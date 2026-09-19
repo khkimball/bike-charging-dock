@@ -9,12 +9,12 @@ it: that depth of bore is what grips the cable's device-end plug, leaving the
 metal tip proud of the cradle floor.  The base receives the plate in a rebate,
 so the deck itself carries no lip or inset.
 """
-import math
 from functools import lru_cache
 
 from build123d import Align, Axis, Box, Part, Pos, Rot
 
 from dock import cradles, divider
+from dock import measurements as M
 from dock import params as P
 
 _MIN = (Align.CENTER, Align.CENTER, Align.MIN)
@@ -87,8 +87,27 @@ def _slot_mouth(part: Part) -> tuple[float, float]:
     return c.X, c.Y
 
 
+# Clearance the base leaves between the charger fence and the lower cavity
+# wall, per side.  It is a base concern, but the deck's Y is what drives the
+# base's Y, so the floor on DECK_Y has to be computed here (base imports deck,
+# not the other way round).
+FENCE_GAP_Y = 2.0
+
+# base.CAVITY_Y == BASE_Y - 4*WALL == DECK_Y + 2*(WALL + CLR_FIT) - 4*WALL,
+# and the cavity has to swallow the charger pocket plus the fence walls plus
+# FENCE_GAP_Y per side:
+#     CAVITY_Y >= (port_face_width + 2*CLR_FIT) + 2*WALL + 2*FENCE_GAP_Y
+# Solving for DECK_Y:
+MIN_DECK_Y = (M.CHARGER.port_face_width + 2 * P.CLR_FIT   # charger pocket (Y)
+              + 2 * P.WALL                                # fence walls
+              + 2 * FENCE_GAP_Y                           # fence-to-cavity gap
+              + 2 * (2 * P.WALL)                          # cavity walls
+              - 2 * (P.WALL + P.CLR_FIT))                 # deck -> base offset
+
 DECK_X = P.WALL + sum(s[1] + P.WALL for s in _stations())
-DECK_Y = max(s[2] for s in _stations()) + 2 * P.WALL
+# The stations stay centred on y = 0; the plate is widened symmetrically when
+# the charger below needs more room than the tallest station does.
+DECK_Y = max(max(s[2] for s in _stations()) + 2 * P.WALL, MIN_DECK_Y)
 SPARE_BAY = (*layout()["spare"], SPARE_W, SPARE_L, SPARE_H)
 
 

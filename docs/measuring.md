@@ -20,11 +20,16 @@ Enter each value in `src/dock/measurements.py`, then run `uv run pytest`.
 - Note where the USB-C port sits (end or side) in a comment.
 
 ## Anker PowerPort 6 (`CHARGER`)
-- length: port face to C7 inlet face
-- width, height (height = the dimension when the ports are on a vertical face)
-- port_face_margin: charger edge to centre of the first USB port
+Lay the charger flat, ports toward you.  The six USB-A ports are on one long
+face; the C7 mains inlet is on the opposite long face.
+- port_face_width: the long dimension -- the face carrying the six ports
+- port_to_inlet: the short horizontal dimension, port face to inlet face
+- height: the remaining (vertical) dimension with the charger lying flat
+- port_face_margin: charger edge to centre of the first USB port, measured
+  along the port face
 - inlet_center_z: bottom of charger to centre of the C7 inlet
-- led_offset_from_ports: nearest port centre to LED centre
+- led_offset_from_ports: nearest port centre to LED centre, measured along
+  the port face
 
 ## Cables (`params.py` Plug entries)
 - For each cable: overmold width, height and length at the device end and

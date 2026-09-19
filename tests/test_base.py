@@ -82,8 +82,9 @@ def test_charger_pocket_fits_inside_the_lower_cavity():
     assert fence.min.Y > cav.min.Y
     assert fence.max.Y < cav.max.Y
     # tripwire on a wider charger than the nominal A2123
-    assert base.CH_W + 2 * params.WALL < base.CAVITY_Y
-    assert base.CH_L > m.CHARGER.length and base.CH_W > m.CHARGER.width
+    assert base.POCKET_Y + 2 * params.WALL < base.CAVITY_Y
+    assert base.POCKET_X > m.CHARGER.port_to_inlet
+    assert base.POCKET_Y > m.CHARGER.port_face_width
 
 
 def test_room_in_front_of_the_charger_inlet_for_the_cord():
@@ -97,6 +98,60 @@ def test_room_in_front_of_the_charger_inlet_for_the_cord():
     pocket_min_x = min(f.center().X for f in fence.faces().filter_by(Axis.X)
                        if f.normal_at().X > 0)
     assert pocket_min_x - cav.min.X >= base.INLET_PLUG_ROOM - 1e-6
+
+
+def test_room_in_front_of_the_charger_ports_for_the_plugs():
+    """Measured on the solid: free X between the pocket's port face and the
+    cavity wall, where six USB-A plugs and their bend radius have to live."""
+    p = base.build_base()
+    cav = _cavity_bbox(p)
+    fence = _fence_section(p)
+    # outward-facing (-X normal) faces; the highest is the pocket's +X face,
+    # i.e. where the charger's six ports sit
+    pocket_max_x = max(f.center().X for f in fence.faces().filter_by(Axis.X)
+                       if f.normal_at().X < 0)
+    assert cav.max.X - pocket_max_x >= base.PORT_PLUG_ROOM_MIN - 1e-6
+
+
+def test_cord_notch_is_in_the_minus_x_end_wall_at_the_inlet():
+    """Measured on the solid: at the inlet centre height the -X end wall is
+    open over CORD_W, centred on the charger."""
+    p = base.build_base()
+    ring = _slab(p, params.FLOOR + m.CHARGER.inlet_center_z + 1.0)
+    # the -X wall is split in two by the notch
+    left = [f for f in ring.faces().filter_by(Axis.Y)
+            if f.center().X < base.CAVITY_MIN_X and abs(f.normal_at().Y) > 0.99]
+    ys = sorted(f.center().Y for f in left)
+    assert ys, "no notch cheeks in the -X end wall"
+    assert abs((max(ys) - min(ys)) - base.CORD_W) < 1e-6
+    assert abs((max(ys) + min(ys)) / 2) < 1e-6
+
+
+def test_led_window_is_in_the_plus_x_end_wall_beside_the_first_port():
+    """Measured on the solid: a LED_W square hole through the +X end wall,
+    centred on the charger's mid-height and on the LED offset in Y."""
+    p = base.build_base()
+    outer = max((f for f in base.build_base().faces().filter_by(Axis.X)
+                 if f.normal_at().X > 0),
+                key=lambda f: f.center().X)
+    inner = outer.inner_wires()
+    assert len(inner) == 1, "expected exactly one hole in the +X end wall"
+    bb = inner[0].bounding_box()
+    assert abs(bb.size.Y - base.LED_W) < 1e-6
+    assert abs(bb.size.Z - base.LED_W) < 1e-6
+    assert abs(bb.center().Y - base.LED_Y) < 1e-6
+    assert abs(bb.center().Z - (params.FLOOR + m.CHARGER.height / 2)) < 1e-6
+    assert base.POCKET_MIN_Y < base.LED_Y < base.POCKET_MIN_Y + base.POCKET_Y
+
+
+def test_escape_port_stays_in_the_rear_wall():
+    p = base.build_base()
+    rear = min((f for f in p.faces().filter_by(Axis.Y)
+                if f.normal_at().Y < 0), key=lambda f: f.center().Y)
+    inner = rear.inner_wires()
+    assert len(inner) == 1
+    bb = inner[0].bounding_box()
+    assert abs(bb.size.Z - base.ESCAPE_H) < 1e-6
 
 
 def test_deck_seats_in_the_rebate_without_interference():
