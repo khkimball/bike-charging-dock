@@ -51,3 +51,10 @@ Either grant it this folder once:
     flatpak override --user --filesystem=$PWD io.github.Snapmaker.Snapmaker_Orca
 
 or launch it without arguments and use File > Import (the file portal).
+
+To verify every part loads in Orca without opening the GUI:
+
+    scripts/orca_check.sh
+
+It writes Orca project files to out/orca/<part>.3mf, which File > Open
+Project in Orca accepts directly.
