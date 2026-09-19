@@ -4,6 +4,7 @@ from build123d import Part
 from dock.export import write_all
 from dock import coupon
 from dock import cradles
+from dock import divider
 
 
 def _coupon_plate() -> Part:
@@ -23,6 +24,10 @@ PARTS.update({
     "cradle_roam": cradles.build_roam_cradle,
     "cradle_ion": cradles.build_ion_cradle,
     "cradle_trackr": cradles.build_trackr_cradle,
+})
+
+PARTS.update({
+    "divider": lambda: divider.build_divider(40, 50),
 })
 
 if __name__ == "__main__":
