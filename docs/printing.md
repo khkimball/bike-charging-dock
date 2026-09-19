@@ -52,6 +52,10 @@ Either grant it this folder once:
 
 or launch it without arguments and use File > Import (the file portal).
 
+The GUI also changes its working directory after launch, so pass ABSOLUTE
+paths on the command line (`$PWD/out/part.stl`); relative paths fail with
+"no geometry data".
+
 To verify every part loads in Orca without opening the GUI:
 
     scripts/orca_check.sh
