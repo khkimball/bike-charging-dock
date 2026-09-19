@@ -626,7 +626,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `params.CLR_RAIL`.
-- Produces: `divider.THICK = 2.0`, `divider.RAIL_W = 4.0`, `divider.RAIL_D = 2.0`, `build_divider(height: float, width: float) -> Part` (a slab with a dovetail rail on each vertical side), and `divider.rail_cutter(height: float) -> Part` returning the mating slot shape (rail + `CLR_RAIL`) to subtract from a bay wall, oriented with the rail's long axis along Z, centred at origin.
+- Produces: `divider.THICK = 2.0`, `divider.RAIL_W = 4.0`, `divider.RAIL_D = 2.0`, `build_divider(height: float, width: float) -> Part` (a slab with a rectangular rail on each vertical side), and `divider.rail_cutter(height: float) -> Part` returning the mating slot shape to subtract from a bay wall, oriented with the rail's long axis along Z, centred at origin. X (depth) is `RAIL_D + CLR_RAIL` because only the slot bottom bears in X (the bay side is open); Y is `RAIL_W + 2*CLR_RAIL`. deck.py must place the cutter wholly inside the wall: centre at x = ±(SPARE_W/2 + (RAIL_D + CLR_RAIL)/2).
 
 - [ ] **Step 1: Failing test**
 
@@ -778,7 +778,7 @@ def _spare_bay() -> Part:
                               align=(Align.CENTER, Align.CENTER, Align.CENTER))
     # two divider positions, rails cut into both long walls
     for y in (-SPARE_L / 4, SPARE_L / 4):
-        for x in (SPARE_W / 2, -SPARE_W / 2):
+        for x in (SPARE_W / 2 + (divider.RAIL_D + P.CLR_RAIL) / 2, -(SPARE_W / 2 + (divider.RAIL_D + P.CLR_RAIL) / 2)):
             bay -= Pos(x, y, P.FLOOR) * divider.rail_cutter(SPARE_H)
     return bay
 
