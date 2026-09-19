@@ -12,3 +12,4 @@ def test_divider_bounding_box():
 def test_cutter_is_larger_than_rail_by_clearance():
     cut = divider.rail_cutter(height=40).bounding_box().size
     assert abs(cut.Y - (divider.RAIL_W + 2 * params.CLR_RAIL)) < 1e-6
+    assert abs(cut.X - (divider.RAIL_D + params.CLR_RAIL)) < 1e-6

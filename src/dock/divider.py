@@ -15,5 +15,6 @@ def build_divider(height: float, width: float) -> Part:
 
 
 def rail_cutter(height: float) -> Part:
+    """Slot for divider rail: X gets c (single bearing face on bay side), Y gets 2c (pull-out clearance)."""
     c = P.CLR_RAIL
     return Box(RAIL_D + c, RAIL_W + 2 * c, height, align=_MIN)
