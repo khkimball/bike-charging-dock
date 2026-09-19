@@ -5,10 +5,14 @@ Conventions shared by all three:
   * the footprint is centred on the origin in X and Y,
   * the bottom outer outline is chamfered by `params.CHAMFER` (chamfers, never
     fillets, on downward-facing edges),
-  * a rectangular through-slot sized to the device-end plug + CLR_DEVICE per
-    side runs through the floor, so a plug pushed up from below sits captive
-    with its metal tip proud of the pocket floor. Retaining the plug is the
-    deck's job (it carries a plug well under each slot), not the cradle's.
+  * the device's cable comes up through the bed face, so a rectangular
+    through-slot runs through the floor.  For a device whose port faces down
+    the slot takes the plug overmold itself, sized plug + CLR_DEVICE per side,
+    and a plug pushed up from below sits captive with its tip proud of the
+    pocket floor.  The bottom-port Roam is the exception: its plug lies flat
+    in a trough and only the cable drops through the bed face.  Retaining the
+    plug is the deck's job (it carries a plug well under each slot), not the
+    cradle's.
 """
 import math
 
@@ -19,7 +23,7 @@ from dock import measurements as M
 from dock import params as P
 
 _MIN = (Align.CENTER, Align.CENTER, Align.MIN)
-_CTR_MINZ = (Align.CENTER, Align.CENTER, Align.MIN)
+
 ROAM_TILT = 20.0   # degrees, shelf tips toward the user (-Y)
 # Gap between the pocket's bottom (-Y) wall face and the near edge of the
 # plug slot, so the slot opens entirely inside the pocket floor.
@@ -37,8 +41,8 @@ ROAM_TROUGH_RUN = P.USB_C_PLUG.length + 2.0   # trough length along the floor
 ROAM_TROUGH_W = P.USB_C_PLUG.width + 2 * P.CLR_DEVICE
 ROAM_TROUGH_H = P.USB_C_PLUG.height + 2 * P.CLR_DEVICE
 # ... and the cable drops to the bed face through a slot at the far end.
-ROAM_CABLE_W = P.USB_C_CABLE.width + 2 * P.CLR_DEVICE
-ROAM_CABLE_L = P.USB_C_CABLE.height + 2 * P.CLR_DEVICE   # along the trough
+ROAM_CABLE_L = P.USB_C_CABLE.height + 2 * P.CLR_DEVICE   # slot run, along the trough
+ROAM_CABLE_END_GAP = 1.0   # slot set back this far from the trough's front wall
 
 
 def _chamfer_bottom_outline(part: Part, amount: float = P.CHAMFER) -> Part:
@@ -108,13 +112,13 @@ def build_roam_cradle() -> Part:
 
     if bottom_port:
         shelf += Pos(0, (nose_front_y + wall_out_y) / 2, 0) * Box(
-            ow, nose, P.FLOOR + ROAM_TROUGH_H, align=_CTR_MINZ)
+            ow, nose, P.FLOOR + ROAM_TROUGH_H, align=_MIN)
         # channel through the wall: closed, so its ceiling is a WALL bridge
         shelf -= Pos(0, (wall_out_y + wall_in_y) / 2, P.FLOOR) * Box(
-            ROAM_TROUGH_W, P.WALL + 0.02, ROAM_TROUGH_H, align=_CTR_MINZ)
+            ROAM_TROUGH_W, P.WALL + 0.02, ROAM_TROUGH_H, align=_MIN)
         # open-top trough in the nose, continuing the same axis
         shelf -= Pos(0, (nose_front_y + P.WALL + wall_out_y) / 2, P.FLOOR) * Box(
-            ROAM_TROUGH_W, ROAM_TROUGH_RUN + 0.01, P.THRU, align=_CTR_MINZ)
+            ROAM_TROUGH_W, ROAM_TROUGH_RUN + 0.01, P.THRU, align=_MIN)
 
     # Tilt toward -Y so the shelf floor normal tips at the user, then lift so
     # the lowest point of the underside sits ROAM_TOE above the bed.
@@ -130,7 +134,8 @@ def build_roam_cradle() -> Part:
 
     if bottom_port:
         # Cable slot: vertical, at the trough's far end, dropping to the bed.
-        y_cable = nose_front_y + P.WALL + ROAM_CABLE_L / 2 + 1.0
+        y_cable = (nose_front_y + P.WALL + ROAM_CABLE_END_GAP
+                   + ROAM_CABLE_L / 2)
         part -= (Pos(0, y_cable * math.cos(t) - P.FLOOR * math.sin(t), 0)
                  * P.plug_cutter(P.USB_C_CABLE))
     else:

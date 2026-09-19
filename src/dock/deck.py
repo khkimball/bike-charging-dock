@@ -4,10 +4,12 @@ Coordinates: the plate spans X = 0..DECK_X, is centred on Y, and its underside
 is the build-plate face at Z = 0.  The whole plate sits on the bed, so the deck
 prints cradles-up with no unsupported bridge and no skirt.
 
-The plate is `PLATE_T` thick and every station's floor slot runs through all of
-it: that depth of bore is what grips the cable's device-end plug, leaving the
-metal tip proud of the cradle floor.  The base receives the plate in a rebate,
-so the deck itself carries no lip or inset.
+The plate is `PLATE_T` thick and every station's bed-face opening is re-cut
+through all of it: for a station whose plug stands up through its floor that
+depth of bore is what grips the plug, leaving the metal tip proud of the
+cradle floor; for the bottom-port Roam, whose plug lies flat in a trough, it
+is simply the cable's way down.  The base receives the plate in a rebate, so
+the deck itself carries no lip or inset.
 """
 from functools import lru_cache
 
@@ -29,6 +31,7 @@ RAIL_YS = (-SPARE_L / 4, SPARE_L / 4)
 # X centre of a rail slot, relative to the bay centre (mirrored in +/-X).
 RAIL_X = SPARE_W / 2 + (divider.RAIL_D + P.CLR_RAIL) / 2
 _ORDER = ("ion", "roam", "trackr", "spare")
+
 
 @lru_cache(maxsize=None)
 def _station(name: str) -> Part:
