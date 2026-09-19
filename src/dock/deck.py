@@ -11,7 +11,7 @@ so the deck itself carries no lip or inset.
 """
 from functools import lru_cache
 
-from build123d import Align, Axis, Box, Part, Pos, Rot
+from build123d import Align, Axis, Box, Part, Pos
 
 from dock import cradles, divider
 from dock import measurements as M
@@ -19,8 +19,6 @@ from dock import params as P
 
 _MIN = (Align.CENTER, Align.CENTER, Align.MIN)
 _CTR = (Align.CENTER, Align.CENTER, Align.CENTER)
-_THRU = 400.0      # cutter length; longer than anything on the deck
-
 PLATE_T = 8.0      # plate thickness = plug engagement depth
 SPARE_W, SPARE_L, SPARE_H = 40.0, 70.0, 30.0   # X, Y, wall height
 # The bay's +/-X walls carry the divider rail slots, so they are thick enough
@@ -31,18 +29,6 @@ RAIL_YS = (-SPARE_L / 4, SPARE_L / 4)
 # X centre of a rail slot, relative to the bay centre (mirrored in +/-X).
 RAIL_X = SPARE_W / 2 + (divider.RAIL_D + P.CLR_RAIL) / 2
 _ORDER = ("ion", "roam", "trackr", "spare")
-
-# Plug captured by each station's floor slot, and the slot's tilt from
-# vertical.  Only the Roam's slot is tilted: it runs normal to the tilted
-# shelf floor, and stays normal to it through the plate so a rigid plug
-# pushes straight in.
-_PLUGS: dict[str, tuple[P.Plug, float]] = {
-    "ion": (P.MICRO_PLUG, 0.0),
-    "roam": (P.USB_C_PLUG, cradles.ROAM_TILT),
-    "trackr": (P.USB_C_PLUG, 0.0),
-    "spare": (P.USB_A_PLUG, 0.0),
-}
-
 
 @lru_cache(maxsize=None)
 def _station(name: str) -> Part:
@@ -72,7 +58,7 @@ def _spare_bay() -> Part:
               SPARE_H + P.FLOOR, align=_MIN)
     bay -= Pos(0, 0, P.FLOOR) * Box(SPARE_W, SPARE_L, SPARE_H, align=_MIN)
     bay -= Box(P.USB_A_PLUG.width + 2 * P.CLR_DEVICE,
-               P.USB_A_PLUG.height + 2 * P.CLR_DEVICE, _THRU, align=_CTR)
+               P.USB_A_PLUG.height + 2 * P.CLR_DEVICE, P.THRU, align=_CTR)
     # two divider positions; the rails cut into both long walls and stay
     # wholly inside them
     for y in RAIL_YS:
@@ -81,13 +67,21 @@ def _spare_bay() -> Part:
     return bay
 
 
-def _slot_mouth(part: Part) -> tuple[float, float]:
-    """XY centre of the station's floor slot, read off its bed face."""
-    inner = part.faces().sort_by(Axis.Z)[0].inner_wires()
-    if len(inner) != 1:
-        raise ValueError(f"expected one floor slot, found {len(inner)}")
-    c = inner[0].bounding_box().center()
-    return c.X, c.Y
+def slot_mouths(part: Part) -> list[tuple[float, float, float, float]]:
+    """Every opening in the station's bed face, as (cx, cy, size_x, size_y).
+
+    Measured off the cradle itself rather than assumed, so it is right for
+    every station -- including the bottom-port Roam, whose bed opening is the
+    cable slot in front of the pocket wall, not a bore under the device.
+    """
+    face = part.faces().sort_by(Axis.Z)[0]
+    out = []
+    for wire in face.inner_wires():
+        bb = wire.bounding_box()
+        out.append((bb.center().X, bb.center().Y, bb.size.X, bb.size.Y))
+    if not out:
+        raise ValueError("station has no opening in its bed face")
+    return out
 
 
 # Clearance the base leaves between the charger fence and the lower cavity
@@ -124,12 +118,9 @@ def build_deck() -> Part:
         # top of the plate
         part += Pos(x, y, PLATE_T - P.FLOOR) * station
 
-        plug, tilt = _PLUGS[name]
-        mx, my = _slot_mouth(station)
-        at = Pos(x + mx, y + my, PLATE_T - P.FLOOR) * Rot(tilt, 0, 0)
-        bores.append(at * Box(plug.width + 2 * P.CLR_DEVICE,
-                              plug.height + 2 * P.CLR_DEVICE,
-                              _THRU, align=_CTR))
+        for mx, my, sx, sy in slot_mouths(station):
+            bores.append(Pos(x + mx, y + my, 0)
+                         * Box(sx, sy, P.THRU, align=_CTR))
 
     # re-cut every slot through the full plate thickness
     for bore in bores:

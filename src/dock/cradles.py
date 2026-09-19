@@ -12,14 +12,15 @@ Conventions shared by all three:
 """
 import math
 
-from build123d import (Align, Box, Cylinder, GeomType, Part, Plane, Polyline,
-                       Pos, Rot, chamfer, extrude, make_face)
+from build123d import (Align, Box, Cylinder, Part, Plane, Polyline, Pos, Rot,
+                       chamfer, extrude, make_face)
 
 from dock import measurements as M
 from dock import params as P
 
 _MIN = (Align.CENTER, Align.CENTER, Align.MIN)
 _CTR = (Align.CENTER, Align.CENTER, Align.CENTER)
+_CTR_MINZ = (Align.CENTER, Align.CENTER, Align.MIN)
 _THRU = 200.0      # slot box length; longer than any cradle, so it cuts clear
 
 ROAM_TILT = 20.0   # degrees, shelf tips toward the user (-Y)
@@ -31,7 +32,16 @@ ROAM_PORT_INSET = 1.0
 # take a chamfer.
 ROAM_TOE = 2.0
 ION_RING_H = 25.0  # ring height above its floor
+ROAM_POCKET_FRACTION = 0.6
 TRACKR_POCKET_FRACTION = 0.6
+# Bottom-port Roam only: the plug lies in an open trough in front of the
+# pocket wall and its tip reaches through the wall into the device.
+ROAM_TROUGH_RUN = P.USB_C_PLUG.length + 2.0   # trough length along the floor
+ROAM_TROUGH_W = P.USB_C_PLUG.width + 2 * P.CLR_DEVICE
+ROAM_TROUGH_H = P.USB_C_PLUG.height + 2 * P.CLR_DEVICE
+# ... and the cable drops to the bed face through a slot at the far end.
+ROAM_CABLE_W = P.USB_C_CABLE.width + 2 * P.CLR_DEVICE
+ROAM_CABLE_L = P.USB_C_CABLE.height + 2 * P.CLR_DEVICE
 
 
 def _slot(plug: P.Plug) -> Part:
@@ -76,37 +86,70 @@ def _wedge(width_x: float, y_low: float, y_high: float,
 
 
 def build_roam_cradle() -> Part:
-    """Tilted shelf holding the lower half of the Roam face-up, open at +Y."""
+    """Tilted shelf holding the lower 0.6 of the Roam face-up, open at +Y.
+
+    With `ROAM.port_face == "bottom"` (the Wahoo Roam 3) the floor is left
+    solid and the USB-C plug arrives horizontally: a plug-sized channel
+    pierces the pocket's low (-Y) wall at floor level, an open trough in the
+    nose ahead of that wall carries the overmold, and a slot at the trough's
+    far end drops the cable to the bed face.  The channel's only ceiling is
+    the 2.4 mm wall itself -- a WALL-span bridge.
+
+    With `port_face == "back"` the original bore through the pocket floor is
+    used instead, and there is no nose.
+    """
     c = P.CLR_DEVICE
-    pw = M.ROAM.width + 2 * c          # pocket width (X)
-    pl = M.ROAM.length * 0.5 + c       # pocket holds the lower half
-    pd = M.ROAM.thickness + 2 * c      # pocket depth into the shelf
+    pw = M.ROAM.width + 2 * c                          # pocket width (X)
+    pl = M.ROAM.length * ROAM_POCKET_FRACTION + c      # pocket run up the slope
+    pd = M.ROAM.thickness + 2 * c                      # pocket depth into the shelf
     ow, ol, oh = pw + 2 * P.WALL, pl + P.WALL, pd + P.FLOOR
+
+    bottom_port = M.ROAM.port_face == "bottom"
+    # nose ahead of the -Y wall that hosts the trough, plus its own front wall
+    nose = ROAM_TROUGH_RUN + P.WALL if bottom_port else 0.0
 
     shelf = Box(ow, ol, oh, align=_MIN)
     # pocket walled on three sides, open at the +Y (upper) end and at +Z
     shelf -= Pos(0, P.WALL / 2, P.FLOOR) * Box(pw, pl, pd, align=_MIN)
 
-    # tilt toward -Y so the shelf floor normal tips at the user, then lift so
-    # the low (-Y) corner sits ROAM_TOE above the bed
-    tilt = Rot(ROAM_TILT, 0, 0)
-    drop = (ol / 2) * math.sin(math.radians(ROAM_TILT))
-    place = Pos(0, 0, drop + ROAM_TOE) * tilt
+    wall_out_y = -ol / 2            # outer face of the pocket's -Y wall
+    wall_in_y = wall_out_y + P.WALL  # its inner face
+    nose_front_y = wall_out_y - nose
 
-    tilted = place * shelf
+    if bottom_port:
+        shelf += Pos(0, (nose_front_y + wall_out_y) / 2, 0) * Box(
+            ow, nose, P.FLOOR + ROAM_TROUGH_H, align=_CTR_MINZ)
+        # channel through the wall: closed, so its ceiling is a WALL bridge
+        shelf -= Pos(0, (wall_out_y + wall_in_y) / 2, P.FLOOR) * Box(
+            ROAM_TROUGH_W, P.WALL + 0.02, ROAM_TROUGH_H, align=_CTR_MINZ)
+        # open-top trough in the nose, continuing the same axis
+        shelf -= Pos(0, (nose_front_y + P.WALL + wall_out_y) / 2, P.FLOOR) * Box(
+            ROAM_TROUGH_W, ROAM_TROUGH_RUN + 0.01, _THRU, align=_CTR_MINZ)
 
-    # ramp fills the space under the tilted shelf; its sloped top *is* the
-    # shelf underside (20 deg from horizontal -> no overhang past 45 deg)
-    half = (ol / 2) * math.cos(math.radians(ROAM_TILT))
-    part = tilted + _wedge(ow, -half, half, 2 * drop, ROAM_TOE)
+    # Tilt toward -Y so the shelf floor normal tips at the user, then lift so
+    # the lowest point of the underside sits ROAM_TOE above the bed.
+    t = math.radians(ROAM_TILT)
+    y_lo_local, y_hi_local = nose_front_y, ol / 2
+    place = Pos(0, 0, ROAM_TOE - y_lo_local * math.sin(t)) * Rot(ROAM_TILT, 0, 0)
+    part = place * shelf
 
-    # Slot normal to the shelf floor, ROAM_PORT_INSET clear of the pocket's
-    # bottom wall. Cut after the union so it runs through shelf and ramp
-    # alike, out to the bed.
-    pocket_wall_y = -pl / 2 + P.WALL / 2          # inner face of the -Y wall
-    y_slot = (pocket_wall_y + ROAM_PORT_INSET
-              + (P.USB_C_PLUG.height + 2 * c) / 2)
-    part -= place * Pos(0, y_slot, 0) * _slot(P.USB_C_PLUG)
+    # Ramp fills the space under the tilted shelf; its sloped top *is* the
+    # shelf underside (20 deg from horizontal -> no overhang past 45 deg).
+    part += _wedge(ow, y_lo_local * math.cos(t), y_hi_local * math.cos(t),
+                   (y_hi_local - y_lo_local) * math.sin(t), ROAM_TOE)
+
+    if bottom_port:
+        # Cable slot: vertical, at the trough's far end, dropping to the bed.
+        y_cable = nose_front_y + P.WALL + ROAM_CABLE_L / 2 + 1.0
+        part -= Pos(0, y_cable * math.cos(t) - P.FLOOR * math.sin(t), 0) * Box(
+            ROAM_CABLE_W, ROAM_CABLE_L, _THRU, align=_CTR)
+    else:
+        # Slot normal to the shelf floor, ROAM_PORT_INSET clear of the
+        # pocket's bottom wall.  Cut after the union so it runs through shelf
+        # and ramp alike, out to the bed.
+        y_slot = (wall_in_y + ROAM_PORT_INSET
+                  + (P.USB_C_PLUG.height + 2 * c) / 2)
+        part -= place * Pos(0, y_slot, 0) * _slot(P.USB_C_PLUG)
 
     return _sit_on_bed_centred(_chamfer_bottom_outline(part))
 
