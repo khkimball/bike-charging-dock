@@ -90,10 +90,11 @@ def build_base() -> Part:
     # and is 2*WALL + 0.5 deep, so it passes right through the wall and no
     # further.
     rear_y = _REAR_CUT_Y0
-    # AC cord notch: open to the top, down to the inlet centre, in line with
-    # the charger's inlet face.  The clamp is a guard that keeps the notch off
-    # the -X wall if the fence is ever moved back.
-    notch_x = max(FENCE_CX - CH_L / 2, CAVITY_MIN_X + CORD_W / 2)
+    # AC cord notch: open to the top, down to the inlet centre, centred on the
+    # free space behind the C7 plug (not the inlet face) so the cord has room
+    # to bend before it exits.  The clamp is a guard that keeps the notch off
+    # the -X wall if INLET_PLUG_ROOM is ever shrunk.
+    notch_x = max(CAVITY_MIN_X + INLET_PLUG_ROOM / 2, CAVITY_MIN_X + CORD_W / 2)
     body -= Pos(notch_x, rear_y, P.FLOOR + M.CHARGER.inlet_center_z) * Box(
         CORD_W, _REAR_CUT_D, BASE_H, align=_REAR)
     # cable escape port, one wall below the rebate so the ledge stays continuous

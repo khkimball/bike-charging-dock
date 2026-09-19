@@ -1,0 +1,39 @@
+# Printing on the Snapmaker U1
+
+Slicer: Snapmaker Orca, installed as a Flatpak.
+
+    flatpak run io.github.Snapmaker.Snapmaker_Orca
+
+Printer: Snapmaker U1. Material: PETG. Profile: 0.4 mm nozzle, 0.2 mm layers.
+
+| Part | Orientation | Walls | Infill | Supports |
+|---|---|---|---|---|
+| coupon_plate, coupon_peg | as exported | 3 | 15 % | none |
+| cradle_* | as exported (pocket up) | 3 | 15 % | none |
+| divider | as exported | 3 | 100 % | none |
+| deck | as exported: flat 8 mm plate on the bed, cradles up | 3 | 15 % | none |
+| base | as exported: open top up | 3 | 15 % | none |
+
+The deck is a flat plate at the bed face with the cradles built up from its
+top, so it prints with no overhangs and no supports.
+
+The base prints open-top-up. Its only ceilings are the escape port and the
+LED window in the rear wall, both short bridges the printer clears without
+supports.
+
+## Print order and measurement loop
+
+1. **coupon** -- print `coupon_plate`/`coupon_peg` first to verify the fit
+   clearances (`CLR_FIT`, `CLR_DEVICE`, `CLR_RAIL`) in `params.py` against the
+   real hardware.
+2. **set clearances** -- adjust `params.py` from the coupon fit, and fill in
+   `src/dock/measurements.py` per `docs/measuring.md`.
+3. **cradles** -- print `cradle_roam`, `cradle_ion`, `cradle_trackr` and check
+   each device seats and its cable plugs in cleanly.
+4. **deck** -- print the full deck once the cradles are confirmed.
+5. **base** -- print last, once the deck's footprint and the charger
+   measurements are locked in.
+
+Re-run `uv run python scripts/export_all.py` after any parameter change, and
+re-run `uv run pytest` before reprinting. Open the refreshed `out/<part>.3mf`
+in Snapmaker Orca for each iteration of the loop.
