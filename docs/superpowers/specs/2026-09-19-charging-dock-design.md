@@ -24,12 +24,17 @@ marketing photos.
 
 ## Power
 
-One desktop-style GaN charger with a detachable AC cord (not a wall-plug
-brick), 4 ports minimum, at least 1 USB-A for the Ion Pro RT micro cable.
-Default target: UGREEN Nexode 65W 4-port desktop charging station. The
-charger cavity is fully parametric (L x W x H plus port-face side), and the
-user measures the actual charger before the base is printed. Port face
-points toward the cable channels; AC cord exits the rear through a notch.
+Anker PowerPort 6 (model A2123): 60 W desktop charger, six USB-A ports on
+one face, detachable AC cord (C7 figure-8 inlet on the opposite face), LED
+next to the ports. Approximate body 96 x 65 x 26 mm; the user measures the
+actual unit (body, port-face offsets, inlet position, LED position) before
+the base is printed, and the cavity is fully parametric.
+
+Cables are all USB-A on the charger end: 2x USB-A to USB-C (Roam 3, Trackr)
+and 1x USB-A to Micro-USB (Ion Pro RT), plus spares for the open bay. The
+port face points toward the cable channels; the AC cord exits the rear
+through a notch; the LED is visible through a small window or light pipe
+hole in the base side.
 
 ## Geometry
 
