@@ -46,8 +46,8 @@ class Charger:
     port_face_margin: float     # charger edge to first port centre, along the
                                 # port face
     inlet_center_z: float       # C7 inlet centre height above charger bottom
-    led_offset_from_ports: float  # LED centre to nearest port centre, along
-                                  # the port face
+    led_offset_from_ports: float  # port 1's centre to the LED centre, along
+                                  # the port face, away from the other ports
 
 
 # Wahoo puts the Roam 3's USB-C on the bottom edge, so the cradle takes the

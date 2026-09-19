@@ -13,7 +13,10 @@ running along Y.  The ports look toward +X and the C7 mains inlet looks toward
 -X, so the pocket is `port_to_inlet` deep in X and `port_face_width` long in Y.
 The mains cord therefore leaves through the -X end wall and the status LED
 shows through the +X end wall; the device cables leave through the rear (-Y)
-escape port.
+escape port.  The charger is pushed to the +X end of the cavity (only
+`PORT_PLUG_ROOM_MIN` clear of the port-side wall) so the LED window is close
+enough to the LED to carry its light; the leftover length goes to the inlet
+side, where the cord just lies on the floor.
 
 It prints open-top-up, so the only ceilings are the escape port, the LED
 window and the four foot recesses -- all short bridges.
@@ -38,7 +41,7 @@ CORD_W = 10.0       # AC cord notch width
 ESCAPE_H = 12.0     # escape port height
 LED_W = 4.0         # LED window side
 FOOT_RECESS_D = 0.6  # leaves 1.0 mm of floor under each foot
-INLET_PLUG_ROOM = 45.0  # free X ahead of the charger inlet for the C7 cord end
+INLET_PLUG_ROOM = 45.0  # required free X ahead of the inlet for the C7 cord end
 PORT_PLUG_ROOM_MIN = 40.0  # required free X in front of the six USB ports
 
 REBATE_D = deck.PLATE_T
@@ -59,20 +62,26 @@ PLATE_BEARING_W = (deck.DECK_X - CAVITY_X) / 2  # width the plate actually lands
 # X runs inlet face -> port face; Y runs along the long, six-port face.
 POCKET_X = M.CHARGER.port_to_inlet + 2 * P.CLR_FIT
 POCKET_Y = M.CHARGER.port_face_width + 2 * P.CLR_FIT
-FENCE_CX = CAVITY_MIN_X + INLET_PLUG_ROOM + POCKET_X / 2  # room to plug the cord in
+# The fence is placed from the +X (port) side, not the -X (inlet) side: the
+# status LED is on the port face and shows through the +X end wall, so the
+# charger has to sit as close to that wall as the USB plugs allow.  The cavity
+# is much longer than the charger needs, and the slack all lands on the inlet
+# side, where a cord lying along the floor does not care.
+FENCE_CX = CAVITY_MAX_X - PORT_PLUG_ROOM_MIN - POCKET_X / 2
 POCKET_MIN_X = FENCE_CX - POCKET_X / 2   # the inlet face of the charger
 POCKET_MAX_X = FENCE_CX + POCKET_X / 2   # the port face of the charger
 POCKET_MIN_Y = -POCKET_Y / 2
 # Clearance left over inside the cavity, for the build report.
 FENCE_MARGIN_X = CAVITY_X - (POCKET_X + 2 * P.WALL)
 FENCE_MARGIN_Y = CAVITY_Y - (POCKET_Y + 2 * P.WALL)
-PORT_PLUG_ROOM = CAVITY_MAX_X - POCKET_MAX_X
+PORT_PLUG_ROOM = CAVITY_MAX_X - POCKET_MAX_X   # == PORT_PLUG_ROOM_MIN
+INLET_ROOM = POCKET_MIN_X - CAVITY_MIN_X       # whatever is left over
 
-# Assumption: the ports are numbered from the -Y end of the port face, so the
-# first port centre sits at POCKET_MIN_Y + port_face_margin and the LED is
-# `led_offset_from_ports` further along the face, i.e. toward +Y (inboard).
-# If the real charger has the LED outboard of port 1 instead, flip this sign.
-LED_Y = POCKET_MIN_Y + M.CHARGER.port_face_margin + M.CHARGER.led_offset_from_ports
+# The ports are numbered from the -Y end of the port face, so the first port
+# centre sits at POCKET_MIN_Y + port_face_margin.  On the PowerPort 6 the LED
+# is at the *end* of the port row, outboard of port 1 -- away from the other
+# five -- so the offset is subtracted, toward -Y.
+LED_Y = POCKET_MIN_Y + M.CHARGER.port_face_margin - M.CHARGER.led_offset_from_ports
 
 # Wall cutters span the 2*WALL wall plus a sliver either side, no more.
 _WALL_CUT_D = 2 * P.WALL + 0.5

@@ -36,8 +36,9 @@ face; the C7 mains inlet is on the opposite long face.
 - port_face_margin: charger edge to centre of the first USB port, measured
   along the port face
 - inlet_center_z: bottom of charger to centre of the C7 inlet
-- led_offset_from_ports: nearest port centre to LED centre, measured along
-  the port face
+- led_offset_from_ports: distance from port 1's centre to the LED centre,
+  measured along the port face *away* from the other ports.  The LED is at
+  the end of the row, outboard of port 1, not between the ports.
 
 ## Cables (`params.py` Plug entries)
 - For each cable: overmold width, height and length at the device end and

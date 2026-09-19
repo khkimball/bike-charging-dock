@@ -74,6 +74,22 @@ def _fence_section(p):
     return min(solids, key=lambda s: s.bounding_box().size.X)
 
 
+def _pocket_port_face_x(p):
+    """X of the charger's port face, measured off the fence cross-section."""
+    fence = _fence_section(p)
+    return max(f.center().X for f in fence.faces().filter_by(Axis.X)
+               if f.normal_at().X < 0)
+
+
+def _led_window_bbox(p):
+    """The single hole in the +X end wall, measured off the solid."""
+    outer = max((f for f in p.faces().filter_by(Axis.X) if f.normal_at().X > 0),
+                key=lambda f: f.center().X)
+    inner = outer.inner_wires()
+    assert len(inner) == 1, "expected exactly one hole in the +X end wall"
+    return inner[0].bounding_box()
+
+
 def test_charger_pocket_fits_inside_the_lower_cavity():
     """Measured on the solid: the fence sits wholly inside the lower cavity."""
     p = base.build_base()
@@ -107,11 +123,8 @@ def test_room_in_front_of_the_charger_ports_for_the_plugs():
     cavity wall, where six USB-A plugs and their bend radius have to live."""
     p = base.build_base()
     cav = _cavity_bbox(p)
-    fence = _fence_section(p)
-    # outward-facing (-X normal) faces; the highest is the pocket's +X face,
-    # i.e. where the charger's six ports sit
-    pocket_max_x = max(f.center().X for f in fence.faces().filter_by(Axis.X)
-                       if f.normal_at().X < 0)
+    # the pocket's +X face is where the charger's six ports sit
+    pocket_max_x = _pocket_port_face_x(p)
     assert cav.max.X - pocket_max_x >= base.PORT_PLUG_ROOM_MIN - 1e-6
 
 
@@ -133,17 +146,37 @@ def test_led_window_is_in_the_plus_x_end_wall_beside_the_first_port():
     """Measured on the solid: a LED_W square hole through the +X end wall,
     centred on the charger's mid-height and on the LED offset in Y."""
     p = base.build_base()
-    outer = max((f for f in p.faces().filter_by(Axis.X)
-                 if f.normal_at().X > 0),
-                key=lambda f: f.center().X)
-    inner = outer.inner_wires()
-    assert len(inner) == 1, "expected exactly one hole in the +X end wall"
-    bb = inner[0].bounding_box()
+    bb = _led_window_bbox(p)
     assert abs(bb.size.Y - base.LED_W) < 1e-6
     assert abs(bb.size.Z - base.LED_W) < 1e-6
     assert abs(bb.center().Y - base.LED_Y) < 1e-6
     assert abs(bb.center().Z - (params.FLOOR + m.CHARGER.height / 2)) < 1e-6
     assert base.POCKET_MIN_Y < base.LED_Y < base.POCKET_MIN_Y + base.POCKET_Y
+
+
+# An LED shining down a long air gap lights the whole cavity instead of the
+# window; keep the window within a hand's width of the LED itself.
+MAX_LED_THROW = 45.0
+
+
+def test_led_window_is_close_enough_to_the_led_to_see_it():
+    """Measured on the solid: the fence is placed from the +X side, so the
+    charger's port face (which carries the LED) is near the +X end wall."""
+    p = base.build_base()
+    throw = _led_window_bbox(p).center().X - _pocket_port_face_x(p)
+    assert 0 < throw <= MAX_LED_THROW, (
+        f"LED window is {throw:.1f} mm from the port face")
+
+
+def test_led_window_is_outboard_of_the_first_port():
+    """Measured on the solid: the PowerPort 6's LED is at the end of the port
+    row, away from the other five -- so the window sits between the pocket's
+    -Y edge and port 1, not inboard of it."""
+    p = base.build_base()
+    y = _led_window_bbox(p).center().Y
+    port_one_y = base.POCKET_MIN_Y + m.CHARGER.port_face_margin
+    assert y < port_one_y, "LED window is inboard of port 1"
+    assert base.POCKET_MIN_Y <= y <= base.POCKET_MIN_Y + base.POCKET_Y
 
 
 def test_escape_port_stays_in_the_rear_wall():
