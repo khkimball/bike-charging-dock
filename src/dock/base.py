@@ -93,7 +93,8 @@ def build_base() -> Part:
     # AC cord notch: open to the top, down to the inlet centre, centred on the
     # free space behind the C7 plug (not the inlet face) so the cord has room
     # to bend before it exits.  The clamp is a guard that keeps the notch off
-    # the -X wall if INLET_PLUG_ROOM is ever shrunk.
+    # the -X wall if INLET_PLUG_ROOM is ever shrunk.  Under current constants
+    # (INLET_PLUG_ROOM=25 > CORD_W=10) the clamp never binds; it's inert.
     notch_x = max(CAVITY_MIN_X + INLET_PLUG_ROOM / 2, CAVITY_MIN_X + CORD_W / 2)
     body -= Pos(notch_x, rear_y, P.FLOOR + M.CHARGER.inlet_center_z) * Box(
         CORD_W, _REAR_CUT_D, BASE_H, align=_REAR)

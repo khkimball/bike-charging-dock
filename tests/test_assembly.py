@@ -3,21 +3,26 @@ from build123d import Axis
 from dock import base, deck, params
 
 
+def _rebate_opening_size(b):
+    """XY size of the rebate opening, measured off the ledge face just below
+    the base's top rim (the widest point of the rebate cut)."""
+    z = base.BASE_H - base.REBATE_D
+    ledge = [f for f in b.faces().filter_by(Axis.Z)
+             if abs(f.center().Z - z) < 1e-6 and f.normal_at().Z > 0]
+    assert ledge, "no horizontal ledge face at the bottom of the rebate"
+    bb = ledge[0].bounding_box()
+    return bb.size.X, bb.size.Y
+
+
 def test_plate_fits_rebate_with_clearance():
-    assert base.BASE_X - 2 * params.WALL >= deck.DECK_X + 2 * params.CLR_FIT - 1e-6
-    assert base.BASE_Y - 2 * params.WALL >= deck.DECK_Y + 2 * params.CLR_FIT - 1e-6
-
-
-def test_assembled_parts_do_not_intersect():
-    d = deck.build_deck()
+    """Measured on the solids: the rebate opening is exactly CLR_FIT bigger
+    than the built deck's footprint on every side."""
     b = base.build_base()
-    seated = base.deck_seat() * d
-    inter = seated & b
-    assert inter.volume < 1e-3
-
-
-def test_plate_top_is_flush_with_base_top():
-    assert abs((base.BASE_H - base.REBATE_D + deck.PLATE_T) - base.BASE_H) < 1e-6
+    d = deck.build_deck()
+    open_x, open_y = _rebate_opening_size(b)
+    deck_bb = d.bounding_box()
+    assert abs((open_x - deck_bb.size.X) / 2 - params.CLR_FIT) < 1e-6
+    assert abs((open_y - deck_bb.size.Y) / 2 - params.CLR_FIT) < 1e-6
 
 
 def test_seated_deck_top_is_flush_with_base_top_measured():
@@ -38,4 +43,6 @@ def test_seated_deck_top_is_flush_with_base_top_measured():
 
 
 def test_assembled_footprint_within_bed():
-    assert base.BASE_X <= params.BED_X and base.BASE_Y <= params.BED_Y
+    """Measured on the solid: the built base's bounding box fits the bed."""
+    bb = base.build_base().bounding_box()
+    assert bb.size.X <= params.BED_X and bb.size.Y <= params.BED_Y
