@@ -41,3 +41,13 @@ everything else on the deck is within 45 degrees of vertical.
 Re-run `uv run python scripts/export_all.py` after any parameter change, and
 re-run `uv run pytest` before reprinting. Open the refreshed `out/<part>.stl`
 in Snapmaker Orca for each iteration of the loop.
+
+## Flatpak note
+
+The Snapmaker Orca Flatpak has no host filesystem access by default, so
+`flatpak run ... out/part.stl` opens the app but reports "no geometry data".
+Either grant it this folder once:
+
+    flatpak override --user --filesystem=$PWD io.github.Snapmaker.Snapmaker_Orca
+
+or launch it without arguments and use File > Import (the file portal).
