@@ -17,9 +17,13 @@ Printer: Snapmaker U1. Material: PETG. Profile: 0.4 mm nozzle, 0.2 mm layers.
 The deck is a flat plate at the bed face with the cradles built up from its
 top, so it prints with no overhangs and no supports.
 
-The base prints open-top-up. Its only ceilings are the escape port and the
-LED window in the rear wall, both short bridges the printer clears without
-supports.
+The base prints open-top-up. Its only ceilings are the rear escape port, the
+LED window in the +X end wall and the four foot recesses in the underside --
+all short bridges the printer clears without supports. (The AC cord notch in
+the -X end wall is open to the top, so it has no ceiling at all.)
+
+The Roam cradle's plug channel is bridged by the 2.4 mm pocket wall above it;
+everything else on the deck is within 45 degrees of vertical.
 
 ## Print order and measurement loop
 

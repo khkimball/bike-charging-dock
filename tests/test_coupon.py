@@ -13,3 +13,9 @@ def test_peg_is_10mm_square():
     _, peg = coupon.build_coupon()
     size = peg.bounding_box().size
     assert abs(size.X - 10) < 1e-6 and abs(size.Y - 10) < 1e-6
+
+
+def test_coupon_parts_are_single_valid_solids():
+    for part in coupon.build_coupon():
+        assert part.is_valid
+        assert len(part.solids()) == 1

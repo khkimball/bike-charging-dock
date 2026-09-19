@@ -19,10 +19,7 @@ from dock import measurements as M
 from dock import params as P
 
 _MIN = (Align.CENTER, Align.CENTER, Align.MIN)
-_CTR = (Align.CENTER, Align.CENTER, Align.CENTER)
 _CTR_MINZ = (Align.CENTER, Align.CENTER, Align.MIN)
-_THRU = 200.0      # slot box length; longer than any cradle, so it cuts clear
-
 ROAM_TILT = 20.0   # degrees, shelf tips toward the user (-Y)
 # Gap between the pocket's bottom (-Y) wall face and the near edge of the
 # plug slot, so the slot opens entirely inside the pocket floor.
@@ -41,14 +38,7 @@ ROAM_TROUGH_W = P.USB_C_PLUG.width + 2 * P.CLR_DEVICE
 ROAM_TROUGH_H = P.USB_C_PLUG.height + 2 * P.CLR_DEVICE
 # ... and the cable drops to the bed face through a slot at the far end.
 ROAM_CABLE_W = P.USB_C_CABLE.width + 2 * P.CLR_DEVICE
-ROAM_CABLE_L = P.USB_C_CABLE.height + 2 * P.CLR_DEVICE
-
-
-def _slot(plug: P.Plug) -> Part:
-    """Through-slot for a plug overmold pushed up from below (Z-thru box)."""
-    return Box(plug.width + 2 * P.CLR_DEVICE,
-               plug.height + 2 * P.CLR_DEVICE,
-               _THRU, align=_CTR)
+ROAM_CABLE_L = P.USB_C_CABLE.height + 2 * P.CLR_DEVICE   # along the trough
 
 
 def _chamfer_bottom_outline(part: Part, amount: float = P.CHAMFER) -> Part:
@@ -124,7 +114,7 @@ def build_roam_cradle() -> Part:
             ROAM_TROUGH_W, P.WALL + 0.02, ROAM_TROUGH_H, align=_CTR_MINZ)
         # open-top trough in the nose, continuing the same axis
         shelf -= Pos(0, (nose_front_y + P.WALL + wall_out_y) / 2, P.FLOOR) * Box(
-            ROAM_TROUGH_W, ROAM_TROUGH_RUN + 0.01, _THRU, align=_CTR_MINZ)
+            ROAM_TROUGH_W, ROAM_TROUGH_RUN + 0.01, P.THRU, align=_CTR_MINZ)
 
     # Tilt toward -Y so the shelf floor normal tips at the user, then lift so
     # the lowest point of the underside sits ROAM_TOE above the bed.
@@ -141,15 +131,15 @@ def build_roam_cradle() -> Part:
     if bottom_port:
         # Cable slot: vertical, at the trough's far end, dropping to the bed.
         y_cable = nose_front_y + P.WALL + ROAM_CABLE_L / 2 + 1.0
-        part -= Pos(0, y_cable * math.cos(t) - P.FLOOR * math.sin(t), 0) * Box(
-            ROAM_CABLE_W, ROAM_CABLE_L, _THRU, align=_CTR)
+        part -= (Pos(0, y_cable * math.cos(t) - P.FLOOR * math.sin(t), 0)
+                 * P.plug_cutter(P.USB_C_CABLE))
     else:
         # Slot normal to the shelf floor, ROAM_PORT_INSET clear of the
         # pocket's bottom wall.  Cut after the union so it runs through shelf
         # and ramp alike, out to the bed.
         y_slot = (wall_in_y + ROAM_PORT_INSET
                   + (P.USB_C_PLUG.height + 2 * c) / 2)
-        part -= place * Pos(0, y_slot, 0) * _slot(P.USB_C_PLUG)
+        part -= place * Pos(0, y_slot, 0) * P.plug_cutter(P.USB_C_PLUG)
 
     return _sit_on_bed_centred(_chamfer_bottom_outline(part))
 
@@ -162,7 +152,7 @@ def build_ion_cradle() -> Part:
 
     part = Cylinder(outer_r, ION_RING_H + P.FLOOR, align=_MIN)
     part -= Pos(0, 0, P.FLOOR) * Cylinder(inner_r, ION_RING_H, align=_MIN)
-    part -= Pos(M.ION.port_offset_from_axis, 0, 0) * _slot(P.MICRO_PLUG)
+    part -= Pos(M.ION.port_offset_from_axis, 0, 0) * P.plug_cutter(P.MICRO_PLUG)
 
     return _sit_on_bed_centred(_chamfer_bottom_outline(part))
 
@@ -176,6 +166,6 @@ def build_trackr_cradle() -> Part:
 
     part = Box(pw + 2 * P.WALL, pt + 2 * P.WALL, depth + P.FLOOR, align=_MIN)
     part -= Pos(0, 0, P.FLOOR) * Box(pw, pt, depth, align=_MIN)
-    part -= _slot(P.USB_C_PLUG)
+    part -= P.plug_cutter(P.USB_C_PLUG)
 
     return _sit_on_bed_centred(_chamfer_bottom_outline(part))

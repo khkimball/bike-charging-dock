@@ -10,8 +10,12 @@ def _rebate_opening_size(b):
     ledge = [f for f in b.faces().filter_by(Axis.Z)
              if abs(f.center().Z - z) < 1e-6 and f.normal_at().Z > 0]
     assert ledge, "no horizontal ledge face at the bottom of the rebate"
-    bb = ledge[0].bounding_box()
-    return bb.size.X, bb.size.Y
+    # the wall cut-outs split the ledge into several faces, so aggregate
+    xs = [v for f in ledge for v in (f.bounding_box().min.X,
+                                     f.bounding_box().max.X)]
+    ys = [v for f in ledge for v in (f.bounding_box().min.Y,
+                                     f.bounding_box().max.Y)]
+    return max(xs) - min(xs), max(ys) - min(ys)
 
 
 def test_plate_fits_rebate_with_clearance():

@@ -57,8 +57,7 @@ def _spare_bay() -> Part:
     bay = Box(SPARE_W + 2 * SPARE_WALL_X, SPARE_L + 2 * P.WALL,
               SPARE_H + P.FLOOR, align=_MIN)
     bay -= Pos(0, 0, P.FLOOR) * Box(SPARE_W, SPARE_L, SPARE_H, align=_MIN)
-    bay -= Box(P.USB_A_PLUG.width + 2 * P.CLR_DEVICE,
-               P.USB_A_PLUG.height + 2 * P.CLR_DEVICE, P.THRU, align=_CTR)
+    bay -= P.plug_cutter(P.USB_A_PLUG)
     # two divider positions; the rails cut into both long walls and stay
     # wholly inside them
     for y in RAIL_YS:

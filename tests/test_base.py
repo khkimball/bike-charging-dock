@@ -1,3 +1,5 @@
+import math
+
 from build123d import Axis, Box, Align, Pos
 
 from dock import base, deck, params
@@ -131,7 +133,7 @@ def test_led_window_is_in_the_plus_x_end_wall_beside_the_first_port():
     """Measured on the solid: a LED_W square hole through the +X end wall,
     centred on the charger's mid-height and on the LED offset in Y."""
     p = base.build_base()
-    outer = max((f for f in base.build_base().faces().filter_by(Axis.X)
+    outer = max((f for f in p.faces().filter_by(Axis.X)
                  if f.normal_at().X > 0),
                 key=lambda f: f.center().X)
     inner = outer.inner_wires()
@@ -158,3 +160,28 @@ def test_deck_seats_in_the_rebate_without_interference():
     p = base.build_base()
     seated = base.deck_seat() * deck.build_deck()
     assert (seated & p).volume < 1e-3
+
+
+MAX_BRIDGE = 20.0   # a ceiling this short prints unsupported
+
+# The base prints open-top-up, so its only ceilings are the rear escape port,
+# the LED window in the +X end wall, and the four foot recesses.  Every other
+# downward face has to be within 45 deg of vertical.
+def test_no_unsupported_ceilings_in_the_base():
+    p = base.build_base()
+    bed_z = p.bounding_box().min.Z
+    for f in p.faces():
+        if f.area <= 0:
+            continue
+        n = f.normal_at(f.center())
+        if n.Z >= -1e-6:
+            continue
+        if abs(f.center().Z - bed_z) < 1e-6:
+            continue                      # the bed face itself
+        overhang = math.degrees(math.asin(min(1.0, -n.Z)))
+        if overhang <= 45.0 + 1e-6:
+            continue
+        bb = f.bounding_box().size
+        assert max(bb.X, bb.Y) <= MAX_BRIDGE, (
+            f"{overhang:.1f} deg ceiling spanning {max(bb.X, bb.Y):.1f} mm "
+            f"at {f.center()}")

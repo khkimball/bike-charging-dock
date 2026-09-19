@@ -1,6 +1,8 @@
 """Design rules. Millimetres. Change here, never inline in a part module."""
 from dataclasses import dataclass
 
+from build123d import Align, Box, Part
+
 WALL = 2.4        # 3 perimeters at 0.4 mm nozzle
 FLOOR = 1.6       # 4 layers at 0.4 mm
 CHAMFER = 1.0     # downward-facing edge chamfer
@@ -27,3 +29,17 @@ MICRO_PLUG = Plug(width=10.5, height=6.5, length=17.0)
 # The bare cable behind the USB-C overmold, not the overmold itself: this is
 # what the Roam cradle's cable slot has to pass.
 USB_C_CABLE = Plug(width=6.0, height=4.0, length=30.0)
+
+
+_CTR = (Align.CENTER, Align.CENTER, Align.CENTER)
+
+
+def plug_cutter(plug: Plug, length: float = THRU) -> Part:
+    """Cutter for a plug overmold: the envelope plus CLR_DEVICE per side.
+
+    Centred on the origin, `length` long in Z, so callers place and rotate
+    it.  Pass `THRU` (the default) for a cut that runs clear of the part.
+    """
+    return Box(plug.width + 2 * CLR_DEVICE,
+               plug.height + 2 * CLR_DEVICE,
+               length, align=_CTR)
