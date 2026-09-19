@@ -1,6 +1,6 @@
 # Printing on the Snapmaker U1
 
-Slicer: Snapmaker Orca, installed as a Flatpak.
+Slicer: Snapmaker Orca (open the .stl files; Orca rejects generic 3MF), installed as a Flatpak.
 
     flatpak run io.github.Snapmaker.Snapmaker_Orca
 
@@ -39,5 +39,5 @@ everything else on the deck is within 45 degrees of vertical.
    measurements are locked in.
 
 Re-run `uv run python scripts/export_all.py` after any parameter change, and
-re-run `uv run pytest` before reprinting. Open the refreshed `out/<part>.3mf`
+re-run `uv run pytest` before reprinting. Open the refreshed `out/<part>.stl`
 in Snapmaker Orca for each iteration of the loop.

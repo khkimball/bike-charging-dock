@@ -20,7 +20,7 @@ def test_plug_sizes_are_positive():
         assert plug.width > 0 and plug.height > 0 and plug.length > 0
 
 
-def test_write_all_creates_three_files(tmp_path: Path):
+def test_write_all_creates_stl_and_step(tmp_path: Path):
     paths = write_all(Box(10, 10, 10), "cube", tmp_path)
-    assert [p.suffix for p in paths] == [".stl", ".3mf", ".step"]
+    assert [p.suffix for p in paths] == [".stl", ".step"]
     assert all(p.stat().st_size > 0 for p in paths)
