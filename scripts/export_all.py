@@ -4,6 +4,7 @@ from build123d import Part
 from dock.export import write_all
 from dock import coupon
 from dock import cradles
+from dock import deck
 from dock import divider
 
 
@@ -28,6 +29,10 @@ PARTS.update({
 
 PARTS.update({
     "divider": lambda: divider.build_divider(40, 50),
+})
+
+PARTS.update({
+    "deck": deck.build_deck,
 })
 
 if __name__ == "__main__":
