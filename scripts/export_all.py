@@ -2,6 +2,7 @@
 from typing import Callable
 from build123d import Part
 from dock.export import write_all
+from dock import base
 from dock import coupon
 from dock import cradles
 from dock import deck
@@ -33,6 +34,10 @@ PARTS.update({
 
 PARTS.update({
     "deck": deck.build_deck,
+})
+
+PARTS.update({
+    "base": base.build_base,
 })
 
 if __name__ == "__main__":
