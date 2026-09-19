@@ -828,10 +828,10 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `scripts/export_all.py`
 
 **Interfaces:**
-- Consumes: `deck.DECK_X, DECK_Y, LIP_H`; `measurements.CHARGER`; `params.*`.
-- Produces: `base.BASE_H`, `build_base() -> Part`.
+- Consumes: `deck.DECK_X, DECK_Y, PLATE_T`; `measurements.CHARGER`; `params.*`.
+- Produces: `base.BASE_H`, `base.BASE_X`, `base.BASE_Y`, `base.REBATE_D`, `build_base() -> Part`.
 
-Geometry: open-top box `DECK_X` by `DECK_Y` outside, walls `WALL`, floor `FLOOR`. Inner height = `CHARGER.height + 12` (cable bend room) and the deck lip drops inside the walls. Charger cavity: a raised `WALL`-thick fence inside the floor, `CHARGER + 2*CLR_FIT` in plan, 8 mm tall, port face toward +X (the cradles' side), with a fingernail notch. Rear (-Y) wall cut-outs: AC cord notch (10 mm wide, from top edge down to `inlet_center_z`), escape port (`USB_A_PLUG.width + 4` wide, 12 mm tall, at the top edge). LED window: 4 mm hole in the -Y wall at the LED position. Four 10 mm diameter, 1 mm deep foot recesses underneath. Corner pegs are omitted: the lip already locates the deck.
+Geometry (rebate design, per the Task 6 ruling: the deck is a flat 8 mm plate, no lip): open-top box with outer size `BASE_X = DECK_X + 2*(WALL + CLR_FIT)`, `BASE_Y = DECK_Y + 2*(WALL + CLR_FIT)`, walls `WALL`, floor `FLOOR`. Inner height below the plate = `CHARGER.height + 12` (cable bend room). At the top of the inner walls a rebate `REBATE_D = PLATE_T` deep and `CLR_FIT` wider than the deck on each side receives the plate flush with the base top; the walls below the rebate are `2*WALL` thick so the plate rests on a `WALL`-wide ledge. `BASE_H = FLOOR + CHARGER.height + 12 + PLATE_T`. Charger fence: a raised `WALL`-thick fence inside the floor, `CHARGER + 2*CLR_FIT` in plan, 8 mm tall, port face toward +X, with a fingernail notch. Rear (-Y) wall cut-outs: AC cord notch (10 mm wide, from the top edge down to `inlet_center_z`), escape port (`USB_A_PLUG.width + 4` wide, 12 mm tall, just below the rebate), LED window 4 mm square at the LED position. Four 10 mm diameter, 1 mm deep foot recesses underneath.
 
 - [ ] **Step 1: Failing tests**
 
@@ -842,19 +842,23 @@ from dock import base, deck, params
 from dock import measurements as m
 
 
-def test_base_matches_deck_footprint():
+def test_base_outer_size_wraps_deck_with_clearance():
     bb = base.build_base().bounding_box().size
-    assert abs(bb.X - deck.DECK_X) < 1e-6
-    assert abs(bb.Y - deck.DECK_Y) < 1e-6
+    assert abs(bb.X - (deck.DECK_X + 2 * (params.WALL + params.CLR_FIT))) < 1e-6
+    assert abs(bb.Y - (deck.DECK_Y + 2 * (params.WALL + params.CLR_FIT))) < 1e-6
 
 
-def test_base_is_taller_than_charger_plus_lip():
-    assert base.BASE_H >= m.CHARGER.height + deck.LIP_H + params.FLOOR
+def test_base_height_leaves_charger_room_under_plate():
+    assert base.BASE_H >= params.FLOOR + m.CHARGER.height + deck.PLATE_T
+
+
+def test_rebate_depth_matches_plate():
+    assert abs(base.REBATE_D - deck.PLATE_T) < 1e-6
 
 
 def test_base_valid_and_on_bed():
     p = base.build_base()
-    assert p.is_valid()
+    assert p.is_valid
     assert abs(p.bounding_box().min.Z) < 1e-6
 
 
@@ -870,7 +874,7 @@ def test_base_has_four_foot_recesses():
 
 `src/dock/base.py`:
 ```python
-"""Base tray: hides the Anker PowerPort 6 and the cable slack."""
+"""Base tray: hides the Anker PowerPort 6 and the cable slack; the deck plate drops into a top rebate."""
 from build123d import Box, Cylinder, Pos, Part, Align
 from dock import params as P
 from dock import measurements as M
@@ -879,33 +883,37 @@ from dock import deck
 _MIN = (Align.CENTER, Align.CENTER, Align.MIN)
 CABLE_ROOM = 12.0
 FENCE_H = 8.0
-BASE_H = P.FLOOR + M.CHARGER.height + CABLE_ROOM + deck.LIP_H
+REBATE_D = deck.PLATE_T
+BASE_X = deck.DECK_X + 2 * (P.WALL + P.CLR_FIT)
+BASE_Y = deck.DECK_Y + 2 * (P.WALL + P.CLR_FIT)
+BASE_H = P.FLOOR + M.CHARGER.height + CABLE_ROOM + REBATE_D
 
 
 def build_base() -> Part:
-    X, Y = deck.DECK_X, deck.DECK_Y
+    X, Y = BASE_X, BASE_Y
     cx = X / 2
     body = Pos(cx, 0, 0) * Box(X, Y, BASE_H, align=_MIN)
-    body -= Pos(cx, 0, P.FLOOR) * Box(X - 2 * P.WALL, Y - 2 * P.WALL, BASE_H, align=_MIN)
+    # lower cavity: walls 2*WALL thick so the rebate leaves a WALL-wide ledge
+    body -= Pos(cx, 0, P.FLOOR) * Box(X - 4 * P.WALL, Y - 4 * P.WALL, BASE_H, align=_MIN)
+    # rebate that receives the deck plate flush with the top
+    body -= Pos(cx, 0, BASE_H - REBATE_D) * Box(
+        deck.DECK_X + 2 * P.CLR_FIT, deck.DECK_Y + 2 * P.CLR_FIT, REBATE_D, align=_MIN)
 
     # charger fence, port face toward +X, charger centred in Y
     ch_l, ch_w = M.CHARGER.length + 2 * P.CLR_FIT, M.CHARGER.width + 2 * P.CLR_FIT
     fence = Box(ch_l + 2 * P.WALL, ch_w + 2 * P.WALL, FENCE_H + P.FLOOR, align=_MIN)
     fence -= Pos(0, 0, P.FLOOR) * Box(ch_l, ch_w, FENCE_H, align=_MIN)
     fence -= Pos(0, ch_w / 2, P.FLOOR) * Box(20, 2 * P.WALL + 2, FENCE_H, align=_MIN)  # nail notch
-    fence_x = P.WALL + ch_l / 2 + P.WALL
+    fence_x = 2 * P.WALL + P.WALL + ch_l / 2
     body += Pos(fence_x, 0, 0) * fence
 
     # rear wall (-Y): cord notch above the inlet, escape port, LED window
     rear_y = -Y / 2
-    inlet_x = fence_x - ch_l / 2  # inlet face is on -X side of the charger
-    body -= Pos(inlet_x, rear_y, P.FLOOR + M.CHARGER.inlet_center_z) * Box(
-        10, 3 * P.WALL, BASE_H, align=_MIN)
-    body -= Pos(X - 30, rear_y, BASE_H - 12) * Box(
-        P.USB_A_PLUG.width + 4, 3 * P.WALL, 12, align=_MIN)
+    inlet_x = fence_x - ch_l / 2  # inlet face is on the -X side of the charger
+    body -= Pos(inlet_x, rear_y, P.FLOOR + M.CHARGER.inlet_center_z) * Box(10, 3 * P.WALL, BASE_H, align=_MIN)
+    body -= Pos(X - 30, rear_y, BASE_H - REBATE_D - 12) * Box(P.USB_A_PLUG.width + 4, 3 * P.WALL, 12, align=_MIN)
     led_x = fence_x + ch_l / 2 - M.CHARGER.port_face_margin - M.CHARGER.led_offset_from_ports
-    body -= Pos(led_x, rear_y, P.FLOOR + M.CHARGER.height / 2) * Box(
-        4, 3 * P.WALL, 4, align=_MIN)
+    body -= Pos(led_x, rear_y, P.FLOOR + M.CHARGER.height / 2) * Box(4, 3 * P.WALL, 4, align=_MIN)
 
     # foot recesses
     for fx in (12, X - 12):
@@ -914,14 +922,14 @@ def build_base() -> Part:
     return body
 ```
 
-Note: the cord notch is wide open to the top so the cord drops in; the LED window is a 4 mm square. If the tests' rear-wall cuts merge two inner wires on the bottom face, move the foot recesses inboard.
+Note: the cord notch runs up through the rebate ledge at the rear; that is intended (the cord drops in from above before the plate is seated). If the tests find the rear-wall cuts merge inner wires on the bottom face, move the foot recesses inboard.
 
 - [ ] **Step 4: Run tests until green.** Register `"base": base.build_base`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add -A && git commit -m "Add base tray with charger fence, cord notch, escape port
+git add -A && git commit -m "Add base tray with rebate, charger fence, cord notch, escape port
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -935,7 +943,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `README.md`
 
 **Interfaces:**
-- Consumes: `deck.build_deck`, `base.build_base`, `deck.LIP_H`, `params.CLR_FIT`.
+- Consumes: `deck.build_deck`, `deck.DECK_X/DECK_Y/PLATE_T`, `base.build_base`, `base.BASE_H/BASE_X/BASE_Y/REBATE_D`, `params.CLR_FIT/WALL/BED_X/BED_Y`.
 
 - [ ] **Step 1: Failing tests**
 
@@ -945,33 +953,26 @@ from build123d import Pos
 from dock import deck, base, params
 
 
-def test_deck_lip_clears_base_walls():
-    """Lip outer size must be smaller than base inner size by 2*CLR_FIT."""
-    d = deck.build_deck()
-    b = base.build_base()
-    lip = d.bounding_box()
-    base_inner_x = b.bounding_box().size.X - 2 * params.WALL
-    base_inner_y = b.bounding_box().size.Y - 2 * params.WALL
-    # slice the deck at half lip height to get the lip outline
-    from build123d import Plane, section
-    lip_outline = d.split(Plane.XY.offset(deck.LIP_H / 2), keep="BOTTOM").bounding_box().size
-    assert lip_outline.X <= base_inner_x - 2 * params.CLR_FIT + 1e-6
-    assert lip_outline.Y <= base_inner_y - 2 * params.CLR_FIT + 1e-6
+def test_plate_fits_rebate_with_clearance():
+    assert base.BASE_X - 2 * params.WALL >= deck.DECK_X + 2 * params.CLR_FIT - 1e-6
+    assert base.BASE_Y - 2 * params.WALL >= deck.DECK_Y + 2 * params.CLR_FIT - 1e-6
 
 
 def test_assembled_parts_do_not_intersect():
     d = deck.build_deck()
     b = base.build_base()
-    seated = Pos(0, 0, base.BASE_H - deck.LIP_H) * d
+    seated = Pos(params.WALL + params.CLR_FIT, 0, base.BASE_H - base.REBATE_D) * d
     inter = seated & b
     assert inter.volume < 1e-3
 
 
+def test_plate_top_is_flush_with_base_top():
+    assert abs((base.BASE_H - base.REBATE_D + deck.PLATE_T) - base.BASE_H) < 1e-6
+
+
 def test_assembled_footprint_within_bed():
-    b = base.build_base().bounding_box().size
-    assert b.X <= params.BED_X and b.Y <= params.BED_Y
+    assert base.BASE_X <= params.BED_X and base.BASE_Y <= params.BED_Y
 ```
-If `split(..., keep=...)` signature differs in the installed build123d, use `Keep.BOTTOM` from `build123d`.
 
 - [ ] **Step 2: Run; fix geometry until green.**
 
@@ -989,7 +990,7 @@ Material: PETG. Profile: U1 0.4 nozzle, 0.2 mm layers.
 | coupon_plate, coupon_peg | as exported | 3 | 15 % | none |
 | cradle_* | as exported (pocket up) | 3 | 15 % | none |
 | divider | as exported | 3 | 100 % | none |
-| deck | as exported (cradles up, lip skirt down) | 3 | 15 % | none |
+| deck | as exported (flat plate on bed, cradles up) | 3 | 15 % | none |
 | base | as exported (open top up) | 3 | 15 % | none |
 
 Order: coupon → update `params.py` → cradles → deck → base.

@@ -1,13 +1,13 @@
-"""Top deck: plate + lip + three cradles + spare bay with divider slots.
+"""Top deck: a solid plate carrying three cradles and a spare bay.
 
-Coordinates: the plate spans X = 0..DECK_X, is centred on Y and its underside
-is the build-plate face at Z = 0 of the *construction* frame.  Everything is
-lifted by WELL_H at the end so the finished part sits on Z = 0.
+Coordinates: the plate spans X = 0..DECK_X, is centred on Y, and its underside
+is the build-plate face at Z = 0.  The whole plate sits on the bed, so the deck
+prints cradles-up with no unsupported bridge and no skirt.
 
-Under every floor slot hangs a plug well: a WALL-thick rectangular boss that
-grips the cable's device-end plug over its whole overmold length, leaving the
-metal tip proud of the cradle floor.  The wells are the deepest thing on the
-deck (deeper than the lip), so they, not the lip, set the Z offset.
+The plate is `PLATE_T` thick and every station's floor slot runs through all of
+it: that depth of bore is what grips the cable's device-end plug, leaving the
+metal tip proud of the cradle floor.  The base receives the plate in a rebate,
+so the deck itself carries no lip or inset.
 """
 import math
 from functools import lru_cache
@@ -19,27 +19,25 @@ from dock import params as P
 
 _MIN = (Align.CENTER, Align.CENTER, Align.MIN)
 _CTR = (Align.CENTER, Align.CENTER, Align.CENTER)
-_MAX = (Align.CENTER, Align.CENTER, Align.MAX)
 _THRU = 400.0      # cutter length; longer than anything on the deck
 
-LIP_H = 6.0
+PLATE_T = 8.0      # plate thickness = plug engagement depth
 SPARE_W, SPARE_L, SPARE_H = 40.0, 70.0, 30.0   # X, Y, wall height
+# The bay's +/-X walls carry the divider rail slots, so they are thick enough
+# to leave WALL of material behind each slot.  The +/-Y walls stay WALL.
+SPARE_WALL_X = P.WALL + divider.RAIL_D + P.CLR_RAIL
 _ORDER = ("ion", "roam", "trackr", "spare")
 
-# Plug captured under each station's floor slot, and the slot's tilt from
+# Plug captured by each station's floor slot, and the slot's tilt from
 # vertical.  Only the Roam's slot is tilted: it runs normal to the tilted
-# shelf floor, so its well leans with it and the plug pushes in straight.
+# shelf floor, and stays normal to it through the plate so a rigid plug
+# pushes straight in.
 _PLUGS: dict[str, tuple[P.Plug, float]] = {
     "ion": (P.MICRO_PLUG, 0.0),
     "roam": (P.USB_C_PLUG, cradles.ROAM_TILT),
     "trackr": (P.USB_C_PLUG, 0.0),
     "spare": (P.USB_A_PLUG, 0.0),
 }
-
-# Every well reaches the bed, so they are all as deep as the longest plug;
-# a shorter well would leave its pillar hanging in mid-air.  Task 7 sizes the
-# base cavity from this.
-WELL_H = max(plug.length for plug, _ in _PLUGS.values())
 
 
 @lru_cache(maxsize=None)
@@ -66,8 +64,8 @@ def layout() -> dict[str, tuple[float, float]]:
 
 
 def _spare_bay() -> Part:
-    bay = Box(SPARE_W + 2 * P.WALL, SPARE_L + 2 * P.WALL, SPARE_H + P.FLOOR,
-              align=_MIN)
+    bay = Box(SPARE_W + 2 * SPARE_WALL_X, SPARE_L + 2 * P.WALL,
+              SPARE_H + P.FLOOR, align=_MIN)
     bay -= Pos(0, 0, P.FLOOR) * Box(SPARE_W, SPARE_L, SPARE_H, align=_MIN)
     bay -= Box(P.USB_A_PLUG.width + 2 * P.CLR_DEVICE,
                P.USB_A_PLUG.height + 2 * P.CLR_DEVICE, _THRU, align=_CTR)
@@ -95,41 +93,24 @@ SPARE_BAY = (*layout()["spare"], SPARE_W, SPARE_L, SPARE_H)
 
 
 def build_deck() -> Part:
-    cx = DECK_X / 2
-    part = Pos(cx, 0, 0) * Box(DECK_X, DECK_Y, P.FLOOR, align=_MIN)
-
-    # lip: a WALL-thick skirt hanging LIP_H below the plate, inset so it
-    # drops into the base
-    inset = P.WALL + P.CLR_FIT
-    outer = Box(DECK_X - 2 * inset, DECK_Y - 2 * inset, LIP_H, align=_MAX)
-    inner = Box(DECK_X - 2 * (inset + P.WALL), DECK_Y - 2 * (inset + P.WALL),
-                LIP_H + 2, align=_MAX)
-    part += Pos(cx, 0, 0) * (outer - inner)
+    part = Pos(DECK_X / 2, 0, 0) * Box(DECK_X, DECK_Y, PLATE_T, align=_MIN)
 
     bores = []
     for name, (x, y) in layout().items():
         station = _station(name)
-        # the station carries its own FLOOR, so at Z=0 it merges with the plate
-        part += Pos(x, y, 0) * station
+        # sink each station by its own FLOOR so its floor merges into the
+        # top of the plate
+        part += Pos(x, y, PLATE_T - P.FLOOR) * station
 
         plug, tilt = _PLUGS[name]
         mx, my = _slot_mouth(station)
-        at = Pos(x + mx, y + my, 0) * Rot(tilt, 0, 0)
-        # overlength so the trim below leaves a full-depth well even when it
-        # leans; trimmed flat, the leaning well still supports the plug over
-        # WELL_H / cos(tilt) of its travel
-        length = (WELL_H + 5.0) / math.cos(math.radians(tilt))
-        part += at * Box(plug.width + 2 * P.CLR_DEVICE + 2 * P.WALL,
-                         plug.height + 2 * P.CLR_DEVICE + 2 * P.WALL,
-                         length, align=_MAX)
+        at = Pos(x + mx, y + my, PLATE_T - P.FLOOR) * Rot(tilt, 0, 0)
         bores.append(at * Box(plug.width + 2 * P.CLR_DEVICE,
                               plug.height + 2 * P.CLR_DEVICE,
                               _THRU, align=_CTR))
 
-    # flatten every well onto one bed plane
-    part -= Pos(cx, 0, -WELL_H) * Box(2 * DECK_X, 2 * DECK_Y, _THRU, align=_MAX)
-    # re-cut each slot through plate and well in one pass
+    # re-cut every slot through the full plate thickness
     for bore in bores:
         part -= bore
 
-    return Pos(0, 0, WELL_H) * part
+    return part

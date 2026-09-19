@@ -1,11 +1,8 @@
 import math
 
+from build123d import Axis
+
 from dock import deck, divider, params
-
-
-def _bed_faces(part):
-    """The faces lying on the print bed (Z = 0)."""
-    return [f for f in part.faces() if abs(f.center().Z) < 1e-6]
 
 
 def test_deck_fits_bed():
@@ -27,48 +24,35 @@ def test_layout_has_four_stations_without_overlap():
 
 
 def test_deck_has_at_least_four_floor_slots():
-    """Every station's plug slot runs clear through the plate and its well."""
     p = deck.build_deck()
-    slots = sum(len(f.inner_wires()) for f in _bed_faces(p))
-    assert slots >= 4
+    bottom = p.faces().sort_by(Axis.Z)[0]
+    assert len(bottom.inner_wires()) >= 4
 
 
-def test_four_plug_wells_stand_on_the_bed():
-    """Four well bottoms, each pierced by exactly one slot, all at Z = 0."""
+def test_plate_is_solid_on_bed():
+    """One face spans the whole footprint: the plate lies flat on the bed."""
     p = deck.build_deck()
-    bed = _bed_faces(p)
-    assert len(bed) == 4, f"expected 4 well bottoms on the bed, got {len(bed)}"
-    for f in bed:
-        assert len(f.inner_wires()) == 1
+    bottom = p.faces().sort_by(Axis.Z)[0]
+    assert abs(bottom.center().Z) < 1e-6
+    size = bottom.outer_wire().bounding_box().size
+    assert abs(size.X - deck.DECK_X) < 1e-6
+    assert abs(size.Y - deck.DECK_Y) < 1e-6
 
 
-def test_well_depth_holds_the_longest_plug():
-    longest = max(plug.length for plug in (params.USB_A_PLUG,
-                                           params.USB_C_PLUG,
-                                           params.MICRO_PLUG))
-    assert deck.WELL_H >= longest
-
-
-def test_wells_are_wall_thick_around_each_plug():
-    """A well bottom's outer outline is the slot + WALL on every side."""
+def test_floor_slots_are_plug_sized():
+    """Each slot through the plate is its own plug + CLR_DEVICE per side."""
     p = deck.build_deck()
-    for f in _bed_faces(p):
-        outer = f.outer_wire().bounding_box().size
-        inner = f.inner_wires()[0].bounding_box().size
-        assert outer.X - inner.X >= 2 * params.WALL - 1e-6
-        assert outer.Y - inner.Y >= 2 * params.WALL - 1e-6
+    bottom = p.faces().sort_by(Axis.Z)[0]
+    widths = sorted(round(w.bounding_box().size.X, 3)
+                    for w in bottom.inner_wires())
+    expect = sorted(round(plug.width + 2 * params.CLR_DEVICE, 3)
+                    for plug, _ in deck._PLUGS.values())
+    assert widths == expect
 
 
-def test_lip_hangs_below_the_plate_and_is_inset():
-    p = deck.build_deck()
-    z = deck.WELL_H - deck.LIP_H
-    ring = [f for f in p.faces() if abs(f.center().Z - z) < 1e-6]
-    assert len(ring) == 1, "expected one rectangular lip bottom face"
-    assert len(ring[0].inner_wires()) == 1, "lip must be a skirt, not a slab"
-    size = ring[0].bounding_box().size
-    inset = 2 * (params.WALL + params.CLR_FIT)
-    assert abs(size.X - (deck.DECK_X - inset)) < 1e-6
-    assert abs(size.Y - (deck.DECK_Y - inset)) < 1e-6
+def test_plate_is_thick_enough_to_hold_a_plug():
+    """The plate bore is the plug well, so it must be a real grip length."""
+    assert deck.PLATE_T >= 4 * params.FLOOR
 
 
 def test_spare_bay_metadata_matches_the_layout():
@@ -77,20 +61,18 @@ def test_spare_bay_metadata_matches_the_layout():
     assert (w, l, h) == (deck.SPARE_W, deck.SPARE_L, deck.SPARE_H)
 
 
-def test_divider_rails_stay_inside_the_spare_bay_walls():
-    """Rail slots must not cut through the outside of the bay's long walls."""
+def test_spare_bay_long_walls_keep_a_wall_behind_each_rail_slot():
     x_rail = deck.SPARE_W / 2 + (divider.RAIL_D + params.CLR_RAIL) / 2
-    outer = x_rail + (divider.RAIL_D + params.CLR_RAIL) / 2
-    assert outer <= deck.SPARE_W / 2 + params.WALL + 1e-9
+    slot_outer = x_rail + (divider.RAIL_D + params.CLR_RAIL) / 2
+    wall_outer = deck.SPARE_W / 2 + deck.SPARE_WALL_X
+    assert wall_outer - slot_outer >= params.WALL - 1e-9
 
 
-def test_no_sloped_face_overhangs_past_45_degrees():
-    """Every sloping downward face (chamfers, the leaning Roam well) is <= 45
-    deg from vertical.  Horizontal downward faces are excluded: the plate
-    underside and the lip/well bottoms are flat by design, not slopes."""
+def test_no_face_overhangs_past_45_degrees():
+    """Bar the bed face, every downward face is <= 45 deg from vertical."""
     p = deck.build_deck()
     for f in p.faces():
         n = f.normal_at(f.center())
-        if n.Z < -1e-6 and abs(n.Z + 1.0) > 1e-6:
+        if n.Z < -1e-6 and f.center().Z > 1e-6:
             overhang = math.degrees(math.asin(min(1.0, -n.Z)))
             assert overhang <= 45.0 + 1e-6, f"{overhang:.1f} deg overhang"
