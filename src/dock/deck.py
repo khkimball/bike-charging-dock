@@ -26,6 +26,10 @@ SPARE_W, SPARE_L, SPARE_H = 40.0, 70.0, 30.0   # X, Y, wall height
 # The bay's +/-X walls carry the divider rail slots, so they are thick enough
 # to leave WALL of material behind each slot.  The +/-Y walls stay WALL.
 SPARE_WALL_X = P.WALL + divider.RAIL_D + P.CLR_RAIL
+# The two divider positions, in Y, relative to the bay centre.
+RAIL_YS = (-SPARE_L / 4, SPARE_L / 4)
+# X centre of a rail slot, relative to the bay centre (mirrored in +/-X).
+RAIL_X = SPARE_W / 2 + (divider.RAIL_D + P.CLR_RAIL) / 2
 _ORDER = ("ion", "roam", "trackr", "spare")
 
 # Plug captured by each station's floor slot, and the slot's tilt from
@@ -71,9 +75,8 @@ def _spare_bay() -> Part:
                P.USB_A_PLUG.height + 2 * P.CLR_DEVICE, _THRU, align=_CTR)
     # two divider positions; the rails cut into both long walls and stay
     # wholly inside them
-    x_rail = SPARE_W / 2 + (divider.RAIL_D + P.CLR_RAIL) / 2
-    for y in (-SPARE_L / 4, SPARE_L / 4):
-        for x in (x_rail, -x_rail):
+    for y in RAIL_YS:
+        for x in (RAIL_X, -RAIL_X):
             bay -= Pos(x, y, P.FLOOR) * divider.rail_cutter(SPARE_H)
     return bay
 

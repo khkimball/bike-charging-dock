@@ -1,6 +1,6 @@
-from build123d import Axis
+from build123d import Axis, Pos
 
-from dock import base, deck, params
+from dock import base, deck, divider, params
 
 
 def _rebate_opening_size(b):
@@ -46,3 +46,19 @@ def test_assembled_footprint_within_bed():
     """Measured on the solid: the built base's bounding box fits the bed."""
     bb = base.build_base().bounding_box()
     assert bb.size.X <= params.BED_X and bb.size.Y <= params.BED_Y
+
+
+def test_divider_fits_spare_bay_rails():
+    """The exported divider slides into either rail position in the spare bay
+    without touching the deck, and its rails really do enter the slots."""
+    d = deck.build_deck()
+    div = divider.build_divider(height=deck.SPARE_H,
+                                width=deck.SPARE_W - params.CLR_RAIL)
+    bx, by = deck.layout()["spare"]
+    for ry in deck.RAIL_YS:
+        placed = Pos(bx, by + ry, deck.PLATE_T) * div
+        assert (placed & d).volume < 1e-3, f"divider fouls the bay at y={ry}"
+        # not vacuous: the rails must reach past the bay wall into the slots
+        bb = placed.bounding_box()
+        assert bb.max.X > bx + deck.SPARE_W / 2
+        assert bb.min.X < bx - deck.SPARE_W / 2

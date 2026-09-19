@@ -7,6 +7,7 @@ from dock import coupon
 from dock import cradles
 from dock import deck
 from dock import divider
+from dock import params
 
 
 def _coupon_plate() -> Part:
@@ -29,7 +30,9 @@ PARTS.update({
 })
 
 PARTS.update({
-    "divider": lambda: divider.build_divider(40, 50),
+    # the slab is narrower than the bay by CLR_RAIL so it does not rub
+    "divider": lambda: divider.build_divider(
+        height=deck.SPARE_H, width=deck.SPARE_W - params.CLR_RAIL),
 })
 
 PARTS.update({

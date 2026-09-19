@@ -8,10 +8,18 @@ RAIL_D = 2.0   # rail depth into the wall (X)
 _MIN = (Align.CENTER, Align.CENTER, Align.MIN)
 
 
-def build_divider(height: float, width: float) -> Part:
+def build_divider(*, height: float, width: float) -> Part:
+    """Slab of `width` between the rail roots, `height` tall.
+
+    `width` is the slab, not the overall part: each rail adds RAIL_D beyond
+    it.  Callers size the slab narrower than the bay by CLR_RAIL so it does
+    not rub on the bay walls.
+    """
     slab = Box(width, THICK, height, align=_MIN)
     rail = Box(RAIL_D, RAIL_W, height, align=_MIN)
-    return slab + Pos(width / 2 + RAIL_D / 2, 0, 0) * rail + Pos(-width / 2 - RAIL_D / 2, 0, 0) * rail
+    return (slab
+            + Pos(width / 2 + RAIL_D / 2, 0, 0) * rail
+            + Pos(-width / 2 - RAIL_D / 2, 0, 0) * rail)
 
 
 def rail_cutter(height: float) -> Part:
