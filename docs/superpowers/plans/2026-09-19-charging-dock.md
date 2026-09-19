@@ -237,7 +237,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Create: `src/dock/coupon.py`, `tests/test_coupon.py`, `scripts/export_all.py`
 
 **Interfaces:**
-- Consumes: `params.WALL`, `params.CLR_DEVICE`, `export.write_all`.
+- Consumes: `export.write_all` only. The coupon deliberately uses fixed sizes: it calibrates params, so it must not depend on them.
 - Produces: `coupon.build_coupon() -> Part`, `coupon.CLEARANCES = (0.1, 0.15, 0.2, 0.25, 0.3, 0.4)`; `scripts/export_all.py` with a `PARTS: dict[str, Callable[[], Part]]` registry that later tasks append to.
 
 The coupon is a plate with six 10 mm square holes and a separate 10 mm square peg. Each hole is 10 + 2*c across, labelled by its position (smallest clearance nearest the notch). The user pushes the peg into each hole; the tightest one that slides in by hand gives the fit clearance, the one that drops freely gives the device clearance.
