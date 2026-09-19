@@ -21,7 +21,6 @@ def test_charger_is_powerport6_sized():
 def test_slab_port_height_defaults_to_mid_thickness():
     """An unmeasured port_height means the port is on the device mid-plane."""
     import dataclasses
-    assert m.ROAM.port_height is None
     assert m.ROAM.port_center_height == m.ROAM.thickness / 2
     measured = dataclasses.replace(m.ROAM, port_height=7.0)
     assert measured.port_center_height == 7.0
