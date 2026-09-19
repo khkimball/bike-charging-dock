@@ -84,10 +84,13 @@ def build_roam_cradle() -> Part:
 
     With `ROAM.port_face == "bottom"` (the Wahoo Roam 3) the floor is left
     solid and the USB-C plug arrives horizontally: a plug-sized channel
-    pierces the pocket's low (-Y) wall at floor level, an open trough in the
-    nose ahead of that wall carries the overmold, and a slot at the trough's
-    far end drops the cable to the bed face.  The channel's only ceiling is
-    the 2.4 mm wall itself -- a WALL-span bridge.
+    pierces the pocket's low (-Y) wall, an open trough in the nose ahead of
+    that wall carries the overmold, and a slot at the trough's far end drops
+    the cable to the bed face.  Channel and trough are centred on the port
+    itself -- `ROAM.port_center_height` above the pocket floor, not at floor
+    level, because the device lies back-down and its bottom-edge port sits up
+    at its own mid-thickness.  The channel's only ceiling is the 2.4 mm wall
+    itself -- a WALL-span bridge.
 
     With `port_face == "back"` the original bore through the pocket floor is
     used instead, and there is no nose.
@@ -101,6 +104,10 @@ def build_roam_cradle() -> Part:
     bottom_port = M.ROAM.port_face == "bottom"
     # nose ahead of the -Y wall that hosts the trough, plus its own front wall
     nose = ROAM_TROUGH_RUN + P.WALL if bottom_port else 0.0
+    # Plug axis height above the pocket floor, and the trough/channel floor
+    # below it.  Both are in the shelf's local (pre-tilt) frame.
+    port_z = P.FLOOR + M.ROAM.port_center_height
+    trough_z0 = port_z - ROAM_TROUGH_H / 2
 
     shelf = Box(ow, ol, oh, align=_MIN)
     # pocket walled on three sides, open at the +Y (upper) end and at +Z
@@ -112,12 +119,12 @@ def build_roam_cradle() -> Part:
 
     if bottom_port:
         shelf += Pos(0, (nose_front_y + wall_out_y) / 2, 0) * Box(
-            ow, nose, P.FLOOR + ROAM_TROUGH_H, align=_MIN)
+            ow, nose, port_z + ROAM_TROUGH_H / 2, align=_MIN)
         # channel through the wall: closed, so its ceiling is a WALL bridge
-        shelf -= Pos(0, (wall_out_y + wall_in_y) / 2, P.FLOOR) * Box(
+        shelf -= Pos(0, (wall_out_y + wall_in_y) / 2, trough_z0) * Box(
             ROAM_TROUGH_W, P.WALL + 0.02, ROAM_TROUGH_H, align=_MIN)
         # open-top trough in the nose, continuing the same axis
-        shelf -= Pos(0, (nose_front_y + P.WALL + wall_out_y) / 2, P.FLOOR) * Box(
+        shelf -= Pos(0, (nose_front_y + P.WALL + wall_out_y) / 2, trough_z0) * Box(
             ROAM_TROUGH_W, ROAM_TROUGH_RUN + 0.01, P.THRU, align=_MIN)
 
     # Tilt toward -Y so the shelf floor normal tips at the user, then lift so
@@ -134,10 +141,16 @@ def build_roam_cradle() -> Part:
 
     if bottom_port:
         # Cable slot: vertical, at the trough's far end, dropping to the bed.
+        # Its Y is where the trough floor lands once the shelf is tilted; the
+        # higher the trough, the further toward -Y that is, so the slot is
+        # also held clear of the wedge's chamfered front edge at bed level.
         y_cable = (nose_front_y + P.WALL + ROAM_CABLE_END_GAP
                    + ROAM_CABLE_L / 2)
-        part -= (Pos(0, y_cable * math.cos(t) - P.FLOOR * math.sin(t), 0)
-                 * P.plug_cutter(P.USB_C_CABLE))
+        front_bed_y = y_lo_local * math.cos(t)     # wedge front, at the bed
+        y_slot = max(y_cable * math.cos(t) - trough_z0 * math.sin(t),
+                     front_bed_y + P.CHAMFER + ROAM_CABLE_END_GAP
+                     + ROAM_CABLE_L / 2)
+        part -= Pos(0, y_slot, 0) * P.plug_cutter(P.USB_C_CABLE)
     else:
         # Slot normal to the shelf floor, ROAM_PORT_INSET clear of the
         # pocket's bottom wall.  Cut after the union so it runs through shelf

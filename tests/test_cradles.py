@@ -112,14 +112,64 @@ def test_roam_plug_lies_in_the_trough_with_its_tip_through_the_wall():
     run = params.WALL + plug.length         # overmold, from the wall outward
     proud = 1.0                             # tip standing into the pocket
     s = (proud - run) / 2                   # centre of the plug, along the slope
+    h = m.ROAM.port_center_height           # plug axis, above the pocket floor
     body = Box(plug.width, run + proud, plug.height, align=_CTR)
     at = Pos(0,
-             y0 + up[0] * s + off[0] * plug.height / 2,
-             z0 + up[1] * s + off[1] * plug.height / 2) * Rot(cradles.ROAM_TILT, 0, 0)
+             y0 + up[0] * s + off[0] * h,
+             z0 + up[1] * s + off[1] * h) * Rot(cradles.ROAM_TILT, 0, 0)
     placed = at * body
     assert (placed & p).volume < 1e-3, "the plug fouls the trough or the wall"
-    # not vacuous: the plug really does reach through the wall into the pocket
-    assert placed.bounding_box().max.Y > y0
+    # Not vacuous: the tip really does reach through the wall into the pocket.
+    # Measured up the slope from the wall's inner face, not in world Y -- the
+    # face leans back, so a plug high up the wall has a smaller Y than one at
+    # the floor and still stands proud of it.
+    reach = max((v.Y - y0) * up[0] + (v.Z - z0) * up[1]
+                for v in placed.vertices())
+    assert reach > proud / 2
+
+
+def _roam_floor_frame(p):
+    """(y0, z0, up, off) for the pocket floor at the -Y wall's inner face.
+
+    `up` steps up the slope and `off` steps off the floor, both in (Y, Z).
+    """
+    floor = _largest_upward_plane(p)
+    n = floor.normal_at(floor.center())
+    wall = _roam_pocket_wall(p).bounding_box()
+    return wall.max.Y, wall.min.Z, (n.Z, -n.Y), (n.Y, n.Z)
+
+
+def _roam_wall_probe(p, width, height, above_floor):
+    """A `width` x `height` box spanning the pocket wall, centred `above_floor`
+    above the pocket floor."""
+    from build123d import Box, Pos, Rot
+    y0, z0, up, off = _roam_floor_frame(p)
+    s = -params.WALL / 2                    # mid-wall, along the slope
+    body = Box(width, params.WALL, height, align=_CTR)
+    return (Pos(0,
+                y0 + up[0] * s + off[0] * above_floor,
+                z0 + up[1] * s + off[1] * above_floor)
+            * Rot(cradles.ROAM_TILT, 0, 0)) * body
+
+
+# The USB-C receptacle in the Roam's bottom edge: the opening the plug tip has
+# to reach, not the overmold.
+RECEPTACLE_W, RECEPTACLE_H = 9.0, 3.2
+
+
+def test_roam_channel_is_level_with_the_usb_c_receptacle():
+    """Measured on the solid: the port sits `port_center_height` above the
+    pocket floor, so the channel through the wall has to be there too -- a
+    channel cut from the floor up misses it entirely."""
+    p = cradles.build_roam_cradle()
+    h = m.ROAM.port_center_height
+    probe = _roam_wall_probe(p, RECEPTACLE_W, RECEPTACLE_H, h)
+    assert (probe & p).volume < 1e-3, (
+        f"the wall blocks the receptacle at {h:.1f} mm above the pocket floor")
+    # not vacuous: the wall is solid everywhere the channel is not
+    if h - cradles.ROAM_TROUGH_H / 2 > RECEPTACLE_H:
+        low = _roam_wall_probe(p, RECEPTACLE_W, RECEPTACLE_H, RECEPTACLE_H / 2)
+        assert (low & p).volume > 1e-3, "the pocket wall is not solid below the channel"
 
 
 def test_roam_bed_opening_is_the_cable_slot_in_front_of_the_wall():

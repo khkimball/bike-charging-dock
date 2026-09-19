@@ -10,7 +10,11 @@ Enter each value in `src/dock/measurements.py`, then run `uv run pytest`.
   `"back"` if it is on the rear face.  A bottom port gets a plug trough and a
   channel through the pocket wall; a back port gets a bore through the shelf
   floor instead.
-- Also note the distance from the bottom edge to the USB-C port centre.
+- port_height: lay the Roam on its back (the face it rests on in the cradle)
+  and look at the bottom edge: the height of the USB-C port centre above the
+  back face.  This is what puts the plug channel level with the port, so get
+  it right -- leave it `None` only if the port really is on the mid-plane,
+  which makes it `thickness / 2`.
 
 ## Bontrager Ion Pro RT (`ION`)
 - diameter: body diameter at the widest point

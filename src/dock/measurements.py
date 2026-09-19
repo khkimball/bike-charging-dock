@@ -10,6 +10,18 @@ class Slab:
     width: float
     thickness: float
     port_face: str = "bottom"   # "bottom" (port on the bottom edge) or "back"
+    port_height: float | None = None
+    """Centre of the charge port above the face the device rests on, mm.
+
+    The device lies back-down on the cradle floor, so this is measured from
+    the back face to the port centre.  `None` means the port is on the
+    device's mid-plane, i.e. `thickness / 2`.
+    """
+
+    @property
+    def port_center_height(self) -> float:
+        """`port_height`, defaulting to the device's mid-thickness."""
+        return self.thickness / 2 if self.port_height is None else self.port_height
 
 
 @dataclass(frozen=True)
@@ -41,7 +53,7 @@ class Charger:
 # Wahoo puts the Roam 3's USB-C on the bottom edge, so the cradle takes the
 # plug in sideways through the pocket wall instead of boring its floor.
 ROAM = Slab(length=89.8, width=60.7, thickness=16.5,
-            port_face="bottom")                              # NOMINAL Wahoo spec
+            port_face="bottom", port_height=None)            # NOMINAL Wahoo spec
 ION = Cylinder(diameter=32.0, length=100.0, port_offset_from_axis=6.0)  # NOMINAL guess
 # The Trackr already stands on its port end, so "bottom" costs it no geometry.
 TRACKR = Slab(length=60.0, width=28.0, thickness=17.0,
