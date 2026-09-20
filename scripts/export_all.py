@@ -2,6 +2,7 @@
 from typing import Callable
 from build123d import Part
 from dock.export import write_all
+from dock import base
 from dock import coupon
 from dock import divider
 from dock import params
@@ -22,6 +23,7 @@ PARTS: dict[str, Callable[[], Part]] = {
 }
 
 PARTS.update({
+    "base": base.build_base,
     "tray": tray.build_tray,
     # Sized from the tray's right column: the slab is narrower than the bay by
     # CLR_RAIL, and each rail adds RAIL_D beyond it into the wall slots.
