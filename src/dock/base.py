@@ -71,7 +71,11 @@ ESCAPE_H = 12.0          # escape port height
 NOTCH_W = 40.0           # notch width (Y), a two-finger grip
 NOTCH_D = 15.0           # how far down from the rim it cuts
 NOTCH_R = 5.0            # its bottom corners, rounded so the rim cannot split
-LED_W = 4.0              # LED window side
+# LED window: wider than it is tall.  The LED's position along the port face
+# is the least certain measurement on the charger, so the window is widened
+# in Y to catch it and kept short in Z, where its ceiling has to bridge.
+LED_W = 8.0              # window width (Y)
+LED_H = 4.0              # window height (Z), and its bridge
 FOOT_R = 5.0             # foot recess radius (Ø10 pads)
 FOOT_RECESS_D = 0.6      # leaves 1.0 mm of floor under each foot
 FOOT_INSET = 12.0        # foot centre in from each outer face
@@ -261,10 +265,10 @@ def build_base() -> Part:
     # the cavity floor and its roof is a 45 degree peak, not a bridge.
     body -= Pos(_END_CUT_X0, 0, CORD_Z0) * _cord_cutter(_WALL_CUT_D)
 
-    # +X end wall: LED window, square, centred on the LED in Y and on the
-    # charger's mid-height in Z.
+    # +X end wall: LED window, centred on the LED in Y and on the charger's
+    # mid-height in Z.
     body -= Pos(_END_CUT_X1, LED_Y, P.FLOOR + M.CHARGER.height / 2) * Box(
-        _WALL_CUT_D, LED_W, LED_W, align=_END_HI)
+        _WALL_CUT_D, LED_W, LED_H, align=_END_HI)
 
     # Rear (-Y) wall: cable escape port, one wall below the rebate so the
     # ledge stays continuous, centred on the tray's spare bay.

@@ -380,7 +380,10 @@ def test_led_window_is_outboard_of_port_one_in_the_plus_x_wall():
     inner = outer.inner_wires()
     assert len(inner) == 1, "expected exactly one hole in the +X end wall"
     bb = inner[0].bounding_box()
-    assert abs(bb.size.Y - base.LED_W) < 1e-6 and abs(bb.size.Z - base.LED_W) < 1e-6
+    assert abs(bb.size.Y - base.LED_W) < 1e-6
+    assert abs(bb.size.Z - base.LED_H) < 1e-6
+    # wide in Y to catch the LED, short in Z because that is what bridges
+    assert base.LED_W > base.LED_H and base.LED_W <= MAX_BRIDGE
     assert abs(bb.center().Z - (params.FLOOR + m.CHARGER.height / 2)) < 1e-6
     # inside the pocket's Y span, and outboard of the first port
     fence = _fence_section(p).bounding_box()
@@ -515,8 +518,10 @@ def test_tie_holes_clear_the_foot_recesses():
 # --- printability ------------------------------------------------------------
 
 def test_no_unsupported_ceilings():
-    """Open-top-up: the only ceilings are the escape port, the LED window and
-    the four foot recesses, all short bridges."""
+    """Open-top-up.  The cord port's roof is a 45 degree peak, steep enough
+    to need no allowlisting at all; the ceilings that do bridge are the
+    escape port, the LED window and the four foot recesses, and every one of
+    them spans MAX_BRIDGE or less.  The notch floors face up, not down."""
     p = base.build_base()
     bed_z = p.bounding_box().min.Z
     for f in p.faces():

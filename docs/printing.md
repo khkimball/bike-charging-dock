@@ -25,7 +25,7 @@ The base prints open-top-up. The AC cord port in the -X end wall is sized
 from the moulded C7 cord end, which makes it too wide to bridge, so it is
 roofed with a 45 degree peak instead: it needs no support. The only real
 ceilings left are the rear escape port (19 mm bridge), the LED window in the
-+X end wall (4 mm) and the four foot recesses in the underside -- all short
++X end wall (8 mm) and the four foot recesses in the underside -- all short
 bridges the printer clears without supports. The escape port lets a spare
 device cable leave through the rear wall; the AC cord port is a closed hole,
 not a notch, so the mains cord is the only thing that leaves through the -X
