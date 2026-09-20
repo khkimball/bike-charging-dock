@@ -206,8 +206,9 @@ def _cord_cutter(depth: float) -> Part:
     peak, lying on Z = 0 and running `depth` along +X from X = 0.
 
     The peak is what makes the port printable.  A CORD_W-wide flat ceiling
-    would be a 26 mm bridge; two 45 degree planes meeting at a ridge are the
-    steepest roof the printer needs no support for.
+    would be a bridge half as long again as the printer will cross; two 45
+    degree planes meeting at a ridge are the steepest roof it needs no
+    support for at all.
     """
     half = CORD_W / 2
     section = Plane.YZ * make_face(Polyline(

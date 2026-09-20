@@ -174,11 +174,13 @@ def test_partition_and_outer_wall_are_rail_wall_thick():
 
 # Where the four outer corner arcs are centred, and the outward 45 degree
 # diagonal at each: the thinnest line through a corner.
+_X_LO, _X_HI = tray.OUTER_R, tray.TRAY_X - tray.OUTER_R
+_Y_LO, _Y_HI = -tray.TRAY_Y / 2 + tray.OUTER_R, tray.TRAY_Y / 2 - tray.OUTER_R
 _CORNERS = [
-    (x, y, angle)
-    for x, xa in ((tray.OUTER_R, 180), (tray.TRAY_X - tray.OUTER_R, 0))
-    for y, angle in ((-tray.TRAY_Y / 2 + tray.OUTER_R, 225 if xa else 315),
-                     (tray.TRAY_Y / 2 - tray.OUTER_R, 135 if xa else 45))
+    (_X_LO, _Y_LO, 225),
+    (_X_LO, _Y_HI, 135),
+    (_X_HI, _Y_LO, 315),
+    (_X_HI, _Y_HI, 45),
 ]
 
 

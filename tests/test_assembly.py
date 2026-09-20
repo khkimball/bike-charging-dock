@@ -19,7 +19,7 @@ from dock import base, lid, tray
 from dock import measurements as m
 from dock import params as P
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from export_all import PARTS  # noqa: E402  (needs the path insert above)
 
@@ -74,7 +74,7 @@ DEVICE_BOXES = {
 def _seated_divider(y):
     """The divider as exported -- the stack clearance only means anything
     against the part that actually gets printed."""
-    x0, _, w, _ = tray.RIGHT_BAYS["ion"]
+    x0, _, _, _ = tray.RIGHT_BAYS["ion"]
     placed = Pos(x0 + tray.RIGHT_BAY_W / 2, y, P.TRAY_PLATE) * PARTS["divider"]()
     return base.tray_seat() * placed
 

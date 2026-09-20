@@ -38,6 +38,7 @@ PARTS.update({
         width=tray.RIGHT_BAY_W - params.CLR_RAIL),
 })
 
+
 def build_report() -> str:
     """The derived sizes and clearances, in mm.  Every one of them moves on
     its own when a measurement or a design rule changes, so print them where
