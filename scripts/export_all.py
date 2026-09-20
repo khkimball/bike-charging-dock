@@ -28,9 +28,12 @@ PARTS.update({
     "tray": tray.build_tray,
     "lid": lid.build_lid,
     # Sized from the tray's right column: the slab is narrower than the bay by
-    # CLR_RAIL, and each rail adds RAIL_D beyond it into the wall slots.
+    # CLR_RAIL, and each rail adds RAIL_D beyond it into the wall slots.  It
+    # is half a millimetre shorter than the bay is deep, so the lid lands on
+    # the tray rim and never on a divider that has not quite seated.
     "divider": lambda: divider.build_divider(
-        height=params.BAY_DEPTH, width=tray.RIGHT_BAY_W - params.CLR_RAIL),
+        height=params.BAY_DEPTH - 0.5,
+        width=tray.RIGHT_BAY_W - params.CLR_RAIL),
 })
 
 if __name__ == "__main__":

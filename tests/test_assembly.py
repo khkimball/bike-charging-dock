@@ -10,13 +10,23 @@ bay away from its cable cutout (ROAM against the +Y wall, the right-column
 devices against the partition at -X) -- matching how `tray.py` reserves the
 cutout at the opposite end.
 """
-from build123d import Align, Box, Pos
+import sys
+from pathlib import Path
 
-from dock import base, divider, lid, tray
+from build123d import Align, Axis, Box, Pos
+
+from dock import base, lid, tray
 from dock import measurements as m
 from dock import params as P
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
+
+from export_all import PARTS  # noqa: E402  (needs the path insert above)
+
 _MIN = (Align.MIN, Align.MIN, Align.MIN)
+# The lid lands on the base rim and the tray is flush with it, so anything
+# loose in the tray has to finish clear of the lid ceiling by this much.
+MIN_STACK_GAP = 0.4
 
 
 def _seated_tray():
@@ -62,31 +72,42 @@ DEVICE_BOXES = {
 
 
 def _seated_divider(y):
+    """The divider as exported -- the stack clearance only means anything
+    against the part that actually gets printed."""
     x0, _, w, _ = tray.RIGHT_BAYS["ion"]
-    d = divider.build_divider(height=P.BAY_DEPTH, width=tray.RIGHT_BAY_W - P.CLR_RAIL)
-    placed = Pos(x0 + tray.RIGHT_BAY_W / 2, y, P.TRAY_PLATE) * d
+    placed = Pos(x0 + tray.RIGHT_BAY_W / 2, y, P.TRAY_PLATE) * PARTS["divider"]()
     return base.tray_seat() * placed
+
+
+def _ceiling_z(seated_lid):
+    """The underside of the seated lid's top plate: the highest downward
+    horizontal face, measured on the solid."""
+    return max(f.center().Z for f in seated_lid.faces().filter_by(Axis.Z)
+               if f.normal_at().Z < 0)
 
 
 # --- lid vs seated tray -------------------------------------------------------
 
 def test_lid_seats_over_the_seated_tray_without_interference():
-    assert (_seated_lid() & _seated_tray()).volume < 1e-3
+    """Here the design is contact, not clearance: the lid drops onto the
+    base rim and the tray is flush with that rim, so the lid ceiling lands on
+    the tray's top face.  Equal to within 1e-6 is what that looks like."""
+    seated_lid, seated_tray = _seated_lid(), _seated_tray()
+    assert (seated_lid & seated_tray).volume < 1e-3
+    assert abs(_ceiling_z(seated_lid) - seated_tray.bounding_box().max.Z) < 1e-6
 
 
 # --- devices on the seated tray vs the seated lid -----------------------------
 
-def test_bay_depth_clears_the_tallest_device():
-    """Precondition for the clearance check below: the walls (and so the
-    seated lid, which rests on them) stand at or above every device."""
-    tallest = max(d.thickness for d in (m.ROAM, m.ION, m.TRACKR))
-    assert P.BAY_DEPTH >= tallest
-
-
 def test_devices_on_the_seated_tray_clear_the_seated_lid():
+    """Not merely out of the lid: every device finishes below its ceiling."""
     seated_lid = _seated_lid()
+    ceiling = _ceiling_z(seated_lid)
     for name, box_fn in DEVICE_BOXES.items():
-        assert (box_fn() & seated_lid).volume < 1e-3, name
+        box = box_fn()
+        assert (box & seated_lid).volume < 1e-3, name
+        gap = ceiling - box.bounding_box().max.Z
+        assert gap > 0, f"{name} touches the lid ceiling"
 
 
 # --- dividers on the seated tray vs base and lid ------------------------------
@@ -94,10 +115,22 @@ def test_devices_on_the_seated_tray_clear_the_seated_lid():
 def test_dividers_on_the_seated_tray_clear_the_base_and_lid():
     p_base = base.build_base()
     seated_lid = _seated_lid()
+    ceiling = _ceiling_z(seated_lid)
     for y in tray.RAIL_YS:
         seated_div = _seated_divider(y)
         assert (seated_div & p_base).volume < 1e-3, ("base", y)
         assert (seated_div & seated_lid).volume < 1e-3, ("lid", y)
+        assert ceiling - seated_div.bounding_box().max.Z > 0, ("gap", y)
+
+
+def test_the_seated_divider_stops_short_of_the_lid_ceiling():
+    """The divider is the tallest loose part in the tray and it drops into
+    its rails by hand, so it must not be what the lid lands on: measured on
+    the seated solids, its top finishes clear of the lid ceiling."""
+    ceiling = _ceiling_z(_seated_lid())
+    for y in tray.RAIL_YS:
+        gap = ceiling - _seated_divider(y).bounding_box().max.Z
+        assert gap >= MIN_STACK_GAP, f"only {gap:.2f} mm of gap at y = {y:.1f}"
 
 
 # --- assembled footprint -------------------------------------------------------

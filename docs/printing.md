@@ -48,7 +48,9 @@ bridge, no supports.
    hardware.
 2. **set clearances** -- adjust `params.py` from the coupon fit, and fill in
    `src/dock/measurements.py` per `docs/measuring.md`.
-3. **tray + dividers** -- print the tray and two `divider`s; check each
+3. **tray + dividers** -- print the tray and two `divider`s (they are half a
+   millimetre shorter than the bays are deep, so the lid lands on the tray
+   rim and never on a divider that has not quite seated); check each
    device seats in its bay, its cable plugs in cleanly through the cutout,
    and both dividers drop into their rail slots.
 4. **base** -- print once the tray's footprint and the charger measurements
