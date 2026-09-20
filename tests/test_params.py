@@ -10,8 +10,8 @@ def test_design_rules_match_spec():
     assert params.WALL == 2.4
     assert params.FLOOR == 1.6
     assert params.CLR_DEVICE == 0.3
-    assert params.CLR_FIT == 0.2
-    assert params.CLR_RAIL == 0.25
+    assert params.CLR_FIT == 0.15
+    assert params.CLR_RAIL == 0.20
     assert (params.BED_X, params.BED_Y) == (250, 120)
 
 
