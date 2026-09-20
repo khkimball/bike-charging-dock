@@ -2,30 +2,29 @@
 
 Enter each value in `src/dock/measurements.py`, then run `uv run pytest`.
 
+Each device is a `Slab(length, width, thickness)`: it lies face-up flat in
+its bay, `length` along the bay, `width` across it, `thickness` = height
+above the bay floor.
+
 ## Wahoo Roam 3 (`ROAM`)
-- length: top to bottom edge, at the widest
-- width: side to side at the widest
-- thickness: face to back, including the rear mount tabs
-- port_face: `"bottom"` if the USB-C port is on the bottom edge (the Roam 3),
-  `"back"` if it is on the rear face.  A bottom port gets a plug trough and a
-  channel through the pocket wall; a back port gets a bore through the shelf
-  floor instead.
-- port_height: lay the Roam on its back (the face it rests on in the cradle)
-  and look at the bottom edge: the height of the USB-C port centre above the
-  back face.  This is what puts the plug channel level with the port, so get
-  it right -- leave it `None` only if the port really is on the mid-plane,
-  which makes it `thickness / 2`.
+- length: top to bottom edge, at the widest, along the bay
+- width: side to side at the widest, across the bay
+- thickness: face to back, including the rear mount tabs -- how tall it
+  stands above the bay floor
+- Published values now in the file: `Slab(96.0, 53.0, 24.0)`.
 
 ## Bontrager Ion Pro RT (`ION`)
-- diameter: body diameter at the widest point
-- length: lens face to tail
-- port_offset_from_axis: with the light standing on its tail, distance from
-  the body centre to the micro-USB port centre (0 if centred)
+Lies flat on its side, not standing on its tail.
+- length: lens face to tail, along the bay
+- width: body diameter across the bay (34.7 mm)
+- thickness: body diameter above the bay floor (30.2 mm) -- the Ion's body is
+  not perfectly round, so width and thickness may differ slightly; use the
+  cross-section as it actually rests
+- Published values now in the file: `Slab(102.5, 34.7, 30.2)`.
 
 ## Wahoo Trackr (`TRACKR`)
-- length, width, thickness of the body without the mount clip
-- port_face: the Trackr stands on its port end, so `"bottom"` is right and
-  costs it no geometry; set `"back"` only if the port is on a face.
+- length, width, thickness of the body without the mount clip, lying flat
+- Published values now in the file: `Slab(89.9, 37.1, 29.1)`.
 
 ## Anker PowerPort 6 (`CHARGER`)
 Lay the charger flat, ports toward you.  The six USB-A ports are on one long

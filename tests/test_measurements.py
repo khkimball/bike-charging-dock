@@ -1,4 +1,5 @@
 from dock import measurements as m
+from dock.measurements import Slab
 
 
 def test_all_measurements_positive():
@@ -8,9 +9,6 @@ def test_all_measurements_positive():
                 continue
             if v is None:
                 continue          # an optional measurement, left unmeasured
-            if k.startswith("port_offset"):
-                assert v >= 0, f"{type(obj).__name__}.{k} must be >= 0"   # 0 = centred port
-                continue
             assert v > 0, f"{type(obj).__name__}.{k} must be > 0"
 
 
@@ -21,9 +19,7 @@ def test_charger_is_powerport6_sized():
     assert 20 < m.CHARGER.height < 32
 
 
-def test_slab_port_height_defaults_to_mid_thickness():
-    """An unmeasured port_height means the port is on the device mid-plane."""
-    import dataclasses
-    assert m.ROAM.port_center_height == m.ROAM.thickness / 2
-    measured = dataclasses.replace(m.ROAM, port_height=7.0)
-    assert measured.port_center_height == 7.0
+def test_devices_are_slabs_with_published_sizes():
+    assert m.ROAM == Slab(96.0, 53.0, 24.0)
+    assert m.ION.width == 34.7 and m.ION.thickness == 30.2
+    assert m.TRACKR.length == 89.9

@@ -2,10 +2,7 @@
 from typing import Callable
 from build123d import Part
 from dock.export import write_all
-from dock import base
 from dock import coupon
-from dock import cradles
-from dock import deck
 from dock import divider
 from dock import params
 
@@ -24,23 +21,9 @@ PARTS: dict[str, Callable[[], Part]] = {
 }
 
 PARTS.update({
-    "cradle_roam": cradles.build_roam_cradle,
-    "cradle_ion": cradles.build_ion_cradle,
-    "cradle_trackr": cradles.build_trackr_cradle,
-})
-
-PARTS.update({
-    # the slab is narrower than the bay by CLR_RAIL so it does not rub
+    # Placeholder size: Task 2 replaces this with tray-derived bay dimensions.
     "divider": lambda: divider.build_divider(
-        height=deck.SPARE_H, width=deck.SPARE_W - params.CLR_RAIL),
-})
-
-PARTS.update({
-    "deck": deck.build_deck,
-})
-
-PARTS.update({
-    "base": base.build_base,
+        height=params.BAY_DEPTH, width=40.0 - params.CLR_RAIL),
 })
 
 if __name__ == "__main__":
