@@ -1,4 +1,7 @@
-from build123d import Axis
+import math
+
+from build123d import Align, Axis, Box, GeomType, Pos, Rot, fillet
+
 from dock import tray, params, divider
 from dock import measurements as m
 
@@ -36,17 +39,36 @@ def test_each_device_fits_its_bay_with_clearance():
 
 
 def test_bays_are_open_voids_of_full_depth():
-    """A box the size of each bay interior, sitting on the plate, does not intersect the tray."""
-    from build123d import Box, Pos, Align
+    """A box the size of each bay interior, sitting on the plate, does not
+    intersect the tray.  The ROAM bay's -X corners are rounded (they stand
+    behind the tray's own outer corners), so its probe is rounded to match."""
     p = tray.build_tray()
-    bays = [tray.ROAM_BAY, *tray.RIGHT_BAYS.values()]
-    for (x0, y0, w, l) in bays:
-        probe = Pos(x0 + w / 2, y0 + l / 2, params.TRAY_PLATE) * Box(w - 0.01, l - 0.01, params.BAY_DEPTH - 0.01, align=(Align.CENTER, Align.CENTER, Align.MIN))
-        assert (probe & p).volume < 1e-3
+    bays = [(tray.ROAM_BAY, True), *((b, False) for b in tray.RIGHT_BAYS.values())]
+    for (x0, y0, w, l), round_min_x in bays:
+        box = Box(w - 0.01, l - 0.01, params.BAY_DEPTH - 0.01,
+                  align=(Align.CENTER, Align.CENTER, Align.MIN))
+        if round_min_x:
+            box = fillet(box.edges().filter_by(Axis.Z).group_by(Axis.X)[0],
+                         tray.BAY_CORNER_R)
+        probe = Pos(x0 + w / 2, y0 + l / 2, params.TRAY_PLATE) * box
+        assert (probe & p).volume < 1e-3, (x0, y0)
+
+
+def test_the_roam_still_fits_its_bay_between_the_rounded_corners():
+    """Rounding the ROAM bay's -X corners must not eat into the device room:
+    a ROAM-sized block, inset CLR_BAY from the walls and pushed to the +Y end
+    away from its cable cutout, still touches nothing."""
+    p = tray.build_tray()
+    x0, y0, w, l = tray.ROAM_BAY
+    probe = Pos(x0 + params.CLR_BAY,
+                y0 + l - params.CLR_BAY - m.ROAM.length,
+                params.TRAY_PLATE) * Box(
+        m.ROAM.width, m.ROAM.length, m.ROAM.thickness,
+        align=(Align.MIN, Align.MIN, Align.MIN))
+    assert (probe & p).volume < 1e-3
 
 
 def test_divider_drops_into_both_rail_positions():
-    from build123d import Pos
     p = tray.build_tray()
     d = divider.build_divider(height=params.BAY_DEPTH, width=tray.RIGHT_BAY_W - params.CLR_RAIL)
     for y in tray.RAIL_YS:
@@ -57,7 +79,6 @@ def test_divider_drops_into_both_rail_positions():
 def test_walls_keep_full_thickness_behind_rail_slots():
     """Probe the material behind each rail slot, in both slotted walls:
     at least WALL remains between the slot and the outside world."""
-    from build123d import Box, Pos, Align
     p = tray.build_tray()
     x_part = tray.RIGHT_BAYS["ion"][0]                          # partition's +X face
     x_out = x_part + tray.RIGHT_BAY_W                           # +X outer wall's -X face
@@ -69,14 +90,12 @@ def test_walls_keep_full_thickness_behind_rail_slots():
 
 
 def test_outer_corners_are_rounded():
-    from build123d import GeomType
     p = tray.build_tray()
     cyl = [f for f in p.faces() if f.geom_type == GeomType.CYLINDER and abs(f.radius - tray.OUTER_R) < 1e-6]
     assert len(cyl) >= 4
 
 
 def test_no_overhang_past_45_degrees():
-    import math
     p = tray.build_tray()
     for f in p.faces():
         n = f.normal_at()
@@ -131,7 +150,6 @@ def test_declared_outer_size_matches_the_built_solid():
 def test_partition_and_outer_wall_are_rail_wall_thick():
     """Both slotted walls are solid RAIL_WALL thick away from the slots, and
     no thicker: the bay faces either side of the probe are void."""
-    from build123d import Box, Pos, Align
     p = tray.build_tray()
     x_part = tray.RIGHT_BAYS["ion"][0]
     x_out = x_part + tray.RIGHT_BAY_W
@@ -147,3 +165,39 @@ def test_partition_and_outer_wall_are_rail_wall_thick():
         # just past the wall's bay-side face there is nothing
         void = probe(face_x - sign * 0.25, 0.4)
         assert (void & p).volume < 1e-3, face_x
+
+
+# --- outer corner walls -------------------------------------------------------
+
+# Where the four outer corner arcs are centred, and the outward 45 degree
+# diagonal at each: the thinnest line through a corner.
+_CORNERS = [
+    (x, y, angle)
+    for x, xa in ((tray.OUTER_R, 180), (tray.TRAY_X - tray.OUTER_R, 0))
+    for y, angle in ((-tray.TRAY_Y / 2 + tray.OUTER_R, 225 if xa else 315),
+                     (tray.TRAY_Y / 2 - tray.OUTER_R, 135 if xa else 45))
+]
+
+
+def _corner_probe(cx, cy, angle, length, width=0.2):
+    """A thin bar lying along the corner's outward diagonal, from just inside
+    the outer surface and `length` deep into the wall."""
+    mid = tray.OUTER_R - 0.02 - length / 2
+    return (Pos(cx + mid * math.cos(math.radians(angle)),
+                cy + mid * math.sin(math.radians(angle)),
+                params.TRAY_PLATE + 2)
+            * Rot(0, 0, angle)
+            * Box(length, width, params.BAY_DEPTH - 6,
+                  align=(Align.CENTER, Align.CENTER, Align.MIN)))
+
+
+def test_outer_corner_walls_are_at_least_wall_thick():
+    """The diagonal through a corner is the shortest line from the outside
+    world to the bay void, so a square-cornered bay void behind a rounded
+    outer corner thins the shell there.  Measured on the solid: at every
+    corner, WALL of material stands on that diagonal."""
+    p = tray.build_tray()
+    assert len(_CORNERS) == 4
+    for cx, cy, angle in _CORNERS:
+        probe = _corner_probe(cx, cy, angle, params.WALL - 0.05)
+        assert abs((probe & p).volume - probe.volume) < 1e-3, (cx, cy, angle)

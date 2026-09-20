@@ -26,6 +26,10 @@ CUTOUT_INSET = 2.0   # cutout edge to the bay's end wall
 
 # Outer vertical corner radius: the tray drops inside the base's R8 corners.
 OUTER_R = P.CORNER_R - P.WALL - P.CLR_FIT
+# The -X bay void's corners are rounded concentric with the outer corner, so
+# the shell keeps WALL on the diagonal -- the shortest line through a corner.
+# A square void behind a rounded corner would leave only 1.1 mm there.
+BAY_CORNER_R = OUTER_R - P.WALL
 
 # Walls carrying rail slots must keep WALL of material behind the slot.
 RAIL_WALL = P.WALL + D.RAIL_D + P.CLR_RAIL
@@ -94,10 +98,17 @@ def build_tray() -> Part:
 
     # Bay voids, full BAY_DEPTH, open to the top.  The right column is one
     # continuous void: the three bays are only separated when a divider is in.
+    # The ROAM bay's two -X corners sit behind the tray's own rounded outer
+    # corners, so they are rounded to match; the right column's +X corners
+    # stand behind the thicker RAIL_WALL and need no such relief.
     over = 10.0   # run the cutters past the top face for a clean cut
-    for x0, y0, w, l in ((_LEFT_X0, _Y0, _LEFT_W, _BAY_L),
-                         (_RIGHT_X0, _Y0, RIGHT_BAY_W, _BAY_L)):
-        part -= Pos(x0, y0, P.TRAY_PLATE) * Box(w, l, P.BAY_DEPTH + over, align=_MIN_XY)
+    for x0, y0, w, l, round_min_x in ((_LEFT_X0, _Y0, _LEFT_W, _BAY_L, True),
+                                      (_RIGHT_X0, _Y0, RIGHT_BAY_W, _BAY_L, False)):
+        void = Box(w, l, P.BAY_DEPTH + over, align=_MIN_XY)
+        if round_min_x:
+            void = fillet(void.edges().filter_by(Axis.Z).group_by(Axis.X)[0],
+                          BAY_CORNER_R)
+        part -= Pos(x0, y0, P.TRAY_PLATE) * void
 
     # Rail slots: partition's +X face and the +X outer wall's -X face.
     slot = D.rail_cutter(P.BAY_DEPTH + over)
