@@ -8,6 +8,9 @@ def test_all_measurements_positive():
                 continue
             if v is None:
                 continue          # an optional measurement, left unmeasured
+            if k.startswith("port_offset"):
+                assert v >= 0, f"{type(obj).__name__}.{k} must be >= 0"   # 0 = centred port
+                continue
             assert v > 0, f"{type(obj).__name__}.{k} must be > 0"
 
 
