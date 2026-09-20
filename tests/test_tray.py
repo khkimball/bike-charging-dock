@@ -29,13 +29,16 @@ def test_four_cable_cutouts_through_the_plate():
 
 
 def test_each_device_fits_its_bay_with_clearance():
-    for dev, (x0, y0, w, l) in ((m.ROAM, tray.ROAM_BAY),):
-        assert w >= dev.width + 2 * params.CLR_BAY - 1e-6
-        assert l >= dev.length + 2 * params.CLR_BAY + tray.CUTOUT[0] - 1e-6
+    # The ROAM lies along Y, so its length runs down the bay and the cutout
+    # is reserved at the bay's -Y end.
+    _, _, w, l = tray.ROAM_BAY
+    assert w >= m.ROAM.width + 2 * params.CLR_BAY - 1e-6
+    assert l >= m.ROAM.length + 2 * params.CLR_BAY + tray.CUTOUT[0] - 1e-6
+    # The right column runs along X, with the cutout at each bay's +X end.
     for name, dev in (("ion", m.ION), ("trackr", m.TRACKR)):
-        x0, y0, w, l = tray.RIGHT_BAYS[name]
-        assert w >= dev.length + 2 * params.CLR_BAY + tray.CUTOUT[0] - 1e-6
-        assert l >= dev.width + 2 * params.CLR_BAY - 1e-6
+        _, _, w, l = tray.RIGHT_BAYS[name]
+        assert w >= dev.length + 2 * params.CLR_BAY + tray.CUTOUT[0] - 1e-6, name
+        assert l >= dev.width + 2 * params.CLR_BAY - 1e-6, name
 
 
 def test_bays_are_open_voids_of_full_depth():

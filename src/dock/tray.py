@@ -73,13 +73,17 @@ _ion_y = _div1_y + D.THICK
 RIGHT_BAYS: dict[str, tuple[float, float, float, float]] = {
     "spare": (_RIGHT_X0, _spare_y, RIGHT_BAY_W, _SPARE_L),
     "trackr": (_RIGHT_X0, _trackr_y, RIGHT_BAY_W, _TRACKR_L),
+    # The Ion charges through a socket low in its tail, and MICRO_PLUG is
+    # taller than the plate: its overmold does not stand on the plate at all
+    # but hangs in the cable cutout, which runs clear through TRAY_PLATE into
+    # the base's cable room, leaving about 1 mm of it above the bay floor.
     "ion": (_RIGHT_X0, _ion_y, RIGHT_BAY_W, _ION_L),
 }
 
 # Y centres of the two removable dividers.
 RAIL_YS: tuple[float, float] = (_div0_y + D.THICK / 2, _div1_y + D.THICK / 2)
 
-_MIN_XY = (Align.MIN, Align.MIN, Align.MIN)
+_MIN_XYZ = (Align.MIN, Align.MIN, Align.MIN)
 _CTR_MINZ = (Align.CENTER, Align.CENTER, Align.MIN)
 
 
@@ -104,7 +108,7 @@ def build_tray() -> Part:
     over = 10.0   # run the cutters past the top face for a clean cut
     for x0, y0, w, l, round_min_x in ((_LEFT_X0, _Y0, _LEFT_W, _BAY_L, True),
                                       (_RIGHT_X0, _Y0, RIGHT_BAY_W, _BAY_L, False)):
-        void = Box(w, l, P.BAY_DEPTH + over, align=_MIN_XY)
+        void = Box(w, l, P.BAY_DEPTH + over, align=_MIN_XYZ)
         if round_min_x:
             void = fillet(void.edges().filter_by(Axis.Z).group_by(Axis.X)[0],
                           BAY_CORNER_R)
