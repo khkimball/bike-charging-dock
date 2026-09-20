@@ -2,7 +2,7 @@
 bounding boxes and probe intersections, never a restatement of a constant."""
 import math
 
-from build123d import Align, Axis, Box, Cylinder, GeomType, Pos
+from build123d import Align, Axis, Box, Cylinder, GeomType, Pos, fillet
 
 from dock import base, params, tray
 from dock import measurements as m
@@ -20,9 +20,31 @@ def _slab(p, z, thick=0.2):
     return p & probe
 
 
+# A height clear of every wall opening: above the cord port's head and below
+# the escape port's sill, so the shell reads as an unbroken ring there.
+CLEAR_Z = (base.CORD_Z0 + base.CORD_H + base.ESCAPE_TOP - base.ESCAPE_H) / 2
+
+
+def _band(off_in, off_out, z0, h):
+    """An annular band hugging the cavity outline, from `off_in` to `off_out`
+    outward of it.  Offsetting a rounded rectangle keeps the corner arc
+    centres, so this follows the cavity wall exactly, corners included."""
+    def ring(d, dz, dh):
+        b = Box(base.CAVITY_X + 2 * d, base.CAVITY_Y + 2 * d, dh,
+                align=(Align.CENTER, Align.CENTER, Align.MIN))
+        return Pos(0, 0, dz) * fillet(b.edges().filter_by(Axis.Z),
+                                      base.CAVITY_R + d)
+    return Pos(base.BASE_X / 2, 0, z0) * (ring(off_out, 0, h)
+                                          - ring(off_in, -1, h + 2))
+
+
+def _is_solid_in(probe, p):
+    return abs((probe & p).volume - probe.volume) < 1e-3
+
+
 def _cavity_bbox(p):
-    """The lower cavity opening, measured just above the fence."""
-    ring = _slab(p, params.FLOOR + base.FENCE_H + 2.0)
+    """The lower cavity opening, measured clear of the fence and the ports."""
+    ring = _slab(p, CLEAR_Z)
     top = ring.faces().filter_by(Axis.Z).sort_by(Axis.Z)[-1]
     inner = top.inner_wires()
     assert len(inner) == 1, f"expected one cavity opening, found {len(inner)}"
@@ -89,6 +111,18 @@ def test_outer_vertical_corners_are_rounded():
     assert len(cyl) >= 4
 
 
+def test_bottom_outer_edge_is_chamfered_not_filleted():
+    """Downward edges get a chamfer: the bed face is CHAMFER in from the
+    outer profile all round, and the foot recesses stay inside it."""
+    p = base.build_base()
+    bb = p.bounding_box().size
+    bottom = p.faces().sort_by(Axis.Z)[0]
+    fb = bottom.bounding_box().size
+    assert abs(fb.X - (bb.X - 2 * params.CHAMFER)) < 1e-6
+    assert abs(fb.Y - (bb.Y - 2 * params.CHAMFER)) < 1e-6
+    assert len(bottom.inner_wires()) == len(base.TIE_GRID) + 4
+
+
 def test_base_is_tall_enough_for_charger_cable_room_and_tray():
     p = base.build_base()
     h = p.bounding_box().size.Z
@@ -121,13 +155,31 @@ def test_tray_seats_in_the_rebate_without_interference():
     assert abs(seated.bounding_box().max.Z - p.bounding_box().max.Z) < 1e-6
 
 
-def test_the_ledge_bears_on_the_tray_all_round():
-    """Every ledge face is at least WALL - CLR_FIT - 0.01 wide in its short
-    direction, so the tray has real material under its rim."""
+def test_the_ledge_is_full_width_all_round():
+    """A LEDGE_W-wide band hugging the cavity wall, the whole way round and
+    through the corners, is solid material just below the ledge and open
+    rebate just above it.  That is the shelf, measured, not its bbox."""
     p = base.build_base()
-    for f in _ledge_faces(p):
-        s = f.bounding_box().size
-        assert min(s.X, s.Y) >= params.WALL - params.CLR_FIT - 0.01, f.center()
+    z = base.BASE_H - base.REBATE_D
+    eps = 5e-4                                  # proves >= LEDGE_W - 1e-3
+    below = _band(eps, base.LEDGE_W - eps, z - 0.3, 0.3)
+    assert _is_solid_in(below, p), "the shelf is not full width all round"
+    above = _band(eps, base.LEDGE_W - eps, z, 0.3)
+    assert (above & p).volume < 1e-3, "the shelf is buried under the rim"
+
+
+def test_the_tray_lands_flat_on_the_ledge_all_round():
+    """The tray's bottom outer edge is chamfered, so only the inner part of
+    the shelf sees flat-on-flat contact.  At least 1 mm of it does, all the
+    way round -- measured against the seated tray, not against BEARING_W."""
+    p = base.build_base()
+    seated = base.tray_seat() * tray.build_tray()
+    z = base.BASE_H - base.REBATE_D
+    contact = _band(5e-3, 1.005, z, 0.3)
+    assert _is_solid_in(contact, seated), "less than 1 mm of flat bearing"
+    assert base.BEARING_W >= 1.0
+    assert abs(base.BEARING_W
+               - (base.LEDGE_W - params.CLR_FIT - params.CHAMFER)) < 1e-9
 
 
 # --- charger fence -----------------------------------------------------------
@@ -139,6 +191,16 @@ def test_fence_stands_inside_the_cavity_with_clearance_each_side():
     assert fence.min.X > cav.min.X and fence.max.X < cav.max.X
     assert fence.min.Y - cav.min.Y >= 2.0
     assert cav.max.Y - fence.max.Y >= 2.0
+
+
+def test_base_y_is_wide_enough_for_the_fence_it_carries():
+    """Measured on the solid: BASE_Y covers the fence plus FENCE_CLEAR_Y each
+    side plus the two 2*WALL side walls, so a remeasured, wider charger grows
+    the base instead of jamming."""
+    p = base.build_base()
+    fence = _fence_section(p).bounding_box()
+    need = fence.size.Y + 2 * base.FENCE_CLEAR_Y + 4 * params.WALL
+    assert p.bounding_box().size.Y >= need - 1e-6
 
 
 def test_pocket_holds_the_charger_with_fit_clearance():
@@ -171,26 +233,38 @@ def test_room_behind_the_inlet_for_the_mains_cord():
 
 # --- wall openings -----------------------------------------------------------
 
-def test_cord_notch_is_in_the_minus_x_wall_centred_on_the_inlet():
+def test_cord_port_is_a_closed_hole_in_the_minus_x_wall_on_the_inlet():
+    """A rectangular through-hole in the -X end wall, centred on the inlet in
+    Y and spanning its centre height in Z -- not a notch open to the top."""
     p = base.build_base()
-    ring = _slab(p, params.FLOOR + m.CHARGER.inlet_center_z + 1.0)
-    cheeks = [f for f in ring.faces().filter_by(Axis.Y)
-              if f.center().X < base.CAVITY_MIN_X and abs(f.normal_at().Y) > 0.99]
-    ys = sorted(f.center().Y for f in cheeks)
-    assert ys, "no notch cheeks in the -X end wall"
-    assert abs((max(ys) - min(ys)) - base.CORD_W) < 1e-6
-    assert abs((max(ys) + min(ys)) / 2) < 1e-6
+    outer = min((f for f in p.faces().filter_by(Axis.X) if f.normal_at().X < 0),
+                key=lambda f: f.center().X)
+    inner = outer.inner_wires()
+    assert len(inner) == 1, "expected exactly one hole in the -X end wall"
+    bb = inner[0].bounding_box()
+    assert abs(bb.size.Y - base.CORD_W) < 1e-6
+    assert abs(bb.size.Z - base.CORD_H) < 1e-6
+    assert abs(bb.center().Y) < 1e-6
+    assert bb.min.Z < params.FLOOR + m.CHARGER.inlet_center_z < bb.max.Z
+    # closed: it stops well below the rebate ledge
+    assert bb.max.Z <= base.BASE_H - base.REBATE_D - 1e-6
+    # ... and it really goes through: a plug-sized bar passes from outside in
+    bar = Pos(-1, 0, bb.min.Z + 0.01) * Box(
+        2 * params.WALL + 1, base.CORD_W - 0.02, base.CORD_H - 0.02,
+        align=(Align.MIN, Align.CENTER, Align.MIN))
+    assert (bar & p).volume < 1e-3
 
 
-def test_cord_notch_is_open_all_the_way_up_through_the_rim():
-    """A slot-sized probe from the inlet height to the top of the part hits
-    nothing: the moulded cord end drops in from above."""
+def test_the_rim_and_the_ledge_are_continuous_all_round():
+    """Nothing breaks the rim or the shelf: one closed ring at each height."""
     p = base.build_base()
-    z0 = params.FLOOR + m.CHARGER.inlet_center_z
-    probe = Pos(0, 0, z0 + 0.01) * Box(2 * params.WALL, base.CORD_W - 0.02,
-                                       base.BASE_H - z0 - 0.01,
-                                       align=(Align.MIN, Align.CENTER, Align.MIN))
-    assert (probe & p).volume < 1e-3
+    z = base.BASE_H - base.REBATE_D
+    for height, what in ((z - 0.2, "shelf"), (z + 0.2, "rim"),
+                         (base.BASE_H - 1.0, "rim top")):
+        ring = _slab(p, height)
+        assert len(ring.solids()) == 1, what
+        top = ring.faces().filter_by(Axis.Z).sort_by(Axis.Z)[-1]
+        assert len(top.inner_wires()) == 1, what
 
 
 def test_led_window_is_outboard_of_port_one_in_the_plus_x_wall():
@@ -245,7 +319,7 @@ def test_walls_below_the_rebate_are_two_walls_thick():
     solid material, and nothing beyond it."""
     p = base.build_base()
     cav = _cavity_bbox(p)
-    z = params.FLOOR + base.FENCE_H + 2.0
+    z = CLEAR_Z
     t = 2 * params.WALL
 
     def probe(cx, cy, sx, sy):

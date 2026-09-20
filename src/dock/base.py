@@ -11,24 +11,30 @@ views and fit checks only.
 Charger orientation: the PowerPort 6 lies flat with its long, six-port face
 running along Y.  The ports look toward +X and the C7 mains inlet looks
 toward -X, so the pocket is `port_to_inlet` deep in X and `port_face_width`
-long in Y.  The mains cord leaves through the -X end wall, the status LED
-shows through the +X end wall, and the device cables leave through the rear
-(-Y) escape port under the tray's spare bay.
+long in Y.  The mains cord leaves through a closed port in the -X end wall,
+the status LED shows through the +X end wall, and the device cables leave
+through the rear (-Y) escape port under the tray's spare bay.
 
 Wall stack-up, bottom to top: the shell below the rebate is 2*WALL thick so
 the rebate can be cut back to the tray's own footprint and still leave a
-continuous ledge; above the ledge the rim is WALL thick.  The outer vertical
-corners are CORNER_R, the cavity corners CORNER_R - 2*WALL (concentric with
-them), and the rebate corners the tray's OUTER_R + CLR_FIT.
+continuous ledge all round; above the ledge the rim is WALL thick.  The outer
+vertical corners are CORNER_R, the cavity corners CORNER_R - 2*WALL, and the
+rebate corners the tray's OUTER_R + CLR_FIT -- all three arcs share a centre,
+so the ledge is a band of uniform width.  The bottom outer edge is chamfered,
+never filleted: it is a downward edge.
 
-It prints open-top-up, so the only ceilings are the escape port, the LED
-window and the four foot recesses -- all short bridges.  The tie-down holes
-are through-holes with no ceiling at all.
+BASE_Y grows if a remeasured charger needs a wider fence (the rebate stays
+tray-sized, so the extra goes into the walls); BASE_X never does, because the
+charger's long axis runs along Y.
+
+It prints open-top-up, so the only ceilings are the cord port, the escape
+port, the LED window and the four foot recesses -- all bridges of 20 mm or
+less.  The tie-down holes are through-holes with no ceiling at all.
 """
 import math
 
 from build123d import (Align, Axis, Box, Cylinder, Location, Part, Pos,
-                       fillet)
+                       chamfer, fillet)
 
 from dock import measurements as M
 from dock import params as P
@@ -44,7 +50,10 @@ _END_HI = (Align.MAX, Align.CENTER, Align.CENTER)
 
 CABLE_ROOM = 15.0        # plug bodies below the tray plus the cable bend
 FENCE_H = 8.0            # charger fence height above the cavity floor
-CORD_W = 10.0            # AC cord notch width
+FENCE_CLEAR_Y = 2.0      # minimum cavity clearance beside the fence, per side
+CORD_W = 20.0            # AC cord port width (Y)
+CORD_H = 16.0            # AC cord port height (Z); its ceiling is a 20 mm bridge
+CORD_Z0 = P.FLOOR + 2.0  # cord port sill above the bed
 ESCAPE_H = 12.0          # escape port height
 LED_W = 4.0              # LED window side
 FOOT_R = 5.0             # foot recess radius (Ø10 pads)
@@ -56,9 +65,22 @@ TIE_D = 4.0              # tie-down hole diameter
 TIE_PITCH = 12.0         # tie-down grid pitch
 TIE_MARGIN = 6.0         # grid edge in from the fence and the cavity walls
 
+# --- charger pocket ---------------------------------------------------------
+# Sized before the box, because a wider charger grows BASE_Y.
+# X runs inlet face -> port face; Y runs along the long, six-port face.
+POCKET_X = M.CHARGER.port_to_inlet + 2 * P.CLR_FIT
+POCKET_Y = M.CHARGER.port_face_width + 2 * P.CLR_FIT
+FENCE_X = POCKET_X + 2 * P.WALL
+FENCE_Y = POCKET_Y + 2 * P.WALL
+
+# --- the box ----------------------------------------------------------------
 REBATE_D = T.TRAY_H
 BASE_X = T.TRAY_X + 2 * (P.WALL + P.CLR_FIT)
-BASE_Y = T.TRAY_Y + 2 * (P.WALL + P.CLR_FIT)
+# The tray sets the floor; a fence that will not fit between the 2*WALL side
+# walls with FENCE_CLEAR_Y to spare raises it.  The rebate stays tray-sized,
+# so any growth lands in the walls, not in the opening.
+BASE_Y = max(T.TRAY_Y + 2 * (P.WALL + P.CLR_FIT),
+             FENCE_Y + 2 * FENCE_CLEAR_Y + 4 * P.WALL)
 BASE_H = P.FLOOR + M.CHARGER.height + CABLE_ROOM + REBATE_D
 
 # Walls below the rebate are 2*WALL thick, so the rebate leaves a ledge.
@@ -71,15 +93,16 @@ CAVITY_R = P.CORNER_R - 2 * P.WALL   # concentric with the outer CORNER_R
 REBATE_X = T.TRAY_X + 2 * P.CLR_FIT
 REBATE_Y = T.TRAY_Y + 2 * P.CLR_FIT
 REBATE_R = T.OUTER_R + P.CLR_FIT
-LEDGE_W = (REBATE_X - CAVITY_X) / 2        # the shelf itself (== WALL)
-BEARING_W = LEDGE_W - P.CLR_FIT            # width the tray actually lands on
+# The shelf itself.  While BASE_Y is tray-driven the two are equal and the
+# ledge is a uniform band; if a wider charger ever grows BASE_Y the Y shelf
+# narrows, and the solid-measured ledge test will say so.
+LEDGE_W = min((REBATE_X - CAVITY_X) / 2, (REBATE_Y - CAVITY_Y) / 2)
+# What the tray actually lands on: its rim is CLR_FIT clear of the rebate
+# wall, and its bottom outer edge is chamfered CHAMFER, so that much of the
+# shelf sees no flat-on-flat contact.
+BEARING_W = LEDGE_W - P.CLR_FIT - P.CHAMFER
 
-# Charger pocket inside the fence, and the fence footprint around it.
-# X runs inlet face -> port face; Y runs along the long, six-port face.
-POCKET_X = M.CHARGER.port_to_inlet + 2 * P.CLR_FIT
-POCKET_Y = M.CHARGER.port_face_width + 2 * P.CLR_FIT
-FENCE_X = POCKET_X + 2 * P.WALL
-FENCE_Y = POCKET_Y + 2 * P.WALL
+# --- fence placement --------------------------------------------------------
 # The fence is placed from the +X (port) side: the status LED is on the port
 # face and shows through the +X end wall, so the charger sits as close to that
 # wall as the USB plugs allow.  The leftover length lands on the inlet side,
@@ -91,7 +114,7 @@ POCKET_MIN_Y = -POCKET_Y / 2
 FENCE_MIN_X, FENCE_MAX_X = POCKET_MIN_X - P.WALL, POCKET_MAX_X + P.WALL
 # Clearances left over inside the cavity, for the build report.
 FENCE_MARGIN_X = CAVITY_X - FENCE_X
-FENCE_MARGIN_Y = (CAVITY_Y - FENCE_Y) / 2      # per side
+FENCE_MARGIN_Y = (CAVITY_Y - FENCE_Y) / 2      # per side, >= FENCE_CLEAR_Y
 PORT_PLUG_ROOM = CAVITY_MAX_X - POCKET_MAX_X   # == PORT_PLUG_ROOM_MIN
 INLET_ROOM = POCKET_MIN_X - CAVITY_MIN_X       # whatever is left over
 
@@ -170,6 +193,9 @@ def build_base() -> Part:
     """The base, underside-down on the bed: X 0..BASE_X, Y centred, Z 0..BASE_H."""
     cx = BASE_X / 2
     body = Pos(cx, 0, 0) * _rounded_box(BASE_X, BASE_Y, BASE_H, P.CORNER_R, _MIN)
+    # Downward outer edge of the box: chamfer, never a fillet.  Done before
+    # any cavity is cut, so only the outer profile is chamfered.
+    body = chamfer(body.faces().sort_by(Axis.Z)[0].edges(), P.CHAMFER)
 
     # Lower cavity: walls 2*WALL thick, corners concentric with the outer ones.
     body -= Pos(cx, 0, P.FLOOR) * _rounded_box(
@@ -181,13 +207,12 @@ def build_base() -> Part:
 
     body += Pos(FENCE_CX, 0, 0) * _fence()
 
-    # -X end wall: AC cord notch facing the C7 inlet.  Open to the top so the
-    # moulded cord end drops in, down to the inlet centre height, centred on
-    # the inlet in Y (the charger is centred on y = 0).  Over its 10 mm it
-    # also takes out the rebate ledge and the rim: intended, the cord needs a
-    # clear run out of the closed dock.
-    body -= Pos(_END_CUT_X0, 0, P.FLOOR + M.CHARGER.inlet_center_z) * Box(
-        _WALL_CUT_D, CORD_W, BASE_H, align=_END_LO)
+    # -X end wall: AC cord port facing the C7 inlet.  A closed rectangular
+    # hole, not a notch open to the top: the rim and the rebate ledge stay
+    # continuous all round, which is what keeps a 2.4 mm rim stiff.  Its sill
+    # is 2 mm above the cavity floor and its 20 mm ceiling is a bridge.
+    body -= Pos(_END_CUT_X0, 0, CORD_Z0) * Box(
+        _WALL_CUT_D, CORD_W, CORD_H, align=_END_LO)
 
     # +X end wall: LED window, square, centred on the LED in Y and on the
     # charger's mid-height in Z.
