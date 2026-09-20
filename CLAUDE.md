@@ -1,6 +1,6 @@
 # Charging dock (build123d)
 
-Parametric 3D-print models for a two-piece cycling-electronics charging dock. Spec and plan live in docs/superpowers/.
+Parametric 3D-print models for a cycling-electronics charging dock: tray, base, lid, and removable dividers, plus a coupon calibration part. Spec and plan live in docs/superpowers/.
 
 ## Toolchain
 - Python 3.12 via uv only (system Python is 3.14; build123d has no wheels for it): `uv venv --python 3.12 && uv pip install -e ".[dev]"`, then `uv run pytest` / `uv run python scripts/export_all.py`.
