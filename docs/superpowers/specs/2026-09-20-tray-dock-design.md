@@ -15,7 +15,7 @@ cover. v1 stood devices upright in shaped cradles; that is replaced.
 
 1. **Base** — rounded-corner open box hiding the Anker PowerPort 6 and the
    cable slack. Top rebate receives the tray so the bay walls sit flush with
-   the base rim. Charger fence, cord notch (−X end wall, open to the top),
+   the base rim. Charger fence, cord port (a closed 20 × 16 mm hole in the −X end wall below the ledge; the C7 end threads in from outside),
    escape port (rear wall), LED window (+X end wall), foot recesses. The floor
    area beside the charger (the port side) carries a grid of 4 mm holes on a
    12 mm pitch for tying cable slack down, as in the reference teardown.
