@@ -20,9 +20,10 @@ def _slab(p, z, thick=0.2):
     return p & probe
 
 
-# A height clear of every wall opening: above the cord port's head and below
-# the escape port's sill, so the shell reads as an unbroken ring there.
-CLEAR_Z = (base.CORD_Z0 + base.CORD_H + base.ESCAPE_TOP - base.ESCAPE_H) / 2
+# A height clear of every wall opening: the cord port's peak now reaches
+# above the escape port's sill, so the only unbroken band left below the
+# rebate is between the escape port's head and the ledge.
+CLEAR_Z = (base.ESCAPE_TOP + base.BASE_H - base.REBATE_D) / 2
 
 
 def _band(off_in, off_out, z0, h):
@@ -243,7 +244,7 @@ def test_cord_port_is_a_closed_hole_in_the_minus_x_wall_on_the_inlet():
     assert len(inner) == 1, "expected exactly one hole in the -X end wall"
     bb = inner[0].bounding_box()
     assert abs(bb.size.Y - base.CORD_W) < 1e-6
-    assert abs(bb.size.Z - base.CORD_H) < 1e-6
+    assert abs(bb.size.Z - (base.CORD_H + base.CORD_W / 2)) < 1e-6
     assert abs(bb.center().Y) < 1e-6
     assert bb.min.Z < params.FLOOR + m.CHARGER.inlet_center_z < bb.max.Z
     # closed: it stops well below the rebate ledge
@@ -253,6 +254,42 @@ def test_cord_port_is_a_closed_hole_in_the_minus_x_wall_on_the_inlet():
         2 * params.WALL + 1, base.CORD_W - 0.02, base.CORD_H - 0.02,
         align=(Align.MIN, Align.CENTER, Align.MIN))
     assert (bar & p).volume < 1e-3
+
+
+def test_the_moulded_cord_end_passes_through_the_cord_port():
+    """The port is sized from the cord end that has to pass it, not from a
+    round number: a block the size of CORD_END slides in through the -X wall
+    and out into the cavity, touching nothing on the way."""
+    p = base.build_base()
+    end = m.CORD_END
+    z0 = base.CORD_Z0 + (base.CORD_H - end.height) / 2
+    probe = Pos(-5, 0, z0) * Box(end.length, end.width, end.height,
+                                 align=(Align.MIN, Align.CENTER, Align.MIN))
+    assert probe.bounding_box().min.X < 0 < 2 * params.WALL < probe.bounding_box().max.X
+    assert (probe & p).volume < 1e-3
+
+
+def test_cord_port_roof_is_a_self_supporting_peak():
+    """CORD_W is well past the 20 mm bridge allowance, so the port's ceiling
+    is not a bridge at all: two 45 degree planes meeting at a ridge over the
+    port's centre line, measured on the solid."""
+    p = base.build_base()
+    roof = [f for f in p.faces()
+            if 0 < f.center().X < 2 * params.WALL
+            and f.center().Z > base.CORD_Z0 + base.CORD_H   # clear of the
+            and abs(f.center().Y) < base.CORD_W             # bottom chamfer
+            and abs(-f.normal_at().Z - math.sin(math.radians(45))) < 1e-6]
+    assert len(roof) == 2, f"expected two 45 degree roof planes, got {len(roof)}"
+    ys = sorted(f.center().Y for f in roof)
+    assert ys[0] < 0 < ys[1], "the two planes should fall away either side"
+    apex = max(f.bounding_box().max.Z for f in roof)
+    assert abs(apex - (base.CORD_Z0 + base.CORD_H + base.CORD_W / 2)) < 1e-6
+    # the ridge is a line, not a flat: no horizontal ceiling over the port
+    flat = [f for f in p.faces().filter_by(Axis.Z)
+            if f.normal_at().Z < 0
+            and 0 < f.center().X < 2 * params.WALL
+            and abs(f.center().Y) < base.CORD_W / 2]
+    assert not flat, "the cord port still has a flat ceiling to bridge"
 
 
 def test_the_rim_and_the_ledge_are_continuous_all_round():

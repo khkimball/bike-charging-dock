@@ -27,14 +27,15 @@ BASE_Y grows if a remeasured charger needs a wider fence (the rebate stays
 tray-sized, so the extra goes into the walls); BASE_X never does, because the
 charger's long axis runs along Y.
 
-It prints open-top-up, so the only ceilings are the cord port, the escape
-port, the LED window and the four foot recesses -- all bridges of 20 mm or
-less.  The tie-down holes are through-holes with no ceiling at all.
+It prints open-top-up.  The cord port is too wide to bridge, so its roof is
+a 45 degree peak; the only remaining ceilings are the escape port, the LED
+window and the four foot recesses -- all bridges of 20 mm or less.  The
+tie-down holes are through-holes with no ceiling at all.
 """
 import math
 
-from build123d import (Align, Axis, Box, Cylinder, Location, Part, Pos,
-                       chamfer, fillet)
+from build123d import (Align, Axis, Box, Cylinder, Location, Part, Plane,
+                       Polyline, Pos, chamfer, extrude, fillet, make_face)
 
 from dock import measurements as M
 from dock import params as P
@@ -51,9 +52,15 @@ _END_HI = (Align.MAX, Align.CENTER, Align.CENTER)
 CABLE_ROOM = 15.0        # plug bodies below the tray plus the cable bend
 FENCE_H = 8.0            # charger fence height above the cavity floor
 FENCE_CLEAR_Y = 2.0      # minimum cavity clearance beside the fence, per side
-CORD_W = 20.0            # AC cord port width (Y)
-CORD_H = 16.0            # AC cord port height (Z); its ceiling is a 20 mm bridge
-CORD_Z0 = P.FLOOR + 2.0  # cord port sill above the bed
+# AC cord port: sized from the moulded C7 end that has to pass through it,
+# plus 1 mm of slack per side.  CORD_W is far past the 20 mm bridge
+# allowance, so the port is not a rectangle: a 45 degree peak of CORD_W / 2
+# sits on top of the rectangular opening, giving a self-supporting roof.
+CORD_W = M.CORD_END.width + 2.0    # port width (Y)
+CORD_H = M.CORD_END.height + 2.0   # rectangular part's height (Z)
+CORD_PEAK = CORD_W / 2             # 45 degree roof above it
+CORD_TOP = CORD_H + CORD_PEAK      # total port height
+CORD_Z0 = P.FLOOR + 2.0            # cord port sill above the bed
 ESCAPE_H = 12.0          # escape port height
 LED_W = 4.0              # LED window side
 FOOT_R = 5.0             # foot recess radius (Ø10 pads)
@@ -179,6 +186,21 @@ def _rounded_box(sx: float, sy: float, sz: float, r: float, align) -> Part:
     return fillet(b.edges().filter_by(Axis.Z), r) if r > 0 else b
 
 
+def _cord_cutter(depth: float) -> Part:
+    """The AC cord port's cutter: a CORD_W x CORD_H opening under a 45 degree
+    peak, lying on Z = 0 and running `depth` along +X from X = 0.
+
+    The peak is what makes the port printable.  A CORD_W-wide flat ceiling
+    would be a 26 mm bridge; two 45 degree planes meeting at a ridge are the
+    steepest roof the printer needs no support for.
+    """
+    half = CORD_W / 2
+    section = Plane.YZ * make_face(Polyline(
+        (-half, 0), (half, 0), (half, CORD_H), (0, CORD_TOP), (-half, CORD_H),
+        close=True))
+    return extrude(section, amount=depth)
+
+
 def _fence() -> Part:
     """Raised fence that locates the charger, port face toward +X."""
     fence = Box(FENCE_X, FENCE_Y, FENCE_H + P.FLOOR, align=_MIN)
@@ -207,12 +229,11 @@ def build_base() -> Part:
 
     body += Pos(FENCE_CX, 0, 0) * _fence()
 
-    # -X end wall: AC cord port facing the C7 inlet.  A closed rectangular
-    # hole, not a notch open to the top: the rim and the rebate ledge stay
-    # continuous all round, which is what keeps a 2.4 mm rim stiff.  Its sill
-    # is 2 mm above the cavity floor and its 20 mm ceiling is a bridge.
-    body -= Pos(_END_CUT_X0, 0, CORD_Z0) * Box(
-        _WALL_CUT_D, CORD_W, CORD_H, align=_END_LO)
+    # -X end wall: AC cord port facing the C7 inlet.  A closed hole, not a
+    # notch open to the top: the rim and the rebate ledge stay continuous all
+    # round, which is what keeps a 2.4 mm rim stiff.  Its sill is 2 mm above
+    # the cavity floor and its roof is a 45 degree peak, not a bridge.
+    body -= Pos(_END_CUT_X0, 0, CORD_Z0) * _cord_cutter(_WALL_CUT_D)
 
     # +X end wall: LED window, square, centred on the LED in Y and on the
     # charger's mid-height in Z.

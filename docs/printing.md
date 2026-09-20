@@ -21,13 +21,15 @@ the +Y (back) wall of its bay, clear of its cable cutout at the -Y end; the
 Ion and Trackr sit against the partition wall, clear of their cutouts at the
 +X end.
 
-The base prints open-top-up. Its only ceilings are the rear escape port
-(19 mm bridge), the AC cord port in the -X end wall (20 mm bridge), the LED
-window in the +X end wall (4 mm) and the four foot recesses in the
-underside -- all short bridges the printer clears without supports. The
-escape port lets a spare device cable leave through the rear wall; the AC
-cord port is a closed hole, not a notch, so the mains cord is the only thing
-that leaves through the -X wall.
+The base prints open-top-up. The AC cord port in the -X end wall is sized
+from the moulded C7 cord end, which makes it too wide to bridge, so it is
+roofed with a 45 degree peak instead: it needs no support. The only real
+ceilings left are the rear escape port (19 mm bridge), the LED window in the
++X end wall (4 mm) and the four foot recesses in the underside -- all short
+bridges the printer clears without supports. The escape port lets a spare
+device cable leave through the rear wall; the AC cord port is a closed hole,
+not a notch, so the mains cord is the only thing that leaves through the -X
+wall.
 
 The lid prints top-face-down with its skirt standing up, so its only
 downward faces are the bed face and its 45 degree chamfer -- no overhang, no

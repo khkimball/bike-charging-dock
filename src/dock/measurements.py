@@ -2,6 +2,8 @@
 All mm. Defaults are nominal/published values, marked NOMINAL."""
 from dataclasses import dataclass
 
+from dock.params import Plug
+
 
 @dataclass(frozen=True)
 class Slab:
@@ -41,3 +43,8 @@ TRACKR = Slab(length=89.9, width=37.1, thickness=29.1)
 CHARGER = Charger(port_face_width=96.0, port_to_inlet=65.0, height=26.0,
                   port_face_margin=10.0, inlet_center_z=13.0,
                   led_offset_from_ports=8.0)                  # NOMINAL A2123
+# The moulded end of the mains cord -- an IEC C7 "figure of 8" connector --
+# measured across the two lobes (width), across the flats (height) and along
+# the cord axis (length).  This is what the base's cord port has to pass, so
+# the port is sized from it; see docs/measuring.md.
+CORD_END = Plug(width=24.0, height=14.0, length=30.0)         # NOMINAL C7

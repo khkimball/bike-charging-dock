@@ -39,6 +39,16 @@ face; the C7 mains inlet is on the opposite long face.
   measured along the port face *away* from the other ports.  The LED is at
   the end of the row, outboard of port 1, not between the ports.
 
+## Mains cord end (`CORD_END`, a `params.Plug`)
+The moulded end of the charger's mains cord -- an IEC C7 "figure of 8"
+connector.  The base's cord port is sized from it, so measure the moulded
+body, not the cable:
+- width: across the two lobes, at the widest point of the moulding
+- height: across the flats, the short way through the moulding
+- length: along the cord axis, from the face that meets the inlet to where
+  the moulding tapers back into the cable
+A C7 end is nominally 24 x 14 mm; check yours, some are fatter.
+
 ## Cables (`params.py` Plug entries)
 - For each cable: overmold width, height and length at the device end and
   the USB-A end. Update `USB_A_PLUG`, `USB_C_PLUG`, `MICRO_PLUG` with the
