@@ -19,7 +19,7 @@ cover. v1 stood devices upright in shaped cradles; that is replaced.
    escape port (rear wall), LED window (+X end wall), foot recesses. The floor
    area beside the charger (the port side) carries a grid of 4 mm holes on a
    12 mm pitch for tying cable slack down, as in the reference teardown.
-2. **Tray** — a plate with 2.4 mm walls forming four bays, 28 mm deep:
+2. **Tray** — a plate with 2.4 mm walls forming four bays, 32 mm deep (BAY_DEPTH, ≥ tallest device + 1):
    - Left bay: Wahoo ROAM 3 lying face-up, long axis along Y, cable cutout at
      the front (−Y) end.
    - Right column, three bays stacked in Y, long axis along X, cable cutouts at
