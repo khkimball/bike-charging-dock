@@ -53,5 +53,7 @@ A C7 end is nominally 24 x 14 mm; check yours, some are fatter.
 - For each cable: overmold width, height and length at the device end and
   the USB-A end. Update `USB_A_PLUG`, `USB_C_PLUG`, `MICRO_PLUG` with the
   largest of each.
-- `USB_C_CABLE` is the bare cable just behind the overmold, not the overmold:
-  it is what the Roam cradle's cable slot has to pass.
+- Nothing is cut to these: every bay gets the same cable cutout
+  (`tray.CUTOUT`, 22 x 12 through the plate). They are the check that the
+  cutout is big enough -- if a remeasured overmold outgrows it, widen the
+  cutout.

@@ -2,8 +2,6 @@
 in a part module."""
 from dataclasses import dataclass
 
-from build123d import Align, Box, Part
-
 WALL = 2.4         # 3 perimeters at 0.4 mm nozzle
 FLOOR = 1.6        # 4 layers at 0.4 mm
 CHAMFER = 1.0      # downward-facing edge chamfer
@@ -27,24 +25,9 @@ class Plug:
     length: float   # overmold length along the cable axis
 
 
-# Typical overmold sizes; refine from the actual cables when measured.
+# Typical overmold sizes; refine from the actual cables when measured.  The
+# tray's cable cutouts are one size for all of them (see tray.CUTOUT), so
+# these are sanity limits, not cutter inputs.
 USB_A_PLUG = Plug(width=15.0, height=8.0, length=20.0)
 USB_C_PLUG = Plug(width=11.0, height=6.0, length=18.0)
 MICRO_PLUG = Plug(width=10.5, height=6.5, length=17.0)
-# The bare cable behind the USB-C overmold, not the overmold itself: this is
-# what the Roam cradle's cable slot has to pass.
-USB_C_CABLE = Plug(width=6.0, height=4.0, length=30.0)
-
-
-_CTR = (Align.CENTER, Align.CENTER, Align.CENTER)
-
-
-def plug_cutter(plug: Plug, length: float = THRU) -> Part:
-    """Cutter for a plug overmold: the envelope plus CLR_BAY per side.
-
-    Centred on the origin, `length` long in Z, so callers place and rotate
-    it.  Pass `THRU` (the default) for a cut that runs clear of the part.
-    """
-    return Box(plug.width + 2 * CLR_BAY,
-               plug.height + 2 * CLR_BAY,
-               length, align=_CTR)

@@ -17,6 +17,9 @@ def test_design_rules_match_spec():
     assert params.CORNER_R == 8.0
     assert (params.BED_X, params.BED_Y) == (250, 250)
     assert not hasattr(params, "CLR_DEVICE")
+    # v1 leftovers: the tray dock cuts one cutout size and has no cradle
+    assert not hasattr(params, "plug_cutter")
+    assert not hasattr(params, "USB_C_CABLE")
 
 
 def test_plug_sizes_are_positive():
