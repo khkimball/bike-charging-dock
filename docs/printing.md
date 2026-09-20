@@ -31,6 +31,12 @@ device cable leave through the rear wall; the AC cord port is a closed hole,
 not a notch, so the mains cord is the only thing that leaves through the -X
 wall.
 
+The tray sits flush with the base's rim, so each end of the rim carries a
+finger notch (40 mm wide, 15 mm down from the rim, corners rounded R5):
+that is what you lift the tray out by. They cut the rim only -- the rebate
+ledge the tray lands on is continuous all the way round -- and the lid's
+skirt covers only the top 8 mm of them.
+
 The lid prints top-face-down with its skirt standing up, so its only
 downward faces are the bed face and its 45 degree chamfer -- no overhang, no
 bridge, no supports.

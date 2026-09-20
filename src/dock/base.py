@@ -15,6 +15,10 @@ long in Y.  The mains cord leaves through a closed port in the -X end wall,
 the status LED shows through the +X end wall, and the device cables leave
 through the rear (-Y) escape port under the tray's spare bay.
 
+The tray lands flush with the rim, so each end rim carries a finger notch
+NOTCH_W wide and NOTCH_D deep to lift it out by.  The notches cut the rim
+only: they stop far above the rebate ledge, which stays continuous.
+
 Wall stack-up, bottom to top: the shell below the rebate is 2*WALL thick so
 the rebate can be cut back to the tray's own footprint and still leave a
 continuous ledge all round; above the ledge the rim is WALL thick.  The outer
@@ -62,6 +66,11 @@ CORD_PEAK = CORD_W / 2             # 45 degree roof above it
 CORD_TOP = CORD_H + CORD_PEAK      # total port height
 CORD_Z0 = P.FLOOR + 2.0            # cord port sill above the bed
 ESCAPE_H = 12.0          # escape port height
+# Finger notches in the rim, one at each end, for lifting the tray out: the
+# tray sits flush with the rim, so without them there is nothing to grip.
+NOTCH_W = 40.0           # notch width (Y), a two-finger grip
+NOTCH_D = 15.0           # how far down from the rim it cuts
+NOTCH_R = 5.0            # its bottom corners, rounded so the rim cannot split
 LED_W = 4.0              # LED window side
 FOOT_R = 5.0             # foot recess radius (Ø10 pads)
 FOOT_RECESS_D = 0.6      # leaves 1.0 mm of floor under each foot
@@ -143,6 +152,8 @@ _WALL_CUT_D = 2 * P.WALL + 0.5
 _REAR_CUT_Y0 = -BASE_Y / 2 - 0.25
 _END_CUT_X0 = -0.25              # -X end wall: start just outside the face
 _END_CUT_X1 = BASE_X + 0.25      # +X end wall: end just outside the face
+# Rim cutters go through the WALL-thick rim and a sliver into the rebate.
+_RIM_CUT_D = P.WALL + 0.5
 
 FOOT_CENTRES: list[tuple[float, float]] = [
     (x, y)
@@ -201,6 +212,21 @@ def _cord_cutter(depth: float) -> Part:
     return extrude(section, amount=depth)
 
 
+def _notch_cutter(depth: float) -> Part:
+    """A lift-out notch's cutter: NOTCH_W wide, NOTCH_D tall with its two
+    bottom corners rounded to NOTCH_R, lying on Z = 0 and running `depth`
+    along +X from X = 0.
+
+    The rounded bottom keeps the cut from ending in a sharp inside corner,
+    which in a WALL-thick rim is where a crack would start.  Rounding it on
+    the cutter leaves the material convex there, and the notch floor faces
+    up, so nothing new overhangs.
+    """
+    cutter = Box(depth, NOTCH_W, NOTCH_D, align=_END_LO)
+    bottom = cutter.edges().filter_by(Axis.X).group_by(Axis.Z)[0]
+    return fillet(bottom, NOTCH_R)
+
+
 def _fence() -> Part:
     """Raised fence that locates the charger, port face toward +X."""
     fence = Box(FENCE_X, FENCE_Y, FENCE_H + P.FLOOR, align=_MIN)
@@ -244,6 +270,12 @@ def build_base() -> Part:
     # ledge stays continuous, centred on the tray's spare bay.
     body -= Pos(ESCAPE_CX, _REAR_CUT_Y0, ESCAPE_TOP - ESCAPE_H) * Box(
         ESCAPE_W, _WALL_CUT_D, ESCAPE_H, align=_REAR)
+
+    # Lift-out notches: the tray sits flush with the rim, so a finger notch
+    # at each end is the only way to get hold of it.  They cut the rim only
+    # -- NOTCH_D stops well above the rebate ledge, which stays unbroken.
+    for x0 in (_END_CUT_X0, _END_CUT_X1 - _RIM_CUT_D):
+        body -= Pos(x0, 0, BASE_H - NOTCH_D) * _notch_cutter(_RIM_CUT_D)
 
     # Tie-down grid: through-holes in the floor, so a tie loops from the
     # cavity down under the base and back.

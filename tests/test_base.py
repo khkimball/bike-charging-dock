@@ -293,15 +293,84 @@ def test_cord_port_roof_is_a_self_supporting_peak():
 
 
 def test_the_rim_and_the_ledge_are_continuous_all_round():
-    """Nothing breaks the rim or the shelf: one closed ring at each height."""
+    """Nothing but the two lift-out notches breaks the rim, and nothing at
+    all breaks the shelf: one closed ring at every height below the notches,
+    and across the notches the rim parts in exactly those two places."""
     p = base.build_base()
     z = base.BASE_H - base.REBATE_D
     for height, what in ((z - 0.2, "shelf"), (z + 0.2, "rim"),
-                         (base.BASE_H - 1.0, "rim top")):
+                         (base.BASE_H - base.NOTCH_D - 0.2, "rim under the notches")):
         ring = _slab(p, height)
         assert len(ring.solids()) == 1, what
         top = ring.faces().filter_by(Axis.Z).sort_by(Axis.Z)[-1]
         assert len(top.inner_wires()) == 1, what
+    across = _slab(p, base.BASE_H - 1.0).solids()
+    assert len(across) == 2, (
+        f"the rim should part at the two notches and nowhere else, "
+        f"got {len(across)} pieces")
+    # ... and the two pieces are the long side rails, one each side of Y = 0
+    ys = sorted(s.center().Y for s in across)
+    assert ys[0] < 0 < ys[1]
+
+
+# --- lift-out notches ---------------------------------------------------------
+
+def _notch_floors(p):
+    """The two notch floors: upward faces at the bottom of the notches."""
+    z = base.BASE_H - base.NOTCH_D
+    return [f for f in p.faces().filter_by(Axis.Z)
+            if f.normal_at().Z > 0 and abs(f.center().Z - z) < 1e-6]
+
+
+def test_each_end_rim_has_a_finger_notch_for_lifting_the_tray():
+    """A notch NOTCH_W wide and NOTCH_D deep is cut out of the rim at each
+    end, centred on Y = 0: the rim there is void, and what is left below is
+    a floor NOTCH_W wide less its two rounded corners."""
+    p = base.build_base()
+    floors = _notch_floors(p)
+    assert len(floors) == 2, f"expected two notch floors, got {len(floors)}"
+    for f in floors:
+        bb = f.bounding_box()
+        assert abs(bb.size.Y - (base.NOTCH_W - 2 * base.NOTCH_R)) < 1e-6
+        assert abs(bb.size.X - params.WALL) < 1e-6     # the rim's thickness
+        assert abs(bb.center().Y) < 1e-6
+    xs = sorted(f.center().X for f in floors)
+    assert xs[0] < params.WALL and xs[1] > base.BASE_X - params.WALL
+    # The rim itself is gone: full NOTCH_W wide above the rounded corners,
+    # and right down to the floor between them.
+    for cx in (params.WALL / 2, base.BASE_X - params.WALL / 2):
+        for w, z0, h in (
+                (base.NOTCH_W, base.NOTCH_R, base.NOTCH_D - base.NOTCH_R),
+                (base.NOTCH_W - 2 * base.NOTCH_R, 0.0, base.NOTCH_D)):
+            probe = Pos(cx, 0, base.BASE_H - base.NOTCH_D + z0 + 0.01) * Box(
+                params.WALL - 0.02, w - 0.02, h - 0.02,
+                align=(Align.CENTER, Align.CENTER, Align.MIN))
+            assert (probe & p).volume < 1e-3, (cx, w)
+
+
+def test_notch_bottom_corners_are_rounded():
+    """Sharp inside corners in a 2.4 mm rim are where it splits; each notch
+    turns into its floor on an R NOTCH_R arc."""
+    p = base.build_base()
+    z = base.BASE_H - base.NOTCH_D + base.NOTCH_R
+    arcs = [f for f in p.faces()
+            if f.geom_type == GeomType.CYLINDER
+            and abs(f.radius - base.NOTCH_R) < 1e-6
+            and abs(f.center().Z - z) < base.NOTCH_R]
+    assert len(arcs) == 4, f"expected two rounded corners per notch, got {len(arcs)}"
+
+
+def test_the_notches_clear_the_cord_port_and_the_led_window():
+    """The notches cut the rim only: both end-wall openings are still closed
+    holes, well below the notch floors."""
+    p = base.build_base()
+    floor_z = min(f.center().Z for f in _notch_floors(p))
+    for pick, sign in ((min, -1), (max, +1)):
+        face = pick((f for f in p.faces().filter_by(Axis.X)
+                     if f.normal_at().X * sign > 0), key=lambda f: f.center().X)
+        inner = face.inner_wires()
+        assert len(inner) == 1, "an end-wall opening ran into its notch"
+        assert inner[0].bounding_box().max.Z < floor_z
 
 
 def test_led_window_is_outboard_of_port_one_in_the_plus_x_wall():
