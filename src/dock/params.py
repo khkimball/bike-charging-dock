@@ -11,7 +11,8 @@ CLR_FIT = 0.15     # coupon 2026-09-20, PLA on U1: 0.10 tight, 0.15 slides
 CLR_RAIL = 0.20    # one step above CLR_FIT so the divider drops in by hand
 CLR_BAY = 3.0      # device to bay wall, per side (bays, not pockets)
 TRAY_PLATE = 3.0   # tray floor thickness (cable cutouts pass through it)
-BAY_DEPTH = 28.0   # bay wall height above the tray plate
+BAY_DEPTH = 32.0   # bay wall height above the tray plate; must clear the
+                   # tallest device (ION 30.2) so the lid does not touch it
 CORNER_R = 8.0     # fillet on the base/lid outer vertical edges
 BED_X = 250        # U1 usable X with margin
 BED_Y = 250        # U1 usable Y with margin

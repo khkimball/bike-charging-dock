@@ -40,7 +40,7 @@ _LEFT_L = m.ROAM.length + 2 * P.CLR_BAY + CUTOUT[0]         # 124.0
 RIGHT_BAY_W = max(d.length for d in (m.ION, m.TRACKR)) + 2 * P.CLR_BAY + CUTOUT[0]   # 130.5
 
 # Stacked -Y to +Y, per the spec: spare at the bottom, TRACKR, Ion at the top.
-_SPARE_L = 40.0
+_SPARE_L = 40.0   # no device chosen yet
 _TRACKR_L = m.TRACKR.width + 2 * P.CLR_BAY                  # 43.1
 _ION_L = m.ION.width + 2 * P.CLR_BAY                        # 40.7
 _RIGHT_L = _SPARE_L + D.THICK + _TRACKR_L + D.THICK + _ION_L   # 127.8
@@ -51,10 +51,9 @@ _BAY_L = max(_LEFT_L, _RIGHT_L)
 
 TRAY_X = P.WALL + _LEFT_W + RAIL_WALL + RIGHT_BAY_W + RAIL_WALL   # 201.1
 TRAY_Y = 2 * P.WALL + _BAY_L                                      # 132.6
-TRAY_H = P.TRAY_PLATE + P.BAY_DEPTH                               # 31.0
+TRAY_H = P.TRAY_PLATE + P.BAY_DEPTH                               # 35.0
 
 _Y0 = -TRAY_Y / 2 + P.WALL          # inner face of the -Y wall
-_Y1 = TRAY_Y / 2 - P.WALL           # inner face of the +Y wall
 _LEFT_X0 = P.WALL
 _RIGHT_X0 = _LEFT_X0 + _LEFT_W + RAIL_WALL    # partition's +X face
 _RIGHT_X1 = _RIGHT_X0 + RIGHT_BAY_W           # +X outer wall's -X face
@@ -77,13 +76,13 @@ RIGHT_BAYS: dict[str, tuple[float, float, float, float]] = {
 RAIL_YS: tuple[float, float] = (_div0_y + D.THICK / 2, _div1_y + D.THICK / 2)
 
 _MIN_XY = (Align.MIN, Align.MIN, Align.MIN)
-_CTR_XY = (Align.CENTER, Align.CENTER, Align.MIN)
+_CTR_MINZ = (Align.CENTER, Align.CENTER, Align.MIN)
 
 
 def _cutout(cx: float, cy: float, along: str) -> Part:
     """Through-plate cable cutout centred at (cx, cy); `along` is the bay axis."""
     sx, sy = (CUTOUT[0], CUTOUT[1]) if along == "x" else (CUTOUT[1], CUTOUT[0])
-    return Pos(cx, cy, -P.THRU / 2) * Box(sx, sy, P.THRU, align=_CTR_XY)
+    return Pos(cx, cy, -P.THRU / 2) * Box(sx, sy, P.THRU, align=_CTR_MINZ)
 
 
 def build_tray() -> Part:

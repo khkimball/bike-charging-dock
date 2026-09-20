@@ -13,7 +13,7 @@ def test_design_rules_match_spec():
     assert params.CLR_RAIL == 0.20
     assert params.CLR_BAY == 3.0
     assert params.TRAY_PLATE == 3.0
-    assert params.BAY_DEPTH == 28.0
+    assert params.BAY_DEPTH == 32.0
     assert params.CORNER_R == 8.0
     assert (params.BED_X, params.BED_Y) == (250, 250)
     assert not hasattr(params, "CLR_DEVICE")
