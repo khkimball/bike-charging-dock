@@ -5,6 +5,7 @@ from dock.export import write_all
 from dock import coupon
 from dock import divider
 from dock import params
+from dock import tray
 
 
 def _coupon_plate() -> Part:
@@ -21,9 +22,11 @@ PARTS: dict[str, Callable[[], Part]] = {
 }
 
 PARTS.update({
-    # Placeholder size: Task 2 replaces this with tray-derived bay dimensions.
+    "tray": tray.build_tray,
+    # Sized from the tray's right column: the slab is narrower than the bay by
+    # CLR_RAIL, and each rail adds RAIL_D beyond it into the wall slots.
     "divider": lambda: divider.build_divider(
-        height=params.BAY_DEPTH, width=40.0 - params.CLR_RAIL),
+        height=params.BAY_DEPTH, width=tray.RIGHT_BAY_W - params.CLR_RAIL),
 })
 
 if __name__ == "__main__":
