@@ -21,7 +21,7 @@ from dock import params as P
 # Cable cutout through the plate: (along the bay, across the bay).  22 mm of
 # run clears a USB-A overmold (P.USB_A_PLUG.length 20) laid flat, and 12 mm
 # across clears its 15 mm width once the plug is turned in line with the bay.
-CUTOUT = (22.0, 12.0)
+CUTOUT = (28.0, 16.0)   # v2.1: was 22 x 12, plug plus cable bend
 CUTOUT_INSET = 2.0   # cutout edge to the bay's end wall
 
 # Outer vertical corner radius: the tray drops inside the base's R8 corners.
@@ -44,7 +44,7 @@ _LEFT_L = m.ROAM.length + 2 * P.CLR_BAY + CUTOUT[0]         # 124.0
 RIGHT_BAY_W = max(d.length for d in (m.ION, m.TRACKR)) + 2 * P.CLR_BAY + CUTOUT[0]   # 130.5
 
 # Stacked -Y to +Y, per the spec: spare at the bottom, TRACKR, Ion at the top.
-_SPARE_L = 40.0   # no device chosen yet
+_SPARE_L = 46.0   # no device chosen yet (v2.1: was 40)
 _TRACKR_L = m.TRACKR.width + 2 * P.CLR_BAY                  # 43.1
 _ION_L = m.ION.width + 2 * P.CLR_BAY                        # 40.7
 _RIGHT_L = _SPARE_L + D.THICK + _TRACKR_L + D.THICK + _ION_L   # 127.8

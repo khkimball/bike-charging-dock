@@ -7,9 +7,9 @@ FLOOR = 1.6        # 4 layers at 0.4 mm
 CHAMFER = 1.0      # downward-facing edge chamfer
 CLR_FIT = 0.15     # coupon 2026-09-20, PLA on U1: 0.10 tight, 0.15 slides
 CLR_RAIL = 0.20    # one step above CLR_FIT so the divider drops in by hand
-CLR_BAY = 3.0      # device to bay wall, per side (bays, not pockets)
+CLR_BAY = 8.0      # device to bay wall, per side; room for the cable beside the device (v2.1: was 3.0, too tight with cables)
 TRAY_PLATE = 3.0   # tray floor thickness (cable cutouts pass through it)
-BAY_DEPTH = 32.0   # bay wall height above the tray plate; must clear the
+BAY_DEPTH = 38.0   # bay wall height above the tray plate (v2.1: was 32); must clear the
                    # tallest device (ION 30.2) so the lid does not touch it
 CORNER_R = 8.0     # fillet on the base/lid outer vertical edges
 BED_X = 250        # U1 usable X with margin
