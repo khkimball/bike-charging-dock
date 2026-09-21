@@ -25,6 +25,9 @@ cover. v1 stood devices upright in shaped cradles; that is replaced.
    - Right column, three bays stacked in Y, long axis along X, cable cutouts at
      the +X end: Bontrager Ion Pro RT (top, +Y), Wahoo TRACKR (middle), spare
      (bottom, −Y).
+   - The Ion Pro RT charges through a socket on its underside, so its bay has
+     three cutouts evenly spaced along the bay instead of one at the end
+     (UNDERSIDE_PORT_CUTOUTS in tray.py); the cable drops straight down.
    - The two separators in the right column are removable dividers riding in
      rail slots on the partition wall and the +X outer wall, so bays can be
      merged. The left/right partition and the outer walls are fixed.

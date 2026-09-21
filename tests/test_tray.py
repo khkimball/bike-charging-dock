@@ -18,11 +18,15 @@ def test_tray_is_one_valid_solid_on_bed():
     assert abs(p.bounding_box().size.Z - tray.TRAY_H) < 1e-6
 
 
-def test_four_cable_cutouts_through_the_plate():
+def _expected_cutout_count():
+    return 1 + sum(tray.UNDERSIDE_PORT_CUTOUTS.get(n, 1) for n in tray.RIGHT_BAYS)
+
+
+def test_cable_cutouts_through_the_plate():
     p = tray.build_tray()
     bottom = p.faces().sort_by(Axis.Z)[0]
     wires = bottom.inner_wires()
-    assert len(wires) == 4
+    assert len(wires) == _expected_cutout_count()
     for w in wires:
         s = w.bounding_box().size
         assert {round(s.X, 3), round(s.Y, 3)} == {tray.CUTOUT[0], tray.CUTOUT[1]}
@@ -114,8 +118,8 @@ def test_bay_depth_clears_the_tallest_device():
 
 
 def _bottom_cutout_wires(p):
-    """The four cable-cutout wires in the plate's bottom face, split into the
-    one running along Y (the left bay's) and the three running along X."""
+    """The cable-cutout wires in the plate's bottom face, split into the one
+    running along Y (the left bay's) and those running along X (right bays)."""
     wires = p.faces().sort_by(Axis.Z)[0].inner_wires()
     along_y = [w for w in wires if w.bounding_box().size.Y > w.bounding_box().size.X]
     along_x = [w for w in wires if w.bounding_box().size.X > w.bounding_box().size.Y]
@@ -125,23 +129,49 @@ def _bottom_cutout_wires(p):
 def test_left_cutout_sits_at_the_near_end_centred_in_its_bay():
     p = tray.build_tray()
     along_y, along_x = _bottom_cutout_wires(p)
-    assert len(along_y) == 1 and len(along_x) == 3
+    assert len(along_y) == 1 and len(along_x) == _expected_cutout_count() - 1
     b = along_y[0].bounding_box()
     assert abs(b.min.Y - (-tray.TRAY_Y / 2 + params.WALL + tray.CUTOUT_INSET)) < 1e-6
     x0, _, w, _ = tray.ROAM_BAY
     assert abs(b.center().X - (x0 + w / 2)) < 1e-6
 
 
-def test_right_cutouts_share_the_far_end_and_stack_spare_trackr_ion():
+def _wires_in_bay(along_x, name):
+    _, y0, _, l = tray.RIGHT_BAYS[name]
+    return [w for w in along_x if abs(w.bounding_box().center().Y - (y0 + l / 2)) < 1e-6]
+
+
+def test_single_cutout_bays_have_it_at_the_far_end():
     p = tray.build_tray()
     _, along_x = _bottom_cutout_wires(p)
     far = tray.TRAY_X - tray.RAIL_WALL - tray.CUTOUT_INSET
-    for w in along_x:
-        assert abs(w.bounding_box().max.X - far) < 1e-6
-    ys = sorted(w.bounding_box().center().Y for w in along_x)
-    for y, name in zip(ys, ("spare", "trackr", "ion")):
-        _, y0, _, l = tray.RIGHT_BAYS[name]
-        assert abs(y - (y0 + l / 2)) < 1e-6, name
+    for name in tray.RIGHT_BAYS:
+        if tray.UNDERSIDE_PORT_CUTOUTS.get(name, 1) != 1:
+            continue
+        ws = _wires_in_bay(along_x, name)
+        assert len(ws) == 1, name
+        assert abs(ws[0].bounding_box().max.X - far) < 1e-6, name
+
+
+def test_underside_port_bay_has_evenly_spaced_cutouts_along_it():
+    """The Ion charges from its underside: three cutouts, one centred in each
+    third of the bay, all inside the bay footprint and clear of the walls."""
+    p = tray.build_tray()
+    _, along_x = _bottom_cutout_wires(p)
+    for name, n in tray.UNDERSIDE_PORT_CUTOUTS.items():
+        x0, y0, w, l = tray.RIGHT_BAYS[name]
+        ws = sorted(_wires_in_bay(along_x, name), key=lambda w: w.bounding_box().center().X)
+        assert len(ws) == n, name
+        xs = [w.bounding_box().center().X for w in ws]
+        section = w / n
+        for i, x in enumerate(xs):
+            assert abs(x - (x0 + section * (i + 0.5))) < 1e-6, (name, i)
+        gaps = [b - a for a, b in zip(xs, xs[1:])]
+        assert all(abs(g - gaps[0]) < 1e-6 for g in gaps)
+        for wire in ws:
+            b = wire.bounding_box()
+            assert b.min.X > x0 + 1.0 and b.max.X < x0 + w - 1.0
+            assert b.min.Y > y0 + 1.0 and b.max.Y < y0 + l - 1.0
 
 
 def test_declared_outer_size_matches_the_built_solid():

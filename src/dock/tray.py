@@ -24,6 +24,11 @@ from dock import params as P
 CUTOUT = (28.0, 16.0)   # v2.1: was 22 x 12, plug plus cable bend
 CUTOUT_INSET = 2.0   # cutout edge to the bay's end wall
 
+# Bays whose device charges through a socket on its UNDERSIDE (the Ion Pro RT)
+# get several cutouts spread along the bay, so the cable can drop straight
+# down wherever the socket lands.  Other bays keep one cutout at the far end.
+UNDERSIDE_PORT_CUTOUTS = {"ion": 3}
+
 # Outer vertical corner radius: the tray drops inside the base's R8 corners.
 OUTER_R = P.CORNER_R - P.WALL - P.CLR_FIT
 # The -X bay void's corners are rounded concentric with the outer corner, so
@@ -87,6 +92,20 @@ _MIN_XYZ = (Align.MIN, Align.MIN, Align.MIN)
 _CTR_MINZ = (Align.CENTER, Align.CENTER, Align.MIN)
 
 
+def cutout_centres_x(name: str) -> tuple[float, ...]:
+    """X centres of the cable cutouts in a right-column bay.
+
+    One cutout inset from the +X end wall by default; bays listed in
+    UNDERSIDE_PORT_CUTOUTS get N cutouts evenly spaced along the bay (one
+    centred in each of N equal sections)."""
+    x0, _, w, _ = RIGHT_BAYS[name]
+    n = UNDERSIDE_PORT_CUTOUTS.get(name, 1)
+    if n == 1:
+        return (x0 + w - CUTOUT_INSET - CUTOUT[0] / 2,)
+    section = w / n
+    return tuple(x0 + section * (i + 0.5) for i in range(n))
+
+
 def _cutout(cx: float, cy: float, along: str) -> Part:
     """Through-plate cable cutout centred at (cx, cy); `along` is the bay axis."""
     sx, sy = (CUTOUT[0], CUTOUT[1]) if along == "x" else (CUTOUT[1], CUTOUT[0])
@@ -125,6 +144,7 @@ def build_tray() -> Part:
     # sit well inside the bay footprint, so they never touch a wall.
     part -= _cutout(_LEFT_X0 + _LEFT_W / 2,
                     _Y0 + CUTOUT_INSET + CUTOUT[0] / 2, "y")
-    for x0, y0, w, l in RIGHT_BAYS.values():
-        part -= _cutout(x0 + w - CUTOUT_INSET - CUTOUT[0] / 2, y0 + l / 2, "x")
+    for name, (x0, y0, w, l) in RIGHT_BAYS.items():
+        for cx in cutout_centres_x(name):
+            part -= _cutout(cx, y0 + l / 2, "x")
     return part
