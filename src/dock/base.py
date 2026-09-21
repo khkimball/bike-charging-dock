@@ -13,7 +13,7 @@ running along Y.  The ports look toward +X and the mains inlet looks toward
 -X, so the pocket is `port_to_inlet` deep in X and `port_face_width` long in
 Y.  Its back is against the -X end wall, as the Trek CHRGtime stands its
 own: the mains cord plugs in from outside, through the closed cord port in
-that wall, straight into the inlet a fit clearance behind it.  There is no
+that wall, straight into the inlet a POCKET_BACK_SLACK behind it.  There is no
 cord room inside the cavity because none is wanted -- the whole run from the
 port face to the +X wall is free floor for the plugs and their cables.  The
 device cables leave through an escape port directly above the cord port in
@@ -29,8 +29,8 @@ bar would have to bridge the whole width of the cavity, 150 mm and more, so
 the bar is broken into a row of inverted-U cable loops, one per charger port,
 standing on the cavity floor beyond the plugs: each has a LOOP_W_IN crown,
 short enough to print unsupported in place.  With the charger at the end
-wall the row lands near the middle of the cavity, and the tie-down grid
-takes the far half of the floor beyond it.
+wall the row lands near the middle of the cavity, with the tie-down grid
+running down both sides of it.
 
 The tray lands flush with the rim, so each end rim carries a finger notch
 NOTCH_W wide and NOTCH_D deep to lift it out by.  The notches cut the rim
@@ -115,9 +115,15 @@ FOOT_INSET = 12.0        # foot centre in from each outer face
 # Nothing places the charger from this any more -- it is backed onto the -X
 # wall -- so it is a floor the layout is checked against, not an input.
 PORT_PLUG_ROOM_MIN = 40.0  # least free X in front of the six USB ports
+# Free X left between the cavity's end wall and the charger's back face,
+# the one the AC inlet is on.  `port_to_inlet` is measured to that face, so
+# anything standing proud of it -- an inlet shroud, a moulded label boss --
+# lives in here; without it such a charger would stand off the end wall and
+# never seat in the fence.  See docs/measuring.md.
+POCKET_BACK_SLACK = 2.0  # free X behind the charger's back face
 TIE_D = 4.0              # tie-down hole diameter
-TIE_PITCH = 12.0         # tie-down grid pitch
-TIE_MARGIN = 6.0         # grid edge in from the cavity walls
+TIE_PITCH = 24.0         # tie-down grid pitch
+TIE_MARGIN = 6.0         # grid edge in from the fence and the cavity walls
 
 # --- charger pocket ---------------------------------------------------------
 # Sized before the box, because a wider charger grows BASE_Y.
@@ -126,8 +132,8 @@ POCKET_X = M.CHARGER.port_to_inlet + 2 * P.CLR_FIT
 POCKET_Y = M.CHARGER.port_face_width + 2 * P.CLR_FIT
 # The fence is a U: two ±Y walls and the +X front wall.  The -X side is open,
 # because the cavity's own end wall is the charger's back stop.  FENCE_Y still
-# has a wall each side, and it is FENCE_Y that can grow BASE_Y.
-FENCE_X = POCKET_X + P.WALL
+# has a wall each side, and it is FENCE_Y that can grow BASE_Y; the U's own X
+# extent depends on where the cavity wall lands, so FENCE_X waits for it.
 FENCE_Y = POCKET_Y + 2 * P.WALL
 
 # --- the box ----------------------------------------------------------------
@@ -163,18 +169,21 @@ BEARING_W = LEDGE_W - P.CLR_FIT - P.CHAMFER
 # The charger is backed onto the -X end wall, the way the CHRGtime manual
 # shows the supply standing: the cord plugs in from outside, through the wall
 # and straight into the inlet, so no floor is spent behind it.  The cavity's
-# inner wall face is the back stop; the pocket starts a fit clearance off it
-# and everything from the port face to the +X wall is free floor.
-POCKET_MIN_X = CAVITY_MIN_X + P.CLR_FIT  # the inlet face of the charger
+# inner wall face is the back stop; the pocket starts POCKET_BACK_SLACK off
+# it, room for whatever stands proud of the charger's back face, and
+# everything from the port face to the +X wall is free floor.
+POCKET_MIN_X = CAVITY_MIN_X + POCKET_BACK_SLACK  # the charger's back face
 POCKET_MAX_X = POCKET_MIN_X + POCKET_X   # the port face of the charger
 POCKET_MIN_Y = -POCKET_Y / 2
 FENCE_CX = POCKET_MIN_X + POCKET_X / 2   # the pocket's centre, not the U's
-FENCE_MIN_X, FENCE_MAX_X = POCKET_MIN_X, POCKET_MAX_X + P.WALL
+# The U's side walls run back to a hair (CLR_FIT) off the cavity wall, so
+# they reach behind the pocket and guide the charger the whole way in.
+FENCE_MIN_X, FENCE_MAX_X = CAVITY_MIN_X + P.CLR_FIT, POCKET_MAX_X + P.WALL
+FENCE_X = FENCE_MAX_X - FENCE_MIN_X
 # Clearances left over inside the cavity, for the build report.
 FENCE_MARGIN_X = CAVITY_MAX_X - FENCE_MAX_X    # free floor in front of the U
 FENCE_MARGIN_Y = (CAVITY_Y - FENCE_Y) / 2      # per side, >= FENCE_CLEAR_Y
 PORT_PLUG_ROOM = CAVITY_MAX_X - POCKET_MAX_X   # >= PORT_PLUG_ROOM_MIN
-INLET_ROOM = POCKET_MIN_X - CAVITY_MIN_X       # the fit clearance, and no more
 
 # The ports are numbered from the -Y end of the port face, so port 1's centre
 # sits at POCKET_MIN_Y + port_face_margin.  Where there is an LED it is at
@@ -239,24 +248,39 @@ def _grid_axis(lo: float, hi: float, pitch: float) -> list[float]:
     return [mid + (i - (n - 1) / 2) * pitch for i in range(n)]
 
 
-def _tie_grid() -> list[tuple[float, float]]:
-    """Tie-down hole centres: the free floor beyond the cable loops.
+def _clears_the_loops(x: float, y: float) -> bool:
+    """Is a tie hole at (x, y) clear of the cable loops standing on the same
+    floor, by TIE_LOOP_CLEAR of material?
 
-    The charger is at the -X wall and the loop row stands in front of its
-    plugs, so the floor worth tying down on is the far half -- from the row
-    out to the +X cavity wall, full cavity Y.  The first column stands off
-    the row by TIE_LOOP_CLEAR of floor, edge to edge, so no hole is left in
-    a loop foot, and the grid stops TIE_MARGIN in from the cavity walls.
-
-    Points that would break into a foot recess are dropped: a hole there
-    would leave 1 mm of floor and a foot that cannot seat flat.
+    The loop row is a band: LOOP_T wide in X, and in Y it runs from the first
+    loop's outer face to the last one's.  A hole outside either span is fine.
     """
-    x0 = LOOP_XC + LOOP_T / 2 + TIE_D / 2 + TIE_LOOP_CLEAR
-    xs = _grid_axis(x0, CAVITY_MAX_X - TIE_MARGIN, TIE_PITCH)
+    if abs(x - LOOP_XC) >= LOOP_T / 2 + TIE_D / 2 + TIE_LOOP_CLEAR:
+        return True
+    reach = LOOP_HALF_W + TIE_D / 2 + TIE_LOOP_CLEAR
+    return not (LOOP_YS[0] - reach < y < LOOP_YS[-1] + reach)
+
+
+def _tie_grid() -> list[tuple[float, float]]:
+    """Tie-down hole centres: the free floor in front of the charger, from
+    the fence's +X wall out to the +X cavity wall, full cavity Y, TIE_MARGIN
+    in from each.
+
+    That includes the strip between the fence and the cable loops, which is
+    where the plugs stand and where the Roam's cable turns back toward its
+    own end of the dock: a tie is worth having there, not only out beyond
+    the row.
+
+    Points that would break into a foot recess are dropped -- a hole there
+    would leave 1 mm of floor and a foot that cannot seat flat -- and so are
+    the points the loop row stands on or stands too near.
+    """
+    xs = _grid_axis(FENCE_MAX_X + TIE_MARGIN, CAVITY_MAX_X - TIE_MARGIN, TIE_PITCH)
     ys = _grid_axis(CAVITY_MIN_Y + TIE_MARGIN, CAVITY_MAX_Y - TIE_MARGIN, TIE_PITCH)
     keep_out = FOOT_R + TIE_D / 2 + 1.0
     return [(x, y) for x in xs for y in ys
-            if all(math.dist((x, y), c) > keep_out for c in FOOT_CENTRES)]
+            if all(math.dist((x, y), c) > keep_out for c in FOOT_CENTRES)
+            and _clears_the_loops(x, y)]
 
 
 TIE_GRID: list[tuple[float, float]] = _tie_grid()
@@ -310,16 +334,19 @@ def _fence() -> Part:
 
     A U, not a ring: the charger backs onto the -X cavity wall, so that wall
     is the fourth side and the fence carries only the two ±Y walls and the
-    +X front wall.  The U stops a fit clearance short of the cavity wall --
-    the same slack the pocket gives the charger -- so the two never fight
-    each other, and the U stands as its own island above the floor slab it
-    is fused to.  The fingernail notch stays in the +Y wall.
+    +X front wall.  The side walls stop a hair's breadth (CLR_FIT) short of
+    the cavity wall rather than running into it.  That gap is not a fit
+    clearance and nothing seats in it: it is there so the U stays its own
+    solid, which is how every fence test finds and measures it.  The slicer
+    fuses it back into the wall, harmlessly -- the U is fused to the floor
+    slab along its whole length either way.  The fingernail notch stays in
+    the +Y wall.
     """
-    fence = Pos(POCKET_MIN_X, 0, 0) * Box(
+    fence = Pos(FENCE_MIN_X, 0, 0) * Box(
         FENCE_X, FENCE_Y, FENCE_H + P.FLOOR, align=_END_LO)
     # the pocket, cut open toward -X so the cavity wall closes it
-    fence -= Pos(POCKET_MIN_X - 1.0, 0, P.FLOOR) * Box(
-        POCKET_X + 1.0, POCKET_Y, FENCE_H, align=_END_LO)
+    fence -= Pos(FENCE_MIN_X - 1.0, 0, P.FLOOR) * Box(
+        POCKET_MAX_X - FENCE_MIN_X + 1.0, POCKET_Y, FENCE_H, align=_END_LO)
     # fingernail notch through the +Y fence wall, to lift the charger out
     fence -= Pos(FENCE_CX, POCKET_Y / 2, P.FLOOR) * Box(20, 2 * P.WALL + 2,
                                                         FENCE_H, align=_MIN)

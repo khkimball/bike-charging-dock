@@ -46,8 +46,9 @@ The mains cord plugs in from outside: push the moulded C7 end through the
 cord port and it goes straight into the inlet, which sits right behind the
 wall. Nothing about the cord is inside the dock but the last few
 millimetres of it. Everything from the charger's port face to the +X cavity
-wall -- 140 mm as the parts stand -- is free floor for the plugs and their
-cables.
+wall -- 138 mm as the parts stand -- is free floor for the plugs and their
+cables. There are 2 mm of free floor behind the charger's back face, room
+for an inlet shroud or a label boss to stand proud of it.
 
 Inside the cavity, a row of six inverted-U cable loops stands on the floor
 clear of the plugs in front of the charger -- 24 mm out from the fence wall,
@@ -55,16 +56,19 @@ about 5 mm past the end of a USB-A overmold -- one over each charger port and
 on the same 12.5 mm port pitch. With the charger at the end wall the row
 lands near the middle of the cavity. They are the CHRGtime's under-tray
 cable bar, printed in place: each has a 10 mm wide by 12 mm tall window and
-the row
-rises 15 mm off the cavity floor, against a rebate ledge that sits
+the row rises 15 mm off the cavity floor, against a rebate ledge that sits
 `BASE_H - REBATE_D` above the bed -- 49.6 mm as the parts stand -- so the
 seated tray is nowhere near them. Nothing about them needs support. A loop
 is 16 mm wide and the pitch is 12.5, so the row prints as one continuous
-bar, with a window over each port and a 2.5 mm post between windows. Route
-each device cable out of its charger port toward the middle of the cavity,
-under its loop, and then up through its bay's cable cutout in the tray; the
-tie-down grid fills the far half of the floor, beyond the loops, and takes a
-cable tie for anything that will not stay put.
+bar, with a window over each port and a 2.5 mm post between windows.
+
+Take each device cable out of its charger port toward the middle of the
+cavity and through its loop: that is all the loops are for, holding the six
+cables in a row where they leave the plugs instead of letting them knot up
+together. Past the row they fan out across the floor to whichever bay's
+cutout they belong to. The tie-down grid runs down both sides of the row --
+including the strip between the fence and the loops, where the plugs stand
+-- and takes a cable tie for anything that will not stay put.
 
 There are six loops for six charger ports, but not every bay feeds one from
 above. The Roam sits in the -X column of the tray, over the charger's own

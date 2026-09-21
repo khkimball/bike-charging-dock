@@ -32,7 +32,13 @@ the front face; AC inlet centred on the back face; no status LED.  Lay the
 charger flat, ports toward you.
 - port_face_width: the long horizontal dimension -- the face carrying the
   six ports
-- port_to_inlet: the other horizontal dimension, port face to inlet face
+- port_to_inlet: the other horizontal dimension, port face to inlet face.
+  Measure the back face to the port face *including anything proud of the
+  back* -- an inlet shroud, a moulded label boss, a raised badge.  The base
+  backs the charger onto the cavity's end wall and leaves
+  `base.POCKET_BACK_SLACK` (2 mm) of free X behind it for exactly that; if
+  what stands proud of the back is more than that, raise the slack rather
+  than fudging this measurement.
 - height: the remaining (vertical) dimension with the charger lying flat
 - port_face_margin: charger edge to centre of the first port, measured along
   the port face
