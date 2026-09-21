@@ -34,14 +34,15 @@ wall ports are closed holes rather than notches, so the rim and the rebate
 ledge stay continuous all the way round.
 
 Inside the cavity, a row of six inverted-U cable loops stands on the floor
-just past the charger fence, one over each charger port and on the same
-15.2 mm port pitch. They are the CHRGtime's under-tray cable bar, printed in
-place: each has a 10 mm wide by 12 mm tall window, the row rises 15 mm off
-the cavity floor (the tray seats 41 mm up, so they are nowhere near it) and
-nothing about them needs support. Route each device cable out of its charger
-port, under its loop and up through its bay's cable cutout in the tray; the
-tie-down grid further along the floor takes a cable tie for anything that
-will not stay put.
+clear of the plugs in front of the charger -- 24 mm out from the fence wall,
+about 5 mm past the end of a USB-A overmold -- one over each charger port and
+on the same 15.2 mm port pitch. They are the CHRGtime's under-tray cable bar,
+printed in place: each has a 10 mm wide by 12 mm tall window, the row rises
+15 mm off the cavity floor (the tray seats 41 mm up, so they are nowhere near
+it) and nothing about them needs support. Route each device cable out of its
+charger port, under its loop and up through its bay's cable cutout in the
+tray; the tie-down grid runs down both sides of the row and takes a cable tie
+for anything that will not stay put.
 
 The tray sits flush with the base's rim, so each end of the rim carries a
 finger notch (40 mm wide, 15 mm down from the rim, corners rounded R5):

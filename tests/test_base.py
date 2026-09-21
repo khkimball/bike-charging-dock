@@ -132,6 +132,14 @@ def _bottom_wires(p):
     return p.faces().sort_by(Axis.Z)[0].inner_wires()
 
 
+def _xy_gap(a, b):
+    """Shortest distance between two bounding boxes in the floor plane; 0 if
+    they overlap."""
+    dx = max(a.min.X - b.max.X, b.min.X - a.max.X, 0.0)
+    dy = max(a.min.Y - b.max.Y, b.min.Y - a.max.Y, 0.0)
+    return math.hypot(dx, dy)
+
+
 # --- outer shell -------------------------------------------------------------
 
 def test_outer_size_wraps_the_tray_with_fit_clearance():
@@ -510,7 +518,8 @@ def test_the_long_walls_carry_no_openings():
 
 # --- cable loops -------------------------------------------------------------
 CABLE_D = 4.0     # a fat charging cable, for the pass-under probe
-LOOP_CLEAR = 2.0  # wall a loop foot must leave round the fence and each tie hole
+LOOP_CLEAR = 2.0  # floor a loop foot must leave round the fence, the tie
+                  # holes and the cavity wall
 
 
 def test_six_cable_loops_stand_over_the_charger_ports():
@@ -533,6 +542,22 @@ def test_six_cable_loops_stand_over_the_charger_ports():
 def test_the_loops_are_evenly_spaced_on_the_port_pitch():
     steps = {round(b - a, 3) for a, b in zip(base.LOOP_YS, base.LOOP_YS[1:])}
     assert steps == {base.PORT_PITCH}, steps
+
+
+def test_a_plug_in_every_charger_port_clears_the_loops():
+    """The loop row stands beyond the plugs, not in them.  A USB-A overmold
+    butted against the charger's port face at each port centre, at the
+    charger's mid height, touches nothing in the base -- not a loop, not a
+    wall.  This is what the row's standoff is actually set by."""
+    p = base.build_base()
+    port_x = _pocket_port_face_x(p)
+    plug = params.USB_A_PLUG
+    for y in base.LOOP_YS:
+        probe = Pos(port_x, y, params.FLOOR + m.CHARGER.height / 2) * Box(
+            plug.length, plug.width, plug.height,
+            align=(Align.MIN, Align.CENTER, Align.CENTER))
+        assert (probe & p).volume < 1e-3, f"plug at y = {y:.1f} fouls the base"
+        assert probe.bounding_box().max.X < base.LOOP_XC - base.LOOP_T / 2
 
 
 def test_a_cable_passes_under_every_loop():
@@ -560,8 +585,14 @@ def test_the_loops_clear_the_fence_and_the_tie_holes():
     ties = [w.bounding_box() for w in _bottom_wires(p)
             if abs(w.bounding_box().size.X - base.TIE_D) < 1e-6]
     assert ties, "no tie holes left to clear"
-    gap = min(t.min.X for t in ties) - max(b.max.X for b in legs)
-    assert gap >= LOOP_CLEAR, f"only {gap:.2f} mm to the nearest tie hole"
+    # The grid runs down both sides of the row, so this is a gap in the
+    # floor plane, not along X: the shortest distance between the two
+    # rectangles, zero if they overlap at all.
+    for t in ties:
+        gap = min(_xy_gap(t, b) for b in legs)
+        assert gap >= LOOP_CLEAR, (
+            f"tie hole at ({t.center().X:.1f}, {t.center().Y:.1f}) is "
+            f"{gap:.2f} mm from a loop foot")
 
 
 def test_the_loops_stay_under_the_tray_and_inside_the_cavity():
@@ -571,9 +602,10 @@ def test_the_loops_stay_under_the_tray_and_inside_the_cavity():
     p = base.build_base()
     legs = [s.bounding_box() for s in _loop_legs(p)]
     cav = _cavity_bbox(p)
-    assert min(b.min.Y for b in legs) > cav.min.Y
-    assert max(b.max.Y for b in legs) < cav.max.Y
-    assert max(b.max.X for b in legs) < cav.max.X
+    assert min(b.min.Y for b in legs) - cav.min.Y >= LOOP_CLEAR
+    assert cav.max.Y - max(b.max.Y for b in legs) >= LOOP_CLEAR
+    gap = cav.max.X - max(b.max.X for b in legs)
+    assert gap >= LOOP_CLEAR, f"only {gap:.2f} mm to the +X cavity wall"
     lo, hi = min(b.min.X for b in legs), max(b.max.X for b in legs)
     crown_z = max(f.center().Z for f in p.faces().filter_by(Axis.Z)
                   if f.normal_at().Z > 0 and lo < f.center().X < hi)

@@ -20,7 +20,7 @@ The CHRGtime also runs a bar under its tray for the device cables to pass
 beneath, so they leave the charger in a tidy row instead of a knot.  A single
 bar would have to bridge the whole width of the cavity, 150 mm and more, so
 the bar is broken into a row of inverted-U cable loops, one per charger port,
-standing on the cavity floor just past the fence: each has a LOOP_W_IN crown,
+standing on the cavity floor beyond the plugs: each has a LOOP_W_IN crown,
 short enough to print unsupported in place.
 
 The tray lands flush with the rim, so each end rim carries a finger notch
@@ -162,9 +162,15 @@ LED_Y = POCKET_MIN_Y + M.CHARGER.port_face_margin - M.CHARGER.led_offset_from_po
 
 # --- cable loops ------------------------------------------------------------
 # One inverted U per charger port, standing on the cavity floor, for a cable
-# to route under on its way to the tray's cutout.  The row sits just past the
-# fence's +X wall, before the tie grid; the opening passes a cable, not a
-# plug, and the crown is a LOOP_W_IN bridge the printer crosses unsupported.
+# to route under on its way to the tray's cutout.  The opening passes a
+# cable, not a plug, and the crown is a LOOP_W_IN bridge the printer crosses
+# unsupported.
+#
+# LOOP_STANDOFF is measured from the fence's +X wall, and it is set by the
+# plugs, not by the fence: six USB-A overmolds stand in front of the port
+# face, so the row has to start past P.USB_A_PLUG.length plus room for the
+# cable to turn down out of the plug.  A row nearer than that is a row you
+# cannot plug a cable in through.
 #
 # The loops are on the port pitch, which is narrower than a loop is wide, so
 # each one merges into its neighbours: the row prints as one bar with a
@@ -173,11 +179,13 @@ PORT_PITCH = 15.2        # USB-A port pitch along the charger's port face
 LOOP_W_IN = 10.0         # inner opening width (Y), and the crown's bridge
 LOOP_H_IN = 12.0         # inner opening height (Z)
 LOOP_T = 3.0             # loop thickness along X
-LOOP_STANDOFF = 6.0      # loop row to the fence wall, and to the tie grid
-LOOP_XC = POCKET_MAX_X + P.WALL + LOOP_STANDOFF     # just past the fence
+LOOP_STANDOFF = 24.0     # fence wall to loop row: plug overmold plus its bend
+LOOP_XC = POCKET_MAX_X + P.WALL + LOOP_STANDOFF     # clear of the plug bodies
+LOOP_HALF_W = LOOP_W_IN / 2 + LOOP_T                # loop half width in Y
 # Port 1's centre sits at POCKET_MIN_Y + port_face_margin, as the LED does.
 LOOP_YS: list[float] = [POCKET_MIN_Y + M.CHARGER.port_face_margin + i * PORT_PITCH
                         for i in range(6)]
+TIE_LOOP_CLEAR = 2.0     # floor left between a tie hole and a loop foot
 
 # Wall cutters span the 2*WALL wall plus a sliver either side, no more.
 _WALL_CUT_D = 2 * P.WALL + 0.5
@@ -200,24 +208,37 @@ def _grid_axis(lo: float, hi: float, pitch: float) -> list[float]:
     return [mid + (i - (n - 1) / 2) * pitch for i in range(n)]
 
 
-def _tie_grid() -> list[tuple[float, float]]:
-    """Tie-down hole centres: the free floor between the cable loops and the
-    +X cavity wall, full cavity Y, TIE_MARGIN in from each.
+def _clears_the_loops(x: float, y: float) -> bool:
+    """Is a tie hole at (x, y) clear of the cable loops standing on the same
+    floor, by TIE_LOOP_CLEAR of material?
 
-    The grid used to start TIE_MARGIN past the fence; the loops now stand in
-    that gap, so the start is pushed on by the loop row's own thickness and
-    standoff.  That keeps every hole clear of a loop foot by more than the
-    2 mm a hole needs to have wall around it.
+    The loop row is a band: LOOP_T wide in X, and in Y it runs from the first
+    loop's outer face to the last one's.  A hole outside either span is fine,
+    so the grid keeps its whole middle column at the ends of the cavity where
+    the row does not reach.
+    """
+    if abs(x - LOOP_XC) >= LOOP_T / 2 + TIE_D / 2 + TIE_LOOP_CLEAR:
+        return True
+    reach = LOOP_HALF_W + TIE_D / 2 + TIE_LOOP_CLEAR
+    return not (LOOP_YS[0] - reach < y < LOOP_YS[-1] + reach)
+
+
+def _tie_grid() -> list[tuple[float, float]]:
+    """Tie-down hole centres: the free floor between the fence's +X wall and
+    the +X cavity wall, full cavity Y, TIE_MARGIN in from each.
 
     Points that would break into a foot recess are dropped -- a hole there
-    would leave 1 mm of floor and a foot that cannot seat flat.
+    would leave 1 mm of floor and a foot that cannot seat flat.  So are the
+    points the cable loops stand on, or stand too near: that costs the middle
+    column everywhere the loop row reaches, and leaves the grid running down
+    both sides of the row.
     """
-    xs = _grid_axis(FENCE_MAX_X + TIE_MARGIN + LOOP_T + LOOP_STANDOFF,
-                    CAVITY_MAX_X - TIE_MARGIN, TIE_PITCH)
+    xs = _grid_axis(FENCE_MAX_X + TIE_MARGIN, CAVITY_MAX_X - TIE_MARGIN, TIE_PITCH)
     ys = _grid_axis(CAVITY_MIN_Y + TIE_MARGIN, CAVITY_MAX_Y - TIE_MARGIN, TIE_PITCH)
     keep_out = FOOT_R + TIE_D / 2 + 1.0
     return [(x, y) for x in xs for y in ys
-            if all(math.dist((x, y), c) > keep_out for c in FOOT_CENTRES)]
+            if all(math.dist((x, y), c) > keep_out for c in FOOT_CENTRES)
+            and _clears_the_loops(x, y)]
 
 
 TIE_GRID: list[tuple[float, float]] = _tie_grid()
@@ -283,7 +304,7 @@ def _loop() -> Part:
     20 mm the printer bridges unsupported, so the loop prints in place with
     the base -- there is nothing to assemble and nothing to support.
     """
-    outer = Box(LOOP_T, LOOP_W_IN + 2 * LOOP_T, LOOP_H_IN + LOOP_T, align=_MIN)
+    outer = Box(LOOP_T, 2 * LOOP_HALF_W, LOOP_H_IN + LOOP_T, align=_MIN)
     return outer - Box(LOOP_T + 2, LOOP_W_IN, LOOP_H_IN, align=_MIN)
 
 
@@ -305,9 +326,10 @@ def build_base() -> Part:
 
     body += Pos(FENCE_CX, 0, 0) * _fence()
 
-    # Cable loops, one per charger port, fused to the cavity floor just past
-    # the fence: each device cable drops out of its plug, runs under its loop
-    # and up through its bay's cutout in the tray.
+    # Cable loops, one per charger port, fused to the cavity floor beyond the
+    # plugs standing in front of the port face: each device cable drops out
+    # of its plug, runs under its loop and up through its bay's cutout in the
+    # tray.
     for y in LOOP_YS:
         body += Pos(LOOP_XC, y, P.FLOOR) * _loop()
 
