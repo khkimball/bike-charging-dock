@@ -96,12 +96,6 @@ def _pocket_port_face_x(p):
                if f.normal_at().X < 0)
 
 
-def _pocket_inlet_face_x(p):
-    fence = _fence_section(p)
-    return min(f.center().X for f in fence.faces().filter_by(Axis.X)
-               if f.normal_at().X > 0)
-
-
 def _end_wall_holes(p, sign):
     """Bounding boxes of the holes in an end wall, lowest first.  `sign` is
     the wall's outward X normal: -1 for the cord/escape wall, +1 for the LED
@@ -249,6 +243,9 @@ def test_fence_stands_inside_the_cavity_with_clearance_each_side():
     cav = _cavity_bbox(p)
     fence = _fence_section(p).bounding_box()
     assert fence.min.X > cav.min.X and fence.max.X < cav.max.X
+    # backed onto the -X wall: the fence stands clear of it by the fit
+    # clearance only, which is what keeps it a separate island to print.
+    assert fence.min.X - cav.min.X <= params.CLR_FIT + 1e-6
     assert fence.min.Y - cav.min.Y >= 2.0
     assert cav.max.Y - fence.max.Y >= 2.0
 
@@ -273,22 +270,50 @@ def test_pocket_holds_the_charger_with_fit_clearance():
             m.CHARGER.port_face_width + grow,
             m.CHARGER.height, align=(Align.CENTER, Align.CENTER, Align.MIN))
         assert (probe & p).volume < 1e-3, grow
-    # ... and the fence really does surround it: the section is a ring, not a bar
+    # ... and the fence really does hold it: a U, three walls round the
+    # charger, with the cavity's own end wall closing the fourth side.
     sect = _fence_section(p).bounding_box()
-    assert sect.size.X >= m.CHARGER.port_to_inlet + 2 * params.WALL - 1e-6
+    assert sect.size.X >= m.CHARGER.port_to_inlet + params.WALL - 1e-6
     assert sect.size.Y >= m.CHARGER.port_face_width + 2 * params.WALL - 1e-6
+    # Open at -X: a bar laid down the pocket's centre line from the cavity's
+    # end wall to the charger's port face meets nothing at fence height.
+    cav = _cavity_bbox(p)
+    back = Pos(cav.min.X, 0, params.FLOOR + base.FENCE_H / 2) * Box(
+        _pocket_port_face_x(p) - cav.min.X - 0.02, 20.0, base.FENCE_H - 0.02,
+        align=(Align.MIN, Align.CENTER, Align.CENTER))
+    assert (back & p).volume < 1e-3, "the fence still has a -X wall"
 
 
 def test_room_in_front_of_the_ports_for_six_plugs():
+    """Port room is everything from the charger's port face out to the +X
+    cavity wall -- the charger is at the far end now, so that is most of the
+    cavity.  PORT_PLUG_ROOM_MIN is only the floor under it."""
     p = base.build_base()
     free = _cavity_bbox(p).max.X - _pocket_port_face_x(p)
     assert free >= base.PORT_PLUG_ROOM_MIN - 1e-6, f"only {free:.1f} mm"
+    assert abs(free - base.PORT_PLUG_ROOM) < 1e-6
 
 
-def test_room_behind_the_inlet_for_the_mains_cord():
+def test_the_charger_backs_onto_the_minus_x_cavity_wall():
+    """The CHRGtime stands its supply's back against the end wall, so the
+    mains cord plugs in from outside, through the wall, straight into the
+    inlet.  Measured on the solid: between that wall and the fence's +X wall
+    there is the charger and the fit clearance, and nothing else -- no cord
+    room behind it to fall into."""
     p = base.build_base()
-    free = _pocket_inlet_face_x(p) - _cavity_bbox(p).min.X
-    assert free >= base.INLET_PLUG_ROOM - 1e-6, f"only {free:.1f} mm"
+    cav = _cavity_bbox(p)
+    run = _pocket_port_face_x(p) - cav.min.X
+    slide = run - m.CHARGER.port_to_inlet
+    assert slide >= 0, f"the charger does not fit: {run:.2f} mm"
+    # all the slack there is: the pocket starts CLR_FIT off the wall and
+    # carries CLR_FIT at each end of its own length
+    assert slide <= 3 * params.CLR_FIT + 1e-6, f"{slide:.2f} mm of slide"
+    # pushed right back against the wall it still touches nothing
+    probe = Pos(cav.min.X, 0, params.FLOOR) * Box(
+        m.CHARGER.port_to_inlet, m.CHARGER.port_face_width, m.CHARGER.height,
+        align=(Align.MIN, Align.CENTER, Align.MIN))
+    assert (probe & p).volume < 1e-3
+    assert base.INLET_ROOM <= params.CLR_FIT + 0.01
 
 
 # --- wall openings -----------------------------------------------------------
@@ -321,17 +346,23 @@ def test_cord_port_is_a_closed_hole_in_the_minus_x_wall_on_the_inlet():
     assert (bar & p).volume < 1e-3
 
 
-def test_the_moulded_cord_end_passes_through_the_cord_port():
-    """The port is sized from the cord end that has to pass it, and placed on
-    the inlet that end has to reach: a block the size of CORD_END, held at
-    the inlet's own centre height, slides in through the -X wall and out into
-    the cavity touching nothing.  Nothing has to lift it or tilt it."""
+def test_the_moulded_cord_end_reaches_the_inlet_through_the_wall():
+    """The charger's inlet face is right behind the -X wall, so the cord
+    plugs in from outside: a block the size of CORD_END, held at the inlet's
+    own centre height and ending on the pocket's back face, comes in from
+    outside the dock, through the wall and up to the inlet, touching nothing.
+    Nothing has to lift it or tilt it."""
     p = base.build_base()
     end = m.CORD_END
-    probe = Pos(-5, 0, params.FLOOR + m.CHARGER.inlet_center_z) * Box(
+    # the pocket's back face: the cavity's own end wall, plus the fit slack
+    back = _cavity_bbox(p).min.X + params.CLR_FIT
+    probe = Pos(back, 0, params.FLOOR + m.CHARGER.inlet_center_z) * Box(
         end.length, end.width, end.height,
-        align=(Align.MIN, Align.CENTER, Align.CENTER))
-    assert probe.bounding_box().min.X < 0 < 2 * params.WALL < probe.bounding_box().max.X
+        align=(Align.MAX, Align.CENTER, Align.CENTER))
+    bb = probe.bounding_box()
+    assert bb.min.X < 0, "the cord end does not reach outside the dock"
+    assert bb.max.X > 2 * params.WALL, "it does not clear the wall"
+    assert abs(bb.max.X - base.POCKET_MIN_X) < 1e-6
     assert (probe & p).volume < 1e-3
 
 
@@ -643,9 +674,9 @@ def test_the_loops_clear_the_fence_and_the_tie_holes():
     ties = [w.bounding_box() for w in _bottom_wires(p)
             if abs(w.bounding_box().size.X - base.TIE_D) < 1e-6]
     assert ties, "no tie holes left to clear"
-    # The grid runs down both sides of the row, so this is a gap in the
-    # floor plane, not along X: the shortest distance between the two
-    # rectangles, zero if they overlap at all.
+    # The grid starts beyond the row, so this is a gap in the floor plane,
+    # not along X: the shortest distance between the two rectangles, zero if
+    # they overlap at all.
     for t in ties:
         gap = min(_xy_gap(t, b) for b in legs)
         assert gap >= LOOP_CLEAR, (
@@ -734,13 +765,19 @@ def test_tie_grid_holes_go_right_through_the_floor():
         assert (pin & p).volume < 1e-3, (x, y)
 
 
-def test_tie_grid_sits_between_the_fence_and_the_plus_x_wall():
+def test_tie_grid_fills_the_floor_beyond_the_loops():
+    """With the charger at the -X wall the free floor is the far half: from
+    the cable loops out to the +X cavity wall, full cavity width.  Measured
+    on the solid: every hole is past the loop row by LOOP_CLEAR, and inside
+    the cavity on every other side."""
     p = base.build_base()
     cav = _cavity_bbox(p)
     fence = _fence_section(p).bounding_box()
+    row_max_x = max(s.bounding_box().max.X for s in _loop_legs(p))
     assert base.TIE_GRID
     for x, y in base.TIE_GRID:
         assert x - base.TIE_D / 2 > fence.max.X
+        assert x - base.TIE_D / 2 >= row_max_x + LOOP_CLEAR - 1e-6
         assert x + base.TIE_D / 2 < cav.max.X
         assert cav.min.Y < y - base.TIE_D / 2 and y + base.TIE_D / 2 < cav.max.Y
 

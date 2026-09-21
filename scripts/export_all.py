@@ -48,12 +48,10 @@ def build_report() -> str:
         f"  base   {base.BASE_X:7.2f} x {base.BASE_Y:7.2f} x {base.BASE_H:6.2f}",
         f"  tray   {tray.TRAY_X:7.2f} x {tray.TRAY_Y:7.2f} x {tray.TRAY_H:6.2f}",
         f"  lid    {lid.LID_X:7.2f} x {lid.LID_Y:7.2f} x {lid.LID_H:6.2f}",
-        f"  cavity room round the fence: X {base.FENCE_MARGIN_X:.2f}, "
-        f"Y {base.FENCE_MARGIN_Y:.2f} per side",
-        f"  plug room in front of the ports: {base.PORT_PLUG_ROOM:6.2f} "
-        f"(need {base.PORT_PLUG_ROOM_MIN:.2f})",
-        f"  cord room behind the inlet:      {base.INLET_ROOM:6.2f} "
-        f"(need {base.INLET_PLUG_ROOM:.2f})",
+        f"  cavity room past the fence: X {base.FENCE_MARGIN_X:.2f} in "
+        f"front, Y {base.FENCE_MARGIN_Y:.2f} per side",
+        f"  charger backed against the -X wall; port room "
+        f"{base.PORT_PLUG_ROOM:.2f} (need {base.PORT_PLUG_ROOM_MIN:.2f})",
     ))
 
 

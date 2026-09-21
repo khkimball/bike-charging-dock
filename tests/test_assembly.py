@@ -138,3 +138,34 @@ def test_the_seated_divider_stops_short_of_the_lid_ceiling():
 def test_assembled_footprint_fits_the_bed():
     s = _seated_lid().bounding_box().size
     assert s.X <= P.BED_X and s.Y <= P.BED_Y
+
+
+# --- tray cable cutouts vs the base cavity ------------------------------------
+
+def _tray_cutout_footprints():
+    """Bounding boxes of the tray's cable cutouts, in base coordinates, read
+    off the seated tray's underside: they are the only voids that go right
+    through the plate, so they are its bottom face's inner wires."""
+    bottom = _seated_tray().faces().filter_by(Axis.Z).sort_by(Axis.Z)[0]
+    return [w.bounding_box() for w in bottom.inner_wires()]
+
+
+def test_every_cable_cutout_drops_into_open_cavity():
+    """A cable dropped through any cutout in the tray has to reach the cavity
+    floor: it must not land on the charger, on the fence or on a cable loop.
+    With the charger moved to the -X end wall the Roam bay's cutout is over
+    the charger's X range, so this is measured, not assumed -- the column
+    under every cutout, from the cavity floor up to the seated tray, is empty
+    base.  (The Roam's cutout clears the charger in Y as well, so that cable
+    drops straight past the charger's -Y side rather than over its top.)"""
+    p_base = base.build_base()
+    top = _seated_tray().bounding_box().min.Z      # the rebate ledge
+    boxes = _tray_cutout_footprints()
+    assert len(boxes) == 6, f"expected six cable cutouts, found {len(boxes)}"
+    for bb in boxes:
+        column = Pos(bb.center().X, bb.center().Y, P.FLOOR) * Box(
+            bb.size.X - 0.02, bb.size.Y - 0.02, top - P.FLOOR,
+            align=(Align.CENTER, Align.CENTER, Align.MIN))
+        assert (column & p_base).volume < 1e-3, (
+            f"a cutout at ({bb.center().X:.1f}, {bb.center().Y:.1f}) drops "
+            f"onto solid base")

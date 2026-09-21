@@ -23,7 +23,11 @@ Ion and Trackr sit against the partition wall, clear of their cutouts at the
 
 The base is built round the Anker A2154 (77 x 82 x 33 mm, six ports in one
 row, no status LED): change `measurements.CHARGER` and the fence, the port
-and inlet room, and the cable loops all follow from it.
+room and the cable loops all follow from it. The charger stands with its
+back against the -X end wall, the way the Trek CHRGtime manual shows its
+own supply: the fence is a U (two side walls and a front wall, 8 mm tall)
+and the cavity's end wall is the fourth side, a fit clearance behind the
+charger's inlet face.
 
 The base prints open-top-up. The AC cord port in the -X end wall is sized
 from the moulded C7 cord end, which makes it too wide to bridge, so it is
@@ -38,25 +42,37 @@ A2154 has no status LED, so that wall is blind. Both -X wall ports are
 closed holes rather than notches, so the rim and the rebate ledge stay
 continuous all the way round.
 
+The mains cord plugs in from outside: push the moulded C7 end through the
+cord port and it goes straight into the inlet, which sits right behind the
+wall. Nothing about the cord is inside the dock but the last few
+millimetres of it. Everything from the charger's port face to the +X cavity
+wall -- 140 mm as the parts stand -- is free floor for the plugs and their
+cables.
+
 Inside the cavity, a row of six inverted-U cable loops stands on the floor
 clear of the plugs in front of the charger -- 24 mm out from the fence wall,
 about 5 mm past the end of a USB-A overmold -- one over each charger port and
-on the same 12.5 mm port pitch. They are the CHRGtime's under-tray cable bar,
-printed in place: each has a 10 mm wide by 12 mm tall window and the row
+on the same 12.5 mm port pitch. With the charger at the end wall the row
+lands near the middle of the cavity. They are the CHRGtime's under-tray
+cable bar, printed in place: each has a 10 mm wide by 12 mm tall window and
+the row
 rises 15 mm off the cavity floor, against a rebate ledge that sits
 `BASE_H - REBATE_D` above the bed -- 49.6 mm as the parts stand -- so the
 seated tray is nowhere near them. Nothing about them needs support. A loop
 is 16 mm wide and the pitch is 12.5, so the row prints as one continuous
 bar, with a window over each port and a 2.5 mm post between windows. Route
-each device cable out of its charger port, under its loop and up through its
-bay's cable cutout in the tray; the tie-down grid runs down both sides of
-the row and takes a cable tie for anything that will not stay put.
+each device cable out of its charger port toward the middle of the cavity,
+under its loop, and then up through its bay's cable cutout in the tray; the
+tie-down grid fills the far half of the floor, beyond the loops, and takes a
+cable tie for anything that will not stay put.
 
 There are six loops for six charger ports, but not every bay feeds one from
-above. The Roam sits in the -X column of the tray, on the far side of the
-charger from the loops, so its cable runs -X out of its charger port, along
-the floor beside the fence, and up into the inlet end of the cavity where
-its bay is: it never passes under a loop.
+above. The Roam sits in the -X column of the tray, over the charger's own
+end of the cavity, so its cable runs the other way: out of its charger port,
+back along the -Y side of the charger past the fence, and straight up
+through its cutout -- which clears the charger in Y, so the cable drops to
+the cavity floor beside it rather than over its top. It never passes under a
+loop.
 
 The tray sits flush with the base's rim, so each end of the rim carries a
 finger notch (40 mm wide, 15 mm down from the rim, corners rounded R5):
