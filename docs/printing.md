@@ -23,13 +23,25 @@ Ion and Trackr sit against the partition wall, clear of their cutouts at the
 
 The base prints open-top-up. The AC cord port in the -X end wall is sized
 from the moulded C7 cord end, which makes it too wide to bridge, so it is
-roofed with a 45 degree peak instead: it needs no support. The only real
-ceilings left are the rear escape port (19 mm bridge), the LED window in the
-+X end wall (8 mm) and the four foot recesses in the underside -- all short
-bridges the printer clears without supports. The escape port lets a spare
-device cable leave through the rear wall; the AC cord port is a closed hole,
-not a notch, so the mains cord is the only thing that leaves through the -X
-wall.
+roofed with a 45 degree peak instead: it needs no support. Directly above it
+in the same wall -- where the Trek CHRGtime puts its own -- sits the device
+cable escape port, a closed 16 x 8 mm hole that clears the peak of the cord
+roof by 1 mm and stops 1 mm below the rebate ledge. The ceilings that do
+bridge are that escape port (16 mm), the crown of each cable loop (10 mm),
+the LED window in the +X end wall (8 mm) and the four foot recesses in the
+underside -- all short bridges the printer clears without supports. Both -X
+wall ports are closed holes rather than notches, so the rim and the rebate
+ledge stay continuous all the way round.
+
+Inside the cavity, a row of six inverted-U cable loops stands on the floor
+just past the charger fence, one over each charger port and on the same
+15.2 mm port pitch. They are the CHRGtime's under-tray cable bar, printed in
+place: each has a 10 mm wide by 12 mm tall window, the row rises 15 mm off
+the cavity floor (the tray seats 41 mm up, so they are nowhere near it) and
+nothing about them needs support. Route each device cable out of its charger
+port, under its loop and up through its bay's cable cutout in the tray; the
+tie-down grid further along the floor takes a cable tie for anything that
+will not stay put.
 
 The tray sits flush with the base's rim, so each end of the rim carries a
 finger notch (40 mm wide, 15 mm down from the rim, corners rounded R5):

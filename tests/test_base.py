@@ -20,10 +20,10 @@ def _slab(p, z, thick=0.2):
     return p & probe
 
 
-# A height clear of every wall opening: the cord port's peak now reaches
-# above the escape port's sill, so the only unbroken band left below the
-# rebate is between the escape port's head and the ledge.
-CLEAR_Z = (base.ESCAPE_TOP + base.BASE_H - base.REBATE_D) / 2
+# A height clear of every wall opening: the cord port and the escape port
+# stack up the whole -X end wall between them, so the only unbroken band
+# left below the rebate is between the escape port's head and the ledge.
+CLEAR_Z = (base.ESCAPE_Z1 + base.BASE_H - base.REBATE_D) / 2
 
 
 def _band(off_in, off_out, z0, h):
@@ -52,11 +52,40 @@ def _cavity_bbox(p):
     return inner[0].bounding_box()
 
 
+def _free_standing(p, z):
+    """Everything standing clear of the shell in the slab at height `z`.
+
+    The cavity floor carries the fence and the cable loops, so a slab down
+    there is no longer two pieces.  The shell is the one piece that reaches
+    the part's own outline; whatever is left stands free of the walls."""
+    outline = p.bounding_box()
+
+    def is_shell(s):
+        return s.bounding_box().min.X <= outline.min.X + 1e-6
+
+    solids = _slab(p, z).solids()
+    shell = [s for s in solids if is_shell(s)]
+    free = [s for s in solids if not is_shell(s)]
+    assert len(shell) == 1, f"expected one shell ring at z = {z:.1f}"
+    assert free, f"nothing stands free of the walls at z = {z:.1f}"
+    return free
+
+
 def _fence_section(p):
-    """The fence's cross-section at mid-fence height, standing free of the walls."""
-    solids = _slab(p, params.FLOOR + base.FENCE_H / 2).solids()
-    assert len(solids) == 2, f"fence should stand free of the walls, got {len(solids)}"
-    return min(solids, key=lambda s: s.bounding_box().size.X)
+    """The fence's cross-section at mid-fence height, standing free of the
+    walls: the largest of the free-standing pieces down there."""
+    return max(_free_standing(p, params.FLOOR + base.FENCE_H / 2),
+               key=lambda s: s.volume)
+
+
+def _loop_legs(p):
+    """The cable loops' cross-section at mid-opening height: everything
+    standing free of the walls on the +X side of the fence."""
+    fence = _fence_section(p).bounding_box()
+    legs = [s for s in _free_standing(p, params.FLOOR + base.LOOP_H_IN / 2)
+            if s.bounding_box().min.X > fence.max.X]
+    assert legs, "no cable loops standing between the fence and the +X wall"
+    return legs
 
 
 def _pocket_port_face_x(p):
@@ -70,6 +99,27 @@ def _pocket_inlet_face_x(p):
     fence = _fence_section(p)
     return min(f.center().X for f in fence.faces().filter_by(Axis.X)
                if f.normal_at().X > 0)
+
+
+def _end_wall_holes(p, sign):
+    """Bounding boxes of the holes in an end wall, lowest first.  `sign` is
+    the wall's outward X normal: -1 for the cord/escape wall, +1 for the LED
+    wall."""
+    face = (max if sign > 0 else min)(
+        (f for f in p.faces().filter_by(Axis.X) if f.normal_at().X * sign > 0),
+        key=lambda f: f.center().X)
+    return sorted((w.bounding_box() for w in face.inner_wires()),
+                  key=lambda b: b.min.Z)
+
+
+def _cord_and_escape_holes(p):
+    """The two holes in the -X end wall: the cord port, then the escape port
+    directly above it."""
+    holes = _end_wall_holes(p, -1)
+    assert len(holes) == 2, (
+        "expected the cord port and the escape port in the -X end wall, "
+        f"found {len(holes)}")
+    return holes
 
 
 def _ledge_faces(p):
@@ -236,13 +286,10 @@ def test_room_behind_the_inlet_for_the_mains_cord():
 
 def test_cord_port_is_a_closed_hole_in_the_minus_x_wall_on_the_inlet():
     """A rectangular through-hole in the -X end wall, centred on the inlet in
-    Y and spanning its centre height in Z -- not a notch open to the top."""
+    Y and spanning its centre height in Z -- not a notch open to the top.  It
+    is the lower of that wall's two holes; the escape port sits above it."""
     p = base.build_base()
-    outer = min((f for f in p.faces().filter_by(Axis.X) if f.normal_at().X < 0),
-                key=lambda f: f.center().X)
-    inner = outer.inner_wires()
-    assert len(inner) == 1, "expected exactly one hole in the -X end wall"
-    bb = inner[0].bounding_box()
+    bb, _ = _cord_and_escape_holes(p)
     assert abs(bb.size.Y - base.CORD_W) < 1e-6
     assert abs(bb.size.Z - (base.CORD_H + base.CORD_W / 2)) < 1e-6
     assert abs(bb.center().Y) < 1e-6
@@ -284,11 +331,14 @@ def test_cord_port_roof_is_a_self_supporting_peak():
     assert ys[0] < 0 < ys[1], "the two planes should fall away either side"
     apex = max(f.bounding_box().max.Z for f in roof)
     assert abs(apex - (base.CORD_Z0 + base.CORD_H + base.CORD_W / 2)) < 1e-6
-    # the ridge is a line, not a flat: no horizontal ceiling over the port
+    # the ridge is a line, not a flat: no horizontal ceiling over the port,
+    # anywhere between its sill and the apex.  (The escape port stacked above
+    # it does have a flat ceiling -- that one is a bridge, and short enough.)
     flat = [f for f in p.faces().filter_by(Axis.Z)
             if f.normal_at().Z < 0
             and 0 < f.center().X < 2 * params.WALL
-            and abs(f.center().Y) < base.CORD_W / 2]
+            and abs(f.center().Y) < base.CORD_W / 2
+            and base.CORD_Z0 < f.center().Z <= apex + 1e-6]
     assert not flat, "the cord port still has a flat ceiling to bridge"
 
 
@@ -361,16 +411,15 @@ def test_notch_bottom_corners_are_rounded():
 
 
 def test_the_notches_clear_the_cord_port_and_the_led_window():
-    """The notches cut the rim only: both end-wall openings are still closed
-    holes, well below the notch floors."""
+    """The notches cut the rim only: every end-wall opening is still a closed
+    hole, well below the notch floors -- the two stacked ports in the -X wall
+    and the LED window in the +X wall."""
     p = base.build_base()
     floor_z = min(f.center().Z for f in _notch_floors(p))
-    for pick, sign in ((min, -1), (max, +1)):
-        face = pick((f for f in p.faces().filter_by(Axis.X)
-                     if f.normal_at().X * sign > 0), key=lambda f: f.center().X)
-        inner = face.inner_wires()
-        assert len(inner) == 1, "an end-wall opening ran into its notch"
-        assert inner[0].bounding_box().max.Z < floor_z
+    for sign, want in ((-1, 2), (+1, 1)):
+        holes = _end_wall_holes(p, sign)
+        assert len(holes) == want, "an end-wall opening ran into its notch"
+        assert max(h.max.Z for h in holes) < floor_z
 
 
 def test_led_window_is_outboard_of_port_one_in_the_plus_x_wall():
@@ -406,21 +455,134 @@ def test_led_window_is_close_enough_to_the_led_to_see_it():
     assert 0 < throw <= MAX_LED_THROW, f"LED window is {throw:.1f} mm from the port face"
 
 
-def test_escape_port_is_in_the_rear_wall_below_the_ledge():
+def test_escape_port_sits_directly_above_the_cord_port():
+    """The CHRGtime puts the device-cable escape directly above the AC cord
+    port in the same wall.  Measured on the solid: two holes in the -X end
+    wall, on the same centre line, the escape port the upper one."""
     p = base.build_base()
-    rear = min((f for f in p.faces().filter_by(Axis.Y) if f.normal_at().Y < 0),
-               key=lambda f: f.center().Y)
-    inner = rear.inner_wires()
-    assert len(inner) == 1
-    bb = inner[0].bounding_box()
-    assert abs(bb.size.Z - base.ESCAPE_H) < 1e-6
-    assert abs(bb.size.X - (params.USB_A_PLUG.width + 4)) < 1e-6
+    cord, escape = _cord_and_escape_holes(p)
+    assert abs(escape.size.Y - base.ESCAPE_W) < 1e-6
+    assert abs(escape.size.Z - base.ESCAPE_H) < 1e-6
+    assert abs(escape.center().Y) < 1e-6
+    assert abs(escape.center().Y - cord.center().Y) < 1e-6
+    # a ligament of material between the two: the sill sits at least the
+    # 1 mm the design asks for above the cord port's 45 degree peak
+    assert escape.min.Z - cord.max.Z >= 1.0 - 1e-6
+    # sized for a device-end plug: a USB-C overmold with slack either side
+    assert escape.size.Y >= params.USB_C_PLUG.width + 4.0
+    assert escape.size.Z >= params.USB_C_PLUG.height
+    # and its flat ceiling is a bridge the printer can cross
+    assert escape.size.Y <= MAX_BRIDGE
+
+
+def test_escape_port_stays_clear_of_the_rebate_ledge():
+    """It is a closed hole, not a notch: ESCAPE_LEDGE_GAP_MIN of wall is left
+    between its head and the shelf the tray lands on."""
+    p = base.build_base()
+    _, escape = _cord_and_escape_holes(p)
     ledge_z = min(f.center().Z for f in _ledge_faces(p))
-    assert bb.max.Z <= ledge_z - params.WALL + 1e-6
-    # centred on the spare bay, in base coordinates
-    x0, _, w, _ = tray.RIGHT_BAYS["spare"]
-    seat_x = base.tray_seat().position.X
-    assert abs(bb.center().X - (seat_x + x0 + w / 2)) < 1e-6
+    gap = ledge_z - escape.max.Z
+    assert gap >= base.ESCAPE_LEDGE_GAP_MIN - 1e-6, f"only {gap:.2f} mm"
+
+
+def test_escape_port_goes_right_through_into_the_cavity():
+    """A bar the size of the opening passes from outside the -X wall into
+    the cavity, touching nothing -- including the cord port below it."""
+    p = base.build_base()
+    _, escape = _cord_and_escape_holes(p)
+    bar = Pos(-1, escape.center().Y, escape.min.Z + 0.01) * Box(
+        2 * params.WALL + 2, escape.size.Y - 0.02, escape.size.Z - 0.02,
+        align=(Align.MIN, Align.CENTER, Align.MIN))
+    assert bar.bounding_box().max.X > 2 * params.WALL
+    assert (bar & p).volume < 1e-3
+
+
+def test_the_long_walls_carry_no_openings():
+    """The escape port used to break the rear (-Y) wall under the tray's
+    spare bay; now that it is in the -X end wall, both long walls are whole."""
+    p = base.build_base()
+    for sign in (-1, +1):
+        face = (max if sign > 0 else min)(
+            (f for f in p.faces().filter_by(Axis.Y)
+             if f.normal_at().Y * sign > 0), key=lambda f: f.center().Y)
+        assert not face.inner_wires(), f"a hole is left in the {sign:+d}Y wall"
+
+
+# --- cable loops -------------------------------------------------------------
+CABLE_D = 4.0     # a fat charging cable, for the pass-under probe
+LOOP_CLEAR = 2.0  # wall a loop foot must leave round the fence and each tie hole
+
+
+def test_six_cable_loops_stand_over_the_charger_ports():
+    """One inverted-U loop per charger port: its crown is solid and the
+    opening under it is void, probed on the solid at every port centre."""
+    p = base.build_base()
+    assert len(base.LOOP_YS) == 6
+    for y in base.LOOP_YS:
+        crown = Pos(base.LOOP_XC, y,
+                    params.FLOOR + base.LOOP_H_IN + base.LOOP_T / 2) * Box(
+            base.LOOP_T - 0.02, base.LOOP_W_IN - 0.02, base.LOOP_T - 0.02,
+            align=_CTR)
+        assert _is_solid_in(crown, p), f"no loop crown at y = {y:.1f}"
+        window = Pos(base.LOOP_XC, y, params.FLOOR + base.LOOP_H_IN / 2) * Box(
+            base.LOOP_T + 2, base.LOOP_W_IN - 0.02, base.LOOP_H_IN - 0.02,
+            align=_CTR)
+        assert (window & p).volume < 1e-3, f"loop at y = {y:.1f} is blocked"
+
+
+def test_the_loops_are_evenly_spaced_on_the_port_pitch():
+    steps = {round(b - a, 3) for a, b in zip(base.LOOP_YS, base.LOOP_YS[1:])}
+    assert steps == {base.PORT_PITCH}, steps
+
+
+def test_a_cable_passes_under_every_loop():
+    """A CABLE_D cable laid on the cavity floor runs from the charger's port
+    face out to the +X cavity wall under each loop, touching nothing."""
+    p = base.build_base()
+    fence = _fence_section(p).bounding_box()
+    cav = _cavity_bbox(p)
+    for y in base.LOOP_YS:
+        cable = Pos(fence.max.X, y, params.FLOOR) * Box(
+            cav.max.X - fence.max.X, CABLE_D, CABLE_D,
+            align=(Align.MIN, Align.CENTER, Align.MIN))
+        assert (cable & p).volume < 1e-3, f"blocked at y = {y:.1f}"
+
+
+def test_the_loops_clear_the_fence_and_the_tie_holes():
+    """Measured on the solid: the loop row stands off the fence's +X wall,
+    and off the nearest tie hole, by at least LOOP_CLEAR -- so neither a loop
+    foot nor a hole is left standing in the other's wall."""
+    p = base.build_base()
+    legs = [s.bounding_box() for s in _loop_legs(p)]
+    fence = _fence_section(p).bounding_box()
+    gap = min(b.min.X for b in legs) - fence.max.X
+    assert gap >= LOOP_CLEAR, f"only {gap:.2f} mm to the fence"
+    ties = [w.bounding_box() for w in _bottom_wires(p)
+            if abs(w.bounding_box().size.X - base.TIE_D) < 1e-6]
+    assert ties, "no tie holes left to clear"
+    gap = min(t.min.X for t in ties) - max(b.max.X for b in legs)
+    assert gap >= LOOP_CLEAR, f"only {gap:.2f} mm to the nearest tie hole"
+
+
+def test_the_loops_stay_under_the_tray_and_inside_the_cavity():
+    """The loops stop well short of the shelf the tray lands on, and the
+    cavity above them is empty all the way up to it.  The crown height is
+    read off the solid: the highest upward face in the loop row's X band."""
+    p = base.build_base()
+    legs = [s.bounding_box() for s in _loop_legs(p)]
+    cav = _cavity_bbox(p)
+    assert min(b.min.Y for b in legs) > cav.min.Y
+    assert max(b.max.Y for b in legs) < cav.max.Y
+    assert max(b.max.X for b in legs) < cav.max.X
+    lo, hi = min(b.min.X for b in legs), max(b.max.X for b in legs)
+    crown_z = max(f.center().Z for f in p.faces().filter_by(Axis.Z)
+                  if f.normal_at().Z > 0 and lo < f.center().X < hi)
+    ledge_z = min(f.center().Z for f in _ledge_faces(p))
+    assert crown_z < ledge_z - base.CABLE_ROOM, f"crown at {crown_z:.1f}"
+    above = Pos((lo + hi) / 2, 0, crown_z) * Box(
+        hi - lo, cav.size.Y - 0.02, ledge_z - crown_z,
+        align=(Align.CENTER, Align.CENTER, Align.MIN))
+    assert (above & p).volume < 1e-3, "something stands above the loops"
 
 
 def test_walls_below_the_rebate_are_two_walls_thick():
@@ -431,8 +593,10 @@ def test_walls_below_the_rebate_are_two_walls_thick():
     z = CLEAR_Z
     t = 2 * params.WALL
 
+    # CLEAR_Z sits in a 1 mm band between the escape port's head and the
+    # ledge, so the probe has to be short enough to stay inside it.
     def probe(cx, cy, sx, sy):
-        return Pos(cx, cy, z) * Box(sx, sy, 2.0, align=_CTR)
+        return Pos(cx, cy, z) * Box(sx, sy, 0.8, align=_CTR)
 
     y = cav.max.Y + t / 2                      # +Y wall, clear of every cutout
     solid = probe(base.BASE_X / 2 - 40, y, 20, t - 0.02)
@@ -520,7 +684,8 @@ def test_tie_holes_clear_the_foot_recesses():
 def test_no_unsupported_ceilings():
     """Open-top-up.  The cord port's roof is a 45 degree peak, steep enough
     to need no allowlisting at all; the ceilings that do bridge are the
-    escape port, the LED window and the four foot recesses, and every one of
+    escape port above it (ESCAPE_W), the crown of each cable loop
+    (LOOP_W_IN), the LED window and the four foot recesses, and every one of
     them spans MAX_BRIDGE or less.  The notch floors face up, not down."""
     p = base.build_base()
     bed_z = p.bounding_box().min.Z

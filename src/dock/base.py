@@ -13,7 +13,15 @@ running along Y.  The ports look toward +X and the C7 mains inlet looks
 toward -X, so the pocket is `port_to_inlet` deep in X and `port_face_width`
 long in Y.  The mains cord leaves through a closed port in the -X end wall,
 the status LED shows through the +X end wall, and the device cables leave
-through the rear (-Y) escape port under the tray's spare bay.
+through an escape port directly above the cord port in that same -X wall --
+where the Trek CHRGtime puts its own.
+
+The CHRGtime also runs a bar under its tray for the device cables to pass
+beneath, so they leave the charger in a tidy row instead of a knot.  A single
+bar would have to bridge the whole width of the cavity, 150 mm and more, so
+the bar is broken into a row of inverted-U cable loops, one per charger port,
+standing on the cavity floor just past the fence: each has a LOOP_W_IN crown,
+short enough to print unsupported in place.
 
 The tray lands flush with the rim, so each end rim carries a finger notch
 NOTCH_W wide and NOTCH_D deep to lift it out by.  The notches cut the rim
@@ -32,9 +40,10 @@ tray-sized, so the extra goes into the walls); BASE_X never does, because the
 charger's long axis runs along Y.
 
 It prints open-top-up.  The cord port is too wide to bridge, so its roof is
-a 45 degree peak; the only remaining ceilings are the escape port, the LED
-window and the four foot recesses -- all bridges of 20 mm or less.  The
-tie-down holes are through-holes with no ceiling at all.
+a 45 degree peak; the only remaining ceilings are the escape port above it
+(ESCAPE_W), the crown of each cable loop (LOOP_W_IN), the LED window and the
+four foot recesses -- all bridges of 20 mm or less.  The tie-down holes are
+through-holes with no ceiling at all.
 """
 import math
 
@@ -46,8 +55,6 @@ from dock import params as P
 from dock import tray as T
 
 _MIN = (Align.CENTER, Align.CENTER, Align.MIN)
-# rear-wall cutters: centred in X, starting at their given Y and Z
-_REAR = (Align.CENTER, Align.MIN, Align.MIN)
 # -X end-wall cutters: starting at their given X, centred in Y, up from Z
 _END_LO = (Align.MIN, Align.CENTER, Align.MIN)
 # +X end-wall cutters: ending at their given X, centred in Y and Z
@@ -65,7 +72,16 @@ CORD_H = M.CORD_END.height + 2.0   # rectangular part's height (Z)
 CORD_PEAK = CORD_W / 2             # 45 degree roof above it
 CORD_TOP = CORD_H + CORD_PEAK      # total port height
 CORD_Z0 = P.FLOOR + 2.0            # cord port sill above the bed
-ESCAPE_H = 12.0          # escape port height
+# Device-cable escape port: the CHRGtime stacks it directly above the cord
+# port in the same wall, so it does too.  It is sized for a device-end plug
+# to be posted through, sits 1 mm of wall above the cord roof's peak, and its
+# head stops short of the rebate ledge -- it is a closed hole, so the ledge
+# and the rim stay continuous.  Its flat ceiling is an ESCAPE_W bridge.
+ESCAPE_W = P.USB_C_PLUG.width + 5.0   # port width (Y)
+ESCAPE_H = 8.0                        # port height (Z), and its bridge
+ESCAPE_Z0 = CORD_Z0 + CORD_TOP + 1.0  # sill, one wall above the cord peak
+ESCAPE_Z1 = ESCAPE_Z0 + ESCAPE_H      # head, kept clear of the rebate ledge
+ESCAPE_LEDGE_GAP_MIN = 1.0            # wall left between the head and the ledge
 # Finger notches in the rim, one at each end, for lifting the tray out: the
 # tray sits flush with the rim, so without them there is nothing to grip.
 NOTCH_W = 40.0           # notch width (Y), a two-finger grip
@@ -144,16 +160,27 @@ INLET_ROOM = POCKET_MIN_X - CAVITY_MIN_X       # whatever is left over
 # so the offset is subtracted, toward -Y.
 LED_Y = POCKET_MIN_Y + M.CHARGER.port_face_margin - M.CHARGER.led_offset_from_ports
 
-# Escape port: centred on the tray's spare bay, which is the -Y bay of the
-# right column, so the cables from it drop straight out of the rear wall.
-_SPARE_X0, _, _SPARE_W, _ = T.RIGHT_BAYS["spare"]
-ESCAPE_W = P.USB_A_PLUG.width + 4
-ESCAPE_CX = P.WALL + P.CLR_FIT + _SPARE_X0 + _SPARE_W / 2
-ESCAPE_TOP = BASE_H - REBATE_D - P.WALL        # one wall below the ledge
+# --- cable loops ------------------------------------------------------------
+# One inverted U per charger port, standing on the cavity floor, for a cable
+# to route under on its way to the tray's cutout.  The row sits just past the
+# fence's +X wall, before the tie grid; the opening passes a cable, not a
+# plug, and the crown is a LOOP_W_IN bridge the printer crosses unsupported.
+#
+# The loops are on the port pitch, which is narrower than a loop is wide, so
+# each one merges into its neighbours: the row prints as one bar with a
+# window over every port, which is what the CHRGtime's bar does anyway.
+PORT_PITCH = 15.2        # USB-A port pitch along the charger's port face
+LOOP_W_IN = 10.0         # inner opening width (Y), and the crown's bridge
+LOOP_H_IN = 12.0         # inner opening height (Z)
+LOOP_T = 3.0             # loop thickness along X
+LOOP_STANDOFF = 6.0      # loop row to the fence wall, and to the tie grid
+LOOP_XC = POCKET_MAX_X + P.WALL + LOOP_STANDOFF     # just past the fence
+# Port 1's centre sits at POCKET_MIN_Y + port_face_margin, as the LED does.
+LOOP_YS: list[float] = [POCKET_MIN_Y + M.CHARGER.port_face_margin + i * PORT_PITCH
+                        for i in range(6)]
 
 # Wall cutters span the 2*WALL wall plus a sliver either side, no more.
 _WALL_CUT_D = 2 * P.WALL + 0.5
-_REAR_CUT_Y0 = -BASE_Y / 2 - 0.25
 _END_CUT_X0 = -0.25              # -X end wall: start just outside the face
 _END_CUT_X1 = BASE_X + 0.25      # +X end wall: end just outside the face
 # Rim cutters go through the WALL-thick rim and a sliver into the rebate.
@@ -174,13 +201,19 @@ def _grid_axis(lo: float, hi: float, pitch: float) -> list[float]:
 
 
 def _tie_grid() -> list[tuple[float, float]]:
-    """Tie-down hole centres: the free floor between the fence's +X wall and
-    the +X cavity wall, full cavity Y, TIE_MARGIN in from each.
+    """Tie-down hole centres: the free floor between the cable loops and the
+    +X cavity wall, full cavity Y, TIE_MARGIN in from each.
+
+    The grid used to start TIE_MARGIN past the fence; the loops now stand in
+    that gap, so the start is pushed on by the loop row's own thickness and
+    standoff.  That keeps every hole clear of a loop foot by more than the
+    2 mm a hole needs to have wall around it.
 
     Points that would break into a foot recess are dropped -- a hole there
     would leave 1 mm of floor and a foot that cannot seat flat.
     """
-    xs = _grid_axis(FENCE_MAX_X + TIE_MARGIN, CAVITY_MAX_X - TIE_MARGIN, TIE_PITCH)
+    xs = _grid_axis(FENCE_MAX_X + TIE_MARGIN + LOOP_T + LOOP_STANDOFF,
+                    CAVITY_MAX_X - TIE_MARGIN, TIE_PITCH)
     ys = _grid_axis(CAVITY_MIN_Y + TIE_MARGIN, CAVITY_MAX_Y - TIE_MARGIN, TIE_PITCH)
     keep_out = FOOT_R + TIE_D / 2 + 1.0
     return [(x, y) for x in xs for y in ys
@@ -242,6 +275,18 @@ def _fence() -> Part:
     return fence
 
 
+def _loop() -> Part:
+    """One cable loop: an inverted U standing on Z = 0, centred on X and Y,
+    LOOP_T thick along X, with a LOOP_W_IN x LOOP_H_IN opening through it.
+
+    The crown is the only ceiling it adds, and LOOP_W_IN is well inside the
+    20 mm the printer bridges unsupported, so the loop prints in place with
+    the base -- there is nothing to assemble and nothing to support.
+    """
+    outer = Box(LOOP_T, LOOP_W_IN + 2 * LOOP_T, LOOP_H_IN + LOOP_T, align=_MIN)
+    return outer - Box(LOOP_T + 2, LOOP_W_IN, LOOP_H_IN, align=_MIN)
+
+
 def build_base() -> Part:
     """The base, underside-down on the bed: X 0..BASE_X, Y centred, Z 0..BASE_H."""
     cx = BASE_X / 2
@@ -260,6 +305,12 @@ def build_base() -> Part:
 
     body += Pos(FENCE_CX, 0, 0) * _fence()
 
+    # Cable loops, one per charger port, fused to the cavity floor just past
+    # the fence: each device cable drops out of its plug, runs under its loop
+    # and up through its bay's cutout in the tray.
+    for y in LOOP_YS:
+        body += Pos(LOOP_XC, y, P.FLOOR) * _loop()
+
     # -X end wall: AC cord port facing the C7 inlet.  A closed hole, not a
     # notch open to the top: the rim and the rebate ledge stay continuous all
     # round, which is what keeps a 2.4 mm rim stiff.  Its sill is 2 mm above
@@ -271,10 +322,12 @@ def build_base() -> Part:
     body -= Pos(_END_CUT_X1, LED_Y, P.FLOOR + M.CHARGER.height / 2) * Box(
         _WALL_CUT_D, LED_W, LED_H, align=_END_HI)
 
-    # Rear (-Y) wall: cable escape port, one wall below the rebate so the
-    # ledge stays continuous, centred on the tray's spare bay.
-    body -= Pos(ESCAPE_CX, _REAR_CUT_Y0, ESCAPE_TOP - ESCAPE_H) * Box(
-        ESCAPE_W, _WALL_CUT_D, ESCAPE_H, align=_REAR)
+    # -X end wall again, directly above the cord port: the device-cable
+    # escape port.  Its sill clears the cord roof's peak by 1 mm and its head
+    # stops ESCAPE_LEDGE_GAP_MIN below the rebate ledge, so this is a closed
+    # hole like the cord port and the ledge stays continuous.
+    body -= Pos(_END_CUT_X0, 0, ESCAPE_Z0) * Box(
+        _WALL_CUT_D, ESCAPE_W, ESCAPE_H, align=_END_LO)
 
     # Lift-out notches: the tray sits flush with the rim, so a finger notch
     # at each end is the only way to get hold of it.  They cut the rim only
