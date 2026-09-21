@@ -18,10 +18,11 @@ from dock import divider as D
 from dock import measurements as m
 from dock import params as P
 
-# Cable cutout through the plate: (along the bay, across the bay).  22 mm of
-# run clears a USB-A overmold (P.USB_A_PLUG.length 20) laid flat, and 12 mm
-# across clears its 15 mm width once the plug is turned in line with the bay.
-CUTOUT = (28.0, 16.0)   # v2.1: was 22 x 12, plug plus cable bend
+# Cable cutout through the plate: (along the bay, across the bay).  The run
+# clears a USB-A overmold (P.USB_A_PLUG.length) laid flat with room behind it
+# for the cable to bend; the width clears the same overmold across
+# (P.USB_A_PLUG.width) once the plug is turned in line with the bay.
+CUTOUT = (28.0, 16.0)   # v2.1: was 22 x 12, too tight once the cable bends
 CUTOUT_INSET = 2.0   # cutout edge to the bay's end wall
 
 # Bays whose device charges through a socket on its UNDERSIDE (the Ion Pro RT)
@@ -41,26 +42,29 @@ RAIL_WALL = P.WALL + D.RAIL_D + P.CLR_RAIL
 
 # --- bay interiors -----------------------------------------------------------
 # Left bay: ROAM lying face-up, long axis along Y, cutout at the -Y end.
-_LEFT_W = m.ROAM.width + 2 * P.CLR_BAY                      # 59.0
-_LEFT_L = m.ROAM.length + 2 * P.CLR_BAY + CUTOUT[0]         # 124.0
+_LEFT_W = m.ROAM.width + 2 * P.CLR_BAY
+_LEFT_L = m.ROAM.length + 2 * P.CLR_BAY + CUTOUT[0]   # device plus its cutout
 
 # Right column: bays run along X, cutouts at the +X end.  The column is as
 # wide as the longest device plus its cutout.
-RIGHT_BAY_W = max(d.length for d in (m.ION, m.TRACKR)) + 2 * P.CLR_BAY + CUTOUT[0]   # 130.5
+RIGHT_BAY_W = max(d.length for d in (m.ION, m.TRACKR)) + 2 * P.CLR_BAY + CUTOUT[0]
 
 # Stacked -Y to +Y, per the spec: spare at the bottom, TRACKR, Ion at the top.
 _SPARE_L = 46.0   # no device chosen yet (v2.1: was 40)
-_TRACKR_L = m.TRACKR.width + 2 * P.CLR_BAY                  # 43.1
-_ION_L = m.ION.width + 2 * P.CLR_BAY                        # 40.7
-_RIGHT_L = _SPARE_L + D.THICK + _TRACKR_L + D.THICK + _ION_L   # 127.8
+_TRACKR_L = m.TRACKR.width + 2 * P.CLR_BAY
+_ION_L = m.ION.width + 2 * P.CLR_BAY
+_RIGHT_L = _SPARE_L + D.THICK + _TRACKR_L + D.THICK + _ION_L   # bays + dividers
 
 # The left bay is stretched to the right column's height; its cutout stays at
 # the -Y end, so the ROAM just has more room behind it.
 _BAY_L = max(_LEFT_L, _RIGHT_L)
 
-TRAY_X = P.WALL + _LEFT_W + RAIL_WALL + RIGHT_BAY_W + RAIL_WALL   # 201.1
-TRAY_Y = 2 * P.WALL + _BAY_L                                      # 132.6
-TRAY_H = P.TRAY_PLATE + P.BAY_DEPTH                               # 35.0
+# No frozen numbers on these three: every one of them moves when a
+# measurement or a design rule does, and they go stale silently.  The current
+# values are in the build report that scripts/export_all.py prints.
+TRAY_X = P.WALL + _LEFT_W + RAIL_WALL + RIGHT_BAY_W + RAIL_WALL
+TRAY_Y = 2 * P.WALL + _BAY_L
+TRAY_H = P.TRAY_PLATE + P.BAY_DEPTH
 
 _Y0 = -TRAY_Y / 2 + P.WALL          # inner face of the -Y wall
 _LEFT_X0 = P.WALL
@@ -81,7 +85,8 @@ RIGHT_BAYS: dict[str, tuple[float, float, float, float]] = {
     # The Ion charges through a socket low in its tail, and MICRO_PLUG is
     # taller than the plate: its overmold does not stand on the plate at all
     # but hangs in the cable cutout, which runs clear through TRAY_PLATE into
-    # the base's cable room, leaving about 1 mm of it above the bay floor.
+    # the base's cable room, so the overmold hangs below the bay floor
+    # instead of standing on it.
     "ion": (_RIGHT_X0, _ion_y, RIGHT_BAY_W, _ION_L),
 }
 

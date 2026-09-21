@@ -322,14 +322,15 @@ def test_cord_port_is_a_closed_hole_in_the_minus_x_wall_on_the_inlet():
 
 
 def test_the_moulded_cord_end_passes_through_the_cord_port():
-    """The port is sized from the cord end that has to pass it, not from a
-    round number: a block the size of CORD_END slides in through the -X wall
-    and out into the cavity, touching nothing on the way."""
+    """The port is sized from the cord end that has to pass it, and placed on
+    the inlet that end has to reach: a block the size of CORD_END, held at
+    the inlet's own centre height, slides in through the -X wall and out into
+    the cavity touching nothing.  Nothing has to lift it or tilt it."""
     p = base.build_base()
     end = m.CORD_END
-    z0 = base.CORD_Z0 + (base.CORD_H - end.height) / 2
-    probe = Pos(-5, 0, z0) * Box(end.length, end.width, end.height,
-                                 align=(Align.MIN, Align.CENTER, Align.MIN))
+    probe = Pos(-5, 0, params.FLOOR + m.CHARGER.inlet_center_z) * Box(
+        end.length, end.width, end.height,
+        align=(Align.MIN, Align.CENTER, Align.CENTER))
     assert probe.bounding_box().min.X < 0 < 2 * params.WALL < probe.bounding_box().max.X
     assert (probe & p).volume < 1e-3
 
@@ -349,6 +350,20 @@ def test_cord_port_roof_is_a_self_supporting_peak():
     assert ys[0] < 0 < ys[1], "the two planes should fall away either side"
     apex = max(f.bounding_box().max.Z for f in roof)
     assert abs(apex - (base.CORD_Z0 + base.CORD_H + base.CORD_W / 2)) < 1e-6
+    # The rectangular opening under the peak is centred on the inlet, so the
+    # cord end goes in level instead of being pushed up toward the ridge --
+    # measured between the sill and the shoulder the roof springs from.
+    sill = _cord_and_escape_holes(p)[0].min.Z
+    shoulder = min(f.bounding_box().min.Z for f in roof)
+    inlet_z = params.FLOOR + m.CHARGER.inlet_center_z
+    if base.CORD_Z0 > base.CORD_Z0_MIN + 1e-9:
+        assert abs((sill + shoulder) / 2 - inlet_z) < 1e-6, (
+            f"opening {sill:.2f}..{shoulder:.2f} is not centred on {inlet_z:.2f}")
+    else:
+        # A low inlet would drive the sill into the cavity floor; it is
+        # clamped there instead, and the inlet still has to fall inside.
+        assert abs(sill - base.CORD_Z0_MIN) < 1e-6
+        assert sill < inlet_z < shoulder
     # the ridge is a line, not a flat: no horizontal ceiling over the port,
     # anywhere between its sill and the apex.  (The escape port stacked above
     # it does have a flat ceiling -- that one is a bridge, and short enough.)

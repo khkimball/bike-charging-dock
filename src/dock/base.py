@@ -74,7 +74,12 @@ CORD_W = M.CORD_END.width + 2.0    # port width (Y)
 CORD_H = M.CORD_END.height + 2.0   # rectangular part's height (Z)
 CORD_PEAK = CORD_W / 2             # 45 degree roof above it
 CORD_TOP = CORD_H + CORD_PEAK      # total port height
-CORD_Z0 = P.FLOOR + 2.0            # cord port sill above the bed
+# The opening is centred on the inlet it has to reach, so the moulded cord
+# end goes in level rather than being pushed up toward the ridge, where the
+# port is already narrowing.  Clamped so that a low inlet cannot drive the
+# sill down onto the cavity floor or under it.
+CORD_Z0_MIN = P.FLOOR + 1.0        # lowest sill worth cutting
+CORD_Z0 = max(P.FLOOR + M.CHARGER.inlet_center_z - CORD_H / 2, CORD_Z0_MIN)
 # Device-cable escape port: the CHRGtime stacks it directly above the cord
 # port in the same wall, so it does too.  It is sized for a device-end plug
 # to be posted through, sits 1 mm of wall above the cord roof's peak, and its
@@ -174,11 +179,18 @@ LED_Y = (PORT_Y1 - M.CHARGER.led_offset_from_ports) if HAS_LED else None
 # cable, not a plug, and the crown is a LOOP_W_IN bridge the printer crosses
 # unsupported.
 #
-# LOOP_STANDOFF is measured from the fence's +X wall, and it is set by the
-# plugs, not by the fence: six USB-A overmolds stand in front of the port
-# face, so the row has to start past P.USB_A_PLUG.length plus room for the
-# cable to turn down out of the plug.  A row nearer than that is a row you
-# cannot plug a cable in through.
+# LOOP_STANDOFF runs from the fence's +X wall to the row's CENTRELINE, not
+# to its face, because that is what LOOP_XC is.  The clearances that matter
+# are therefore one half-thickness shorter:
+#
+#     past the fence wall   LOOP_STANDOFF - LOOP_T / 2
+#     past a plugged-in end P.WALL + LOOP_STANDOFF - LOOP_T / 2
+#                           - P.USB_A_PLUG.length
+#
+# and it is the second one that sets it.  Six overmolds stand in front of
+# the port face, so a row nearer than their length is a row you cannot plug
+# a cable in through; the spare beyond that is room for the cable to turn
+# down out of the plug.  test_base.py measures both gaps on the solid.
 #
 # The loops are on the port pitch, which is narrower than a loop is wide, so
 # each one merges into its neighbours: the row prints as one bar with a
@@ -187,7 +199,7 @@ PORT_PITCH = M.CHARGER.port_pitch   # centre to centre along the port face
 LOOP_W_IN = 10.0         # inner opening width (Y), and the crown's bridge
 LOOP_H_IN = 12.0         # inner opening height (Z)
 LOOP_T = 3.0             # loop thickness along X
-LOOP_STANDOFF = 24.0     # fence wall to loop row: plug overmold plus its bend
+LOOP_STANDOFF = 24.0     # fence wall to the loop row's centreline
 LOOP_XC = POCKET_MAX_X + P.WALL + LOOP_STANDOFF     # clear of the plug bodies
 LOOP_HALF_W = LOOP_W_IN / 2 + LOOP_T                # loop half width in Y
 # One loop per port, on the port centres themselves.
@@ -353,8 +365,9 @@ def build_base() -> Part:
 
     # -X end wall: AC cord port facing the mains inlet.  A closed hole, not a
     # notch open to the top: the rim and the rebate ledge stay continuous all
-    # round, which is what keeps a 2.4 mm rim stiff.  Its sill is 2 mm above
-    # the cavity floor and its roof is a 45 degree peak, not a bridge.
+    # round, which is what keeps a 2.4 mm rim stiff.  Its rectangular opening
+    # is centred on the inlet's height and its roof is a 45 degree peak, not
+    # a bridge.
     body -= Pos(_END_CUT_X0, 0, CORD_Z0) * _cord_cutter(_WALL_CUT_D)
 
     # +X end wall: LED window, centred on the LED in Y and on the charger's

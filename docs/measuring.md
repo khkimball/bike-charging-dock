@@ -41,7 +41,11 @@ charger flat, ports toward you.
   the error out.  Anker does not publish it; the file has a NOMINAL 12.5 with
   the row centred on the face, which is where `port_face_margin` comes from
   too.  The base's cable loops sit one per port on this pitch, so it is worth
-  getting right.
+  getting right.  A loop is `LOOP_W_IN + 2 * LOOP_T` = 16 mm wide, so the
+  posts left between two windows are `port_pitch - LOOP_W_IN`: if the
+  measured pitch comes in under **12.4 mm**, drop `base.LOOP_W_IN` to keep
+  those posts at least `WALL` (2.4 mm) thick.  There is a test that fails if
+  you forget.
 - inlet_center_z: bottom of charger to centre of the AC inlet.  NOMINAL is
   half the body height.  The base's cord port has to span this, and the port
   narrows into a 45 degree peak above its rectangular part, so an inlet
@@ -70,6 +74,6 @@ A C7 end is nominally 24 x 14 mm; check yours, some are fatter.
   the USB-A end. Update `USB_A_PLUG`, `USB_C_PLUG`, `MICRO_PLUG` with the
   largest of each.
 - Nothing is cut to these: every bay gets the same cable cutout
-  (`tray.CUTOUT`, 22 x 12 through the plate). They are the check that the
+  (`tray.CUTOUT`, 28 x 16 through the plate). They are the check that the
   cutout is big enough -- if a remeasured overmold outgrows it, widen the
   cutout.
