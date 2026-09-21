@@ -52,8 +52,13 @@ cover. v1 stood devices upright in shaped cradles; that is replaced.
   205 × 140 mm, base height about 75 mm.
 - Base height = FLOOR + charger height + CABLE_ROOM 15 + tray height (plate +
   bay depth).
-- Charger pocket: port_to_inlet + 2·CLR_FIT by port_face_width + 2·CLR_FIT,
-  ports toward +X with 40 mm plug room, inlet toward −X. Cavity must clear the
+- Charger (Anker A2154 since 2026-09-21; 3 USB-C + 3 USB-A, no LED): its back
+  sits against the −X end wall (2 mm slack) with the fence a U of two sides and
+  a front; the AC cord plugs in from outside through the cord port straight
+  into the inlet; ports face the cavity centre with ≥ 40 mm plug room. A row of
+  six cable loops (a comb, one window per port) stands 24 mm in front of the
+  fence; cables run under it toward the centre, then up through the cutouts.
+  The escape port sits directly above the cord port in the same wall. Cavity must clear the
   fence by ≥ 2 mm per side in Y; the tray's Y is driven by the bays, and the
   base grows only if the fence needs it.
 - Measurements: ROAM 96 × 53 × 24 (published), ION 102.5 × 30.2 × 34.7
