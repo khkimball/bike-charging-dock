@@ -21,25 +21,32 @@ the +Y (back) wall of its bay, clear of its cable cutout at the -Y end; the
 Ion and Trackr sit against the partition wall, clear of their cutouts at the
 +X end.
 
+The base is built round the Anker A2154 (77 x 82 x 33 mm, six ports in one
+row, no status LED): change `measurements.CHARGER` and the fence, the port
+and inlet room, and the cable loops all follow from it.
+
 The base prints open-top-up. The AC cord port in the -X end wall is sized
 from the moulded C7 cord end, which makes it too wide to bridge, so it is
 roofed with a 45 degree peak instead: it needs no support. Directly above it
 in the same wall -- where the Trek CHRGtime puts its own -- sits the device
 cable escape port, a closed 16 x 8 mm hole that clears the peak of the cord
-roof by 1 mm and stops 1 mm below the rebate ledge. The ceilings that do
-bridge are that escape port (16 mm), the crown of each cable loop (10 mm),
-the LED window in the +X end wall (8 mm) and the four foot recesses in the
-underside -- all short bridges the printer clears without supports. Both -X
-wall ports are closed holes rather than notches, so the rim and the rebate
-ledge stay continuous all the way round.
+roof by 1 mm and stops well below the rebate ledge. The ceilings that do
+bridge are that escape port (16 mm), the crown of each cable loop (10 mm)
+and the four foot recesses in the underside -- all short bridges the printer
+clears without supports. There is no LED window in the +X end wall: the
+A2154 has no status LED, so that wall is blind. Both -X wall ports are
+closed holes rather than notches, so the rim and the rebate ledge stay
+continuous all the way round.
 
 Inside the cavity, a row of six inverted-U cable loops stands on the floor
 clear of the plugs in front of the charger -- 24 mm out from the fence wall,
 about 5 mm past the end of a USB-A overmold -- one over each charger port and
-on the same 15.2 mm port pitch. They are the CHRGtime's under-tray cable bar,
+on the same 12.5 mm port pitch. They are the CHRGtime's under-tray cable bar,
 printed in place: each has a 10 mm wide by 12 mm tall window, the row rises
 15 mm off the cavity floor (the tray seats 41 mm up, so they are nowhere near
-it) and nothing about them needs support. Route each device cable out of its
+it) and nothing about them needs support. A loop is 16 mm wide and the pitch
+is 12.5, so the row prints as one continuous bar, with a window over each
+port and a 2.5 mm post between windows. Route each device cable out of its
 charger port, under its loop and up through its bay's cable cutout in the
 tray; the tie-down grid runs down both sides of the row and takes a cable tie
 for anything that will not stay put.

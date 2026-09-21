@@ -26,18 +26,34 @@ Lies flat on its side, not standing on its tail.
 - length, width, thickness of the body without the mount clip, lying flat
 - Published values now in the file: `Slab(89.9, 37.1, 29.1)`.
 
-## Anker PowerPort 6 (`CHARGER`)
-Lay the charger flat, ports toward you.  The six USB-A ports are on one long
-face; the C7 mains inlet is on the opposite long face.
-- port_face_width: the long dimension -- the face carrying the six ports
-- port_to_inlet: the short horizontal dimension, port face to inlet face
+## Anker A2154 112 W six-port charger (`CHARGER`)
+Published: 77 x 82 x 33 mm, 302 g; three USB-C and three USB-A in one row on
+the front face; AC inlet centred on the back face; no status LED.  Lay the
+charger flat, ports toward you.
+- port_face_width: the long horizontal dimension -- the face carrying the
+  six ports
+- port_to_inlet: the other horizontal dimension, port face to inlet face
 - height: the remaining (vertical) dimension with the charger lying flat
-- port_face_margin: charger edge to centre of the first USB port, measured
-  along the port face
-- inlet_center_z: bottom of charger to centre of the C7 inlet
-- led_offset_from_ports: distance from port 1's centre to the LED centre,
-  measured along the port face *away* from the other ports.  The LED is at
-  the end of the row, outboard of port 1, not between the ports.
+- port_face_margin: charger edge to centre of the first port, measured along
+  the port face
+- port_pitch: centre to centre between adjacent ports.  Measure port 1 to
+  port 6 and divide by five rather than measuring one gap -- five gaps share
+  the error out.  Anker does not publish it; the file has a NOMINAL 12.5 with
+  the row centred on the face, which is where `port_face_margin` comes from
+  too.  The base's cable loops sit one per port on this pitch, so it is worth
+  getting right.
+- inlet_center_z: bottom of charger to centre of the AC inlet.  NOMINAL is
+  half the body height.  The base's cord port has to span this, and the port
+  narrows into a 45 degree peak above its rectangular part, so an inlet
+  higher than expected is a real failure -- `test_base.py` measures it.
+- led_offset_from_ports: `None` when the charger has no status LED.  The
+  A2154 has none, and the base then cuts no window and leaves its +X end
+  wall blind.  If yours does have one, measure from port 1's centre to the
+  LED centre along the port face, *away* from the other ports: the LED sits
+  at the end of the row, outboard of port 1, not between the ports.
+- Check what the AC inlet actually is while you have the charger in hand.
+  `CORD_END` below is still sized for an IEC C7 "figure of 8"; a C13 or C5
+  inlet is a different shape and the cord port must be resized from it.
 
 ## Mains cord end (`CORD_END`, a `params.Plug`)
 The moulded end of the charger's mains cord -- an IEC C7 "figure of 8"

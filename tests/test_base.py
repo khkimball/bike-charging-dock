@@ -2,6 +2,7 @@
 bounding boxes and probe intersections, never a restatement of a constant."""
 import math
 
+import pytest
 from build123d import Align, Axis, Box, Cylinder, GeomType, Pos, fillet
 
 from dock import base, params, tray
@@ -302,6 +303,15 @@ def test_cord_port_is_a_closed_hole_in_the_minus_x_wall_on_the_inlet():
     assert abs(bb.size.Z - (base.CORD_H + base.CORD_W / 2)) < 1e-6
     assert abs(bb.center().Y) < 1e-6
     assert bb.min.Z < params.FLOOR + m.CHARGER.inlet_center_z < bb.max.Z
+    # ... and at full width there, not somewhere up in the 45 degree peak:
+    # a bar across the whole opening at the inlet's centre height passes
+    # through the wall.  A taller charger walks its inlet up toward the peak,
+    # and this is what notices.
+    inlet_z = params.FLOOR + m.CHARGER.inlet_center_z
+    span = Pos(-1, 0, inlet_z) * Box(
+        2 * params.WALL + 2, base.CORD_W - 0.02, 0.4,
+        align=(Align.MIN, Align.CENTER, Align.CENTER))
+    assert (span & p).volume < 1e-3, "the cord port does not reach the inlet"
     # closed: it stops well below the rebate ledge
     assert bb.max.Z <= base.BASE_H - base.REBATE_D - 1e-6
     # ... and it really goes through: a plug-sized bar passes from outside in
@@ -418,18 +428,19 @@ def test_notch_bottom_corners_are_rounded():
     assert len(arcs) == 4, f"expected two rounded corners per notch, got {len(arcs)}"
 
 
-def test_the_notches_clear_the_cord_port_and_the_led_window():
+def test_the_notches_clear_the_end_wall_openings():
     """The notches cut the rim only: every end-wall opening is still a closed
     hole, well below the notch floors -- the two stacked ports in the -X wall
-    and the LED window in the +X wall."""
+    and, when the charger has an LED, its window in the +X wall."""
     p = base.build_base()
     floor_z = min(f.center().Z for f in _notch_floors(p))
-    for sign, want in ((-1, 2), (+1, 1)):
+    for sign, want in ((-1, 2), (+1, 1 if base.HAS_LED else 0)):
         holes = _end_wall_holes(p, sign)
         assert len(holes) == want, "an end-wall opening ran into its notch"
-        assert max(h.max.Z for h in holes) < floor_z
+        assert all(h.max.Z < floor_z for h in holes)
 
 
+@pytest.mark.skipif(not base.HAS_LED, reason="this charger has no status LED")
 def test_led_window_is_outboard_of_port_one_in_the_plus_x_wall():
     p = base.build_base()
     outer = max((f for f in p.faces().filter_by(Axis.X) if f.normal_at().X > 0),
@@ -455,12 +466,23 @@ def test_led_window_is_outboard_of_port_one_in_the_plus_x_wall():
 MAX_LED_THROW = 45.0
 
 
+@pytest.mark.skipif(not base.HAS_LED, reason="this charger has no status LED")
 def test_led_window_is_close_enough_to_the_led_to_see_it():
     """Measured on the solid: the fence is placed from the +X side, so the
     charger's port face (which carries the LED) is near the +X end wall."""
     p = base.build_base()
     throw = p.bounding_box().max.X - _pocket_port_face_x(p)
     assert 0 < throw <= MAX_LED_THROW, f"LED window is {throw:.1f} mm from the port face"
+
+
+@pytest.mark.skipif(base.HAS_LED, reason="this charger has a status LED")
+def test_no_led_window_when_the_charger_has_no_led():
+    """A charger with no LED gets no window cut for one: the +X end wall is
+    blind, and the only openings left in the part are the two in the -X wall
+    and the two rim notches."""
+    p = base.build_base()
+    assert not _end_wall_holes(p, +1)
+    assert len(_end_wall_holes(p, -1)) == 2
 
 
 def test_escape_port_sits_directly_above_the_cord_port():
@@ -539,6 +561,22 @@ def test_six_cable_loops_stand_over_the_charger_ports():
         assert (window & p).volume < 1e-3, f"loop at y = {y:.1f} is blocked"
 
 
+def test_the_posts_between_the_loops_are_thick_enough_to_print():
+    """On a port pitch narrower than a loop is wide the loops overlap, and
+    what is left between two windows is a post PORT_PITCH - LOOP_W_IN thick.
+    It has to be solid, and at least a wall thick, or the row prints as a
+    row of stripes."""
+    p = base.build_base()
+    post_w = base.PORT_PITCH - base.LOOP_W_IN
+    assert post_w >= params.WALL, f"{post_w:.2f} mm post, thinner than a wall"
+    for a, b in zip(base.LOOP_YS, base.LOOP_YS[1:]):
+        post = Pos(base.LOOP_XC, (a + b) / 2,
+                   params.FLOOR + base.LOOP_H_IN / 2) * Box(
+            base.LOOP_T - 0.02, post_w - 0.02, base.LOOP_H_IN - 0.02,
+            align=_CTR)
+        assert _is_solid_in(post, p), f"no post at y = {(a + b) / 2:.1f}"
+
+
 def test_the_loops_are_evenly_spaced_on_the_port_pitch():
     steps = {round(b - a, 3) for a, b in zip(base.LOOP_YS, base.LOOP_YS[1:])}
     assert steps == {base.PORT_PITCH}, steps
@@ -546,9 +584,14 @@ def test_the_loops_are_evenly_spaced_on_the_port_pitch():
 
 def test_a_plug_in_every_charger_port_clears_the_loops():
     """The loop row stands beyond the plugs, not in them.  A USB-A overmold
-    butted against the charger's port face at each port centre, at the
-    charger's mid height, touches nothing in the base -- not a loop, not a
-    wall.  This is what the row's standoff is actually set by."""
+    -- the largest of the plug envelopes, used for all six ports -- butted
+    against the charger's port face at each port centre, at the charger's mid
+    height, touches nothing in the base: not a loop, not the fence, not a
+    wall.  This is what the row's standoff is actually set by.
+
+    Deliberately plug against base only, never plug against plug: on a port
+    pitch narrower than an overmold the plugs foul each other, which is the
+    charger's problem and the cable set's, not the dock's."""
     p = base.build_base()
     port_x = _pocket_port_face_x(p)
     plug = params.USB_A_PLUG

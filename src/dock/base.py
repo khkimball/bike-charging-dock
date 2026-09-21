@@ -1,5 +1,5 @@
-"""Base: the rounded-corner lower box.  It hides the Anker PowerPort 6 and
-the cable slack, and the tray drops into a rebate in its top rim.
+"""Base: the rounded-corner lower box.  It hides the charger and the cable
+slack, and the tray drops into a rebate in its top rim.
 
 The base has its own origin: the box spans X = 0..BASE_X, is centred on Y,
 and its underside is the build-plate face at Z = 0.  The tray has its own
@@ -8,13 +8,16 @@ rim, so the tray must be moved by `tray_seat()` to sit in it.  Both parts
 print underside-down on their own origins; `tray_seat()` is for assembly
 views and fit checks only.
 
-Charger orientation: the PowerPort 6 lies flat with its long, six-port face
-running along Y.  The ports look toward +X and the C7 mains inlet looks
-toward -X, so the pocket is `port_to_inlet` deep in X and `port_face_width`
-long in Y.  The mains cord leaves through a closed port in the -X end wall,
-the status LED shows through the +X end wall, and the device cables leave
-through an escape port directly above the cord port in that same -X wall --
-where the Trek CHRGtime puts its own.
+Charger orientation: the charger lies flat with its long, six-port face
+running along Y.  The ports look toward +X and the mains inlet looks toward
+-X, so the pocket is `port_to_inlet` deep in X and `port_face_width` long in
+Y.  The mains cord leaves through a closed port in the -X end wall, and the
+device cables leave through an escape port directly above the cord port in
+that same wall -- where the Trek CHRGtime puts its own.  A charger with a
+status LED gets a window for it in the +X end wall; one without (the A2154
+has no LED at all) leaves that wall blind.  Everything in here is derived
+from `measurements.CHARGER`, port pitch included, so swapping the charger is
+a measurement change and not a geometry change.
 
 The CHRGtime also runs a bar under its tray for the device cables to pass
 beneath, so they leave the charger in a tidy row instead of a knot.  A single
@@ -41,9 +44,9 @@ charger's long axis runs along Y.
 
 It prints open-top-up.  The cord port is too wide to bridge, so its roof is
 a 45 degree peak; the only remaining ceilings are the escape port above it
-(ESCAPE_W), the crown of each cable loop (LOOP_W_IN), the LED window and the
-four foot recesses -- all bridges of 20 mm or less.  The tie-down holes are
-through-holes with no ceiling at all.
+(ESCAPE_W), the crown of each cable loop (LOOP_W_IN), the LED window when
+there is one, and the four foot recesses -- all bridges of 20 mm or less.
+The tie-down holes are through-holes with no ceiling at all.
 """
 import math
 
@@ -88,8 +91,11 @@ NOTCH_W = 40.0           # notch width (Y), a two-finger grip
 NOTCH_D = 15.0           # how far down from the rim it cuts
 NOTCH_R = 5.0            # its bottom corners, rounded so the rim cannot split
 # LED window: wider than it is tall.  The LED's position along the port face
-# is the least certain measurement on the charger, so the window is widened
-# in Y to catch it and kept short in Z, where its ceiling has to bridge.
+# is the least certain measurement on a charger that has one, so the window
+# is widened in Y to catch it and kept short in Z, where its ceiling has to
+# bridge.  Cut only when HAS_LED; there is no point putting a hole in the
+# +X end wall of a dock whose charger has nothing to show through it.
+HAS_LED = M.CHARGER.led_offset_from_ports is not None
 LED_W = 8.0              # window width (Y)
 LED_H = 4.0              # window height (Z), and its bridge
 FOOT_R = 5.0             # foot recess radius (Ø10 pads)
@@ -139,10 +145,11 @@ LEDGE_W = min((REBATE_X - CAVITY_X) / 2, (REBATE_Y - CAVITY_Y) / 2)
 BEARING_W = LEDGE_W - P.CLR_FIT - P.CHAMFER
 
 # --- fence placement --------------------------------------------------------
-# The fence is placed from the +X (port) side: the status LED is on the port
-# face and shows through the +X end wall, so the charger sits as close to that
-# wall as the USB plugs allow.  The leftover length lands on the inlet side,
-# where a cord lying along the floor does not care.
+# The fence is placed from the +X (port) side: the plugs are what needs the
+# room, so the charger sits as close to that wall as they allow and the
+# leftover length lands on the inlet side, where a cord lying along the floor
+# does not care.  It keeps a status LED, which is on the port face, near its
+# window too, on a charger that has one.
 FENCE_CX = CAVITY_MAX_X - PORT_PLUG_ROOM_MIN - POCKET_X / 2
 POCKET_MIN_X = FENCE_CX - POCKET_X / 2   # the inlet face of the charger
 POCKET_MAX_X = FENCE_CX + POCKET_X / 2   # the port face of the charger
@@ -155,10 +162,11 @@ PORT_PLUG_ROOM = CAVITY_MAX_X - POCKET_MAX_X   # == PORT_PLUG_ROOM_MIN
 INLET_ROOM = POCKET_MIN_X - CAVITY_MIN_X       # whatever is left over
 
 # The ports are numbered from the -Y end of the port face, so port 1's centre
-# sits at POCKET_MIN_Y + port_face_margin.  On the PowerPort 6 the LED is at
-# the *end* of the port row, outboard of port 1 -- away from the other five --
-# so the offset is subtracted, toward -Y.
-LED_Y = POCKET_MIN_Y + M.CHARGER.port_face_margin - M.CHARGER.led_offset_from_ports
+# sits at POCKET_MIN_Y + port_face_margin.  Where there is an LED it is at
+# the *end* of the port row, outboard of port 1 -- away from the other five
+# -- so the offset is subtracted, toward -Y.
+PORT_Y1 = POCKET_MIN_Y + M.CHARGER.port_face_margin
+LED_Y = (PORT_Y1 - M.CHARGER.led_offset_from_ports) if HAS_LED else None
 
 # --- cable loops ------------------------------------------------------------
 # One inverted U per charger port, standing on the cavity floor, for a cable
@@ -175,16 +183,15 @@ LED_Y = POCKET_MIN_Y + M.CHARGER.port_face_margin - M.CHARGER.led_offset_from_po
 # The loops are on the port pitch, which is narrower than a loop is wide, so
 # each one merges into its neighbours: the row prints as one bar with a
 # window over every port, which is what the CHRGtime's bar does anyway.
-PORT_PITCH = 15.2        # USB-A port pitch along the charger's port face
+PORT_PITCH = M.CHARGER.port_pitch   # centre to centre along the port face
 LOOP_W_IN = 10.0         # inner opening width (Y), and the crown's bridge
 LOOP_H_IN = 12.0         # inner opening height (Z)
 LOOP_T = 3.0             # loop thickness along X
 LOOP_STANDOFF = 24.0     # fence wall to loop row: plug overmold plus its bend
 LOOP_XC = POCKET_MAX_X + P.WALL + LOOP_STANDOFF     # clear of the plug bodies
 LOOP_HALF_W = LOOP_W_IN / 2 + LOOP_T                # loop half width in Y
-# Port 1's centre sits at POCKET_MIN_Y + port_face_margin, as the LED does.
-LOOP_YS: list[float] = [POCKET_MIN_Y + M.CHARGER.port_face_margin + i * PORT_PITCH
-                        for i in range(6)]
+# One loop per port, on the port centres themselves.
+LOOP_YS: list[float] = [PORT_Y1 + i * PORT_PITCH for i in range(6)]
 TIE_LOOP_CLEAR = 2.0     # floor left between a tie hole and a loop foot
 
 # Wall cutters span the 2*WALL wall plus a sliver either side, no more.
@@ -296,16 +303,28 @@ def _fence() -> Part:
     return fence
 
 
-def _loop() -> Part:
-    """One cable loop: an inverted U standing on Z = 0, centred on X and Y,
-    LOOP_T thick along X, with a LOOP_W_IN x LOOP_H_IN opening through it.
+def _loop_row() -> Part:
+    """The whole row of cable loops, standing on Z = 0 and centred on X:
+    LOOP_T thick, one inverted U per port centre in LOOP_YS.
 
-    The crown is the only ceiling it adds, and LOOP_W_IN is well inside the
-    20 mm the printer bridges unsupported, so the loop prints in place with
-    the base -- there is nothing to assemble and nothing to support.
+    Every crown is a LOOP_W_IN bridge, well inside the 20 mm the printer
+    crosses unsupported, so the row prints in place with the base.
+
+    The outers are fused first and the windows cut afterwards, which matters
+    whenever the port pitch is narrower than a loop is wide: the outers then
+    overlap, and cutting last is what keeps every window the full LOOP_W_IN.
+    Fusing finished loops instead would let each one's leg grow into its
+    neighbour's window.  What is left between two windows is a post
+    PORT_PITCH - LOOP_W_IN thick, which has to stay at least a wall thick --
+    there is a test that measures it on the solid.
     """
-    outer = Box(LOOP_T, 2 * LOOP_HALF_W, LOOP_H_IN + LOOP_T, align=_MIN)
-    return outer - Box(LOOP_T + 2, LOOP_W_IN, LOOP_H_IN, align=_MIN)
+    row = Part()
+    for y in LOOP_YS:
+        row += Pos(0, y, 0) * Box(LOOP_T, 2 * LOOP_HALF_W, LOOP_H_IN + LOOP_T,
+                                  align=_MIN)
+    for y in LOOP_YS:
+        row -= Pos(0, y, 0) * Box(LOOP_T + 2, LOOP_W_IN, LOOP_H_IN, align=_MIN)
+    return row
 
 
 def build_base() -> Part:
@@ -330,19 +349,20 @@ def build_base() -> Part:
     # plugs standing in front of the port face: each device cable drops out
     # of its plug, runs under its loop and up through its bay's cutout in the
     # tray.
-    for y in LOOP_YS:
-        body += Pos(LOOP_XC, y, P.FLOOR) * _loop()
+    body += Pos(LOOP_XC, 0, P.FLOOR) * _loop_row()
 
-    # -X end wall: AC cord port facing the C7 inlet.  A closed hole, not a
+    # -X end wall: AC cord port facing the mains inlet.  A closed hole, not a
     # notch open to the top: the rim and the rebate ledge stay continuous all
     # round, which is what keeps a 2.4 mm rim stiff.  Its sill is 2 mm above
     # the cavity floor and its roof is a 45 degree peak, not a bridge.
     body -= Pos(_END_CUT_X0, 0, CORD_Z0) * _cord_cutter(_WALL_CUT_D)
 
     # +X end wall: LED window, centred on the LED in Y and on the charger's
-    # mid-height in Z.
-    body -= Pos(_END_CUT_X1, LED_Y, P.FLOOR + M.CHARGER.height / 2) * Box(
-        _WALL_CUT_D, LED_W, LED_H, align=_END_HI)
+    # mid-height in Z.  Skipped outright on a charger with no LED -- that
+    # wall stays blind rather than carrying a hole onto nothing.
+    if HAS_LED:
+        body -= Pos(_END_CUT_X1, LED_Y, P.FLOOR + M.CHARGER.height / 2) * Box(
+            _WALL_CUT_D, LED_W, LED_H, align=_END_HI)
 
     # -X end wall again, directly above the cord port: the device-cable
     # escape port.  Its sill clears the cord roof's peak by 1 mm and its head
