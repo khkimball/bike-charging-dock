@@ -46,12 +46,8 @@ charger flat, ports toward you.
   port 6 and divide by five rather than measuring one gap -- five gaps share
   the error out.  Anker does not publish it; the file has a NOMINAL 12.5 with
   the row centred on the face, which is where `port_face_margin` comes from
-  too.  The base's cable loops sit one per port on this pitch, so it is worth
-  getting right.  A loop is `LOOP_W_IN + 2 * LOOP_T` = 16 mm wide, so the
-  posts left between two windows are `port_pitch - LOOP_W_IN`: if the
-  measured pitch comes in under **12.4 mm**, drop `base.LOOP_W_IN` to keep
-  those posts at least `WALL` (2.4 mm) thick.  There is a test that fails if
-  you forget.
+  too.  Nothing in the base depends on it now that the charger's own cable
+  block replaces the printed loops; it only positions the plug-clearance test.
 - inlet_center_z: bottom of charger to centre of the AC inlet.  NOMINAL is
   half the body height.  The base's cord port has to span this, and the port
   narrows into a 45 degree peak above its rectangular part, so an inlet
