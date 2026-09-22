@@ -15,22 +15,15 @@ Y.  Its back is against the -X end wall, as the Trek CHRGtime stands its
 own: the mains cord plugs in from outside, through the closed cord port in
 that wall, straight into the inlet a POCKET_BACK_SLACK behind it.  There is no
 cord room inside the cavity because none is wanted -- the whole run from the
-port face to the +X wall is free floor for the plugs and their cables.  The
-device cables leave through an escape port directly above the cord port in
-that same wall -- where the CHRGtime puts its own.  A charger with a
-status LED gets a window for it in the +X end wall; one without (the A2154
-has no LED at all) leaves that wall blind.  Everything in here is derived
-from `measurements.CHARGER`, port pitch included, so swapping the charger is
-a measurement change and not a geometry change.
-
-The CHRGtime also runs a bar under its tray for the device cables to pass
-beneath, so they leave the charger in a tidy row instead of a knot.  A single
-bar would have to bridge the whole width of the cavity, 150 mm and more, so
-the bar is broken into a row of inverted-U cable loops, one per charger port,
-standing on the cavity floor beyond the plugs: each has a LOOP_W_IN crown,
-short enough to print unsupported in place.  With the charger at the end
-wall the row lands near the middle of the cavity, with the tie-down grid
-running down both sides of it.
+port face to the +X wall is free floor for the plugs and their cables, which
+run across the floor to their cutouts in the tray above; the Anker A2154
+ships with its own silicone cable-management block, so nothing in the base
+routes them.  The device cables leave through an escape port directly above
+the cord port in that same wall -- where the CHRGtime puts its own.  A
+charger with a status LED gets a window for it in the +X end wall; one
+without (the A2154 has no LED at all) leaves that wall blind.  Everything in
+here is derived from `measurements.CHARGER`, port pitch included, so
+swapping the charger is a measurement change and not a geometry change.
 
 The tray lands flush with the rim, so each end rim carries a finger notch
 NOTCH_W wide and NOTCH_D deep to lift it out by.  The notches cut the rim
@@ -53,9 +46,8 @@ rectangle: CORD_W is too wide to bridge, so unlike every other ceiling in
 the part it prints under a support structure -- SUPPORTED_CEILINGS names it
 as the one ceiling the design accepts that for.  Everything else is a
 self-supporting bridge of 20 mm or less: the escape port above it
-(ESCAPE_W), the crown of each cable loop (LOOP_W_IN), the LED window when
-there is one, and the four foot recesses.  The tie-down holes are
-through-holes with no ceiling at all.
+(ESCAPE_W), the LED window when there is one, and the four foot recesses.
+The tie-down holes are through-holes with no ceiling at all.
 """
 import math
 
@@ -205,40 +197,11 @@ PORT_PLUG_ROOM = CAVITY_MAX_X - POCKET_MAX_X   # >= PORT_PLUG_ROOM_MIN
 PORT_Y1 = POCKET_MIN_Y + M.CHARGER.port_face_margin
 LED_Y = (PORT_Y1 - M.CHARGER.led_offset_from_ports) if HAS_LED else None
 
-# --- cable loops ------------------------------------------------------------
-# One inverted U per charger port, standing on the cavity floor, for a cable
-# to route under on its way to the tray's cutout.  The opening passes a
-# cable, not a plug, and the crown is a LOOP_W_IN bridge the printer crosses
-# unsupported.
-#
-# LOOP_STANDOFF runs from the fence's +X wall to the row's CENTRELINE, not
-# to its face, because that is what LOOP_XC is.  The clearances that matter
-# are therefore one half-thickness shorter:
-#
-#     past the fence wall   LOOP_STANDOFF - LOOP_T / 2
-#     past a plugged-in end P.WALL + LOOP_STANDOFF - LOOP_T / 2
-#                           - P.USB_A_PLUG.length
-#
-# and it is the second one that sets it.  Six overmolds stand in front of
-# the port face, so a row nearer than their length is a row you cannot plug
-# a cable in through; the spare beyond that is room for the cable to turn
-# down out of the plug.  test_base.py measures both gaps on the solid.
-#
-# The loops are on the port pitch, which is narrower than a loop is wide, so
-# each one merges into its neighbours: the row prints as one bar with a
-# window over every port, which is what the CHRGtime's bar does anyway.  The
-# standoff is unchanged by moving the charger to the wall; the row just moves
-# with it, and now stands near the middle of the cavity.
+# The six port centres, from port 1 at PORT_Y1 to port 6 on the port pitch:
+# test data for checking a plug at every port clears the base, and for the
+# LED offset above.
 PORT_PITCH = M.CHARGER.port_pitch   # centre to centre along the port face
-LOOP_W_IN = 10.0         # inner opening width (Y), and the crown's bridge
-LOOP_H_IN = 12.0         # inner opening height (Z)
-LOOP_T = 3.0             # loop thickness along X
-LOOP_STANDOFF = 24.0     # fence wall to the loop row's centreline
-LOOP_XC = POCKET_MAX_X + P.WALL + LOOP_STANDOFF     # clear of the plug bodies
-LOOP_HALF_W = LOOP_W_IN / 2 + LOOP_T                # loop half width in Y
-# One loop per port, on the port centres themselves.
-LOOP_YS: list[float] = [PORT_Y1 + i * PORT_PITCH for i in range(6)]
-TIE_LOOP_CLEAR = 2.0     # floor left between a tie hole and a loop foot
+PORT_YS: list[float] = [PORT_Y1 + i * PORT_PITCH for i in range(6)]
 
 # Wall cutters span the 2*WALL wall plus a sliver either side, no more.
 _WALL_CUT_D = 2 * P.WALL + 0.5
@@ -261,39 +224,24 @@ def _grid_axis(lo: float, hi: float, pitch: float) -> list[float]:
     return [mid + (i - (n - 1) / 2) * pitch for i in range(n)]
 
 
-def _clears_the_loops(x: float, y: float) -> bool:
-    """Is a tie hole at (x, y) clear of the cable loops standing on the same
-    floor, by TIE_LOOP_CLEAR of material?
-
-    The loop row is a band: LOOP_T wide in X, and in Y it runs from the first
-    loop's outer face to the last one's.  A hole outside either span is fine.
-    """
-    if abs(x - LOOP_XC) >= LOOP_T / 2 + TIE_D / 2 + TIE_LOOP_CLEAR:
-        return True
-    reach = LOOP_HALF_W + TIE_D / 2 + TIE_LOOP_CLEAR
-    return not (LOOP_YS[0] - reach < y < LOOP_YS[-1] + reach)
-
-
 def _tie_grid() -> list[tuple[float, float]]:
     """Tie-down hole centres: the free floor in front of the charger, from
     the fence's +X wall out to the +X cavity wall, full cavity Y, TIE_MARGIN
     in from each.
 
-    That includes the strip between the fence and the cable loops, which is
-    where the plugs stand and where the Roam's cable turns back toward its
-    own end of the dock: a tie is worth having there, not only out beyond
-    the row.
+    That includes the strip between the fence and the plugs standing in
+    front of the port face, and where the Roam's cable turns back toward its
+    own end of the dock: a tie is worth having there too, not only further
+    out.
 
     Points that would break into a foot recess are dropped -- a hole there
-    would leave 1 mm of floor and a foot that cannot seat flat -- and so are
-    the points the loop row stands on or stands too near.
+    would leave 1 mm of floor and a foot that cannot seat flat.
     """
     xs = _grid_axis(FENCE_MAX_X + TIE_MARGIN, CAVITY_MAX_X - TIE_MARGIN, TIE_PITCH)
     ys = _grid_axis(CAVITY_MIN_Y + TIE_MARGIN, CAVITY_MAX_Y - TIE_MARGIN, TIE_PITCH)
     keep_out = FOOT_R + TIE_D / 2 + 1.0
     return [(x, y) for x in xs for y in ys
-            if all(math.dist((x, y), c) > keep_out for c in FOOT_CENTRES)
-            and _clears_the_loops(x, y)]
+            if all(math.dist((x, y), c) > keep_out for c in FOOT_CENTRES)]
 
 
 TIE_GRID: list[tuple[float, float]] = _tie_grid()
@@ -362,30 +310,6 @@ def _fence() -> Part:
     return fence
 
 
-def _loop_row() -> Part:
-    """The whole row of cable loops, standing on Z = 0 and centred on X:
-    LOOP_T thick, one inverted U per port centre in LOOP_YS.
-
-    Every crown is a LOOP_W_IN bridge, well inside the 20 mm the printer
-    crosses unsupported, so the row prints in place with the base.
-
-    The outers are fused first and the windows cut afterwards, which matters
-    whenever the port pitch is narrower than a loop is wide: the outers then
-    overlap, and cutting last is what keeps every window the full LOOP_W_IN.
-    Fusing finished loops instead would let each one's leg grow into its
-    neighbour's window.  What is left between two windows is a post
-    PORT_PITCH - LOOP_W_IN thick, which has to stay at least a wall thick --
-    there is a test that measures it on the solid.
-    """
-    row = Part()
-    for y in LOOP_YS:
-        row += Pos(0, y, 0) * Box(LOOP_T, 2 * LOOP_HALF_W, LOOP_H_IN + LOOP_T,
-                                  align=_MIN)
-    for y in LOOP_YS:
-        row -= Pos(0, y, 0) * Box(LOOP_T + 2, LOOP_W_IN, LOOP_H_IN, align=_MIN)
-    return row
-
-
 def build_base() -> Part:
     """The base, underside-down on the bed: X 0..BASE_X, Y centred, Z 0..BASE_H."""
     cx = BASE_X / 2
@@ -403,12 +327,6 @@ def build_base() -> Part:
         REBATE_X, REBATE_Y, REBATE_D + 1.0, REBATE_R, _MIN)
 
     body += _fence()
-
-    # Cable loops, one per charger port, fused to the cavity floor beyond the
-    # plugs standing in front of the port face: each device cable drops out
-    # of its plug, runs under its loop and up through its bay's cutout in the
-    # tray.
-    body += Pos(LOOP_XC, 0, P.FLOOR) * _loop_row()
 
     # -X end wall: AC cord port facing the mains inlet.  A closed hole, not a
     # notch open to the top: the rim and the rebate ledge stay continuous all
@@ -437,8 +355,8 @@ def build_base() -> Part:
     for x0 in (_END_CUT_X0, _END_CUT_X1 - _RIM_CUT_D):
         body -= Pos(x0, 0, BASE_H - NOTCH_D) * _notch_cutter(_RIM_CUT_D)
 
-    # Tie-down grid: through-holes in the floor, so a tie loops from the
-    # cavity down under the base and back.
+    # Tie-down grid: through-holes in the floor, so a tie threads from the
+    # cavity down under the base and back up.
     for x, y in TIE_GRID:
         body -= Pos(x, y, -1.0) * Cylinder(TIE_D / 2, P.FLOOR + 2.0, align=_MIN)
 

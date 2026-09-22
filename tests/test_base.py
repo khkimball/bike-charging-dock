@@ -56,9 +56,9 @@ def _cavity_bbox(p):
 def _free_standing(p, z):
     """Everything standing clear of the shell in the slab at height `z`.
 
-    The cavity floor carries the fence and the cable loops, so a slab down
-    there is no longer two pieces.  The shell is the one piece that reaches
-    the part's own outline; whatever is left stands free of the walls."""
+    The cavity floor carries the fence, so a slab down there is no longer
+    two pieces.  The shell is the one piece that reaches the part's own
+    outline; whatever is left stands free of the walls."""
     outline = p.bounding_box()
 
     def is_shell(s):
@@ -77,16 +77,6 @@ def _fence_section(p):
     walls: the largest of the free-standing pieces down there."""
     return max(_free_standing(p, params.FLOOR + base.FENCE_H / 2),
                key=lambda s: s.volume)
-
-
-def _loop_legs(p):
-    """The cable loops' cross-section at mid-opening height: everything
-    standing free of the walls on the +X side of the fence."""
-    fence = _fence_section(p).bounding_box()
-    legs = [s for s in _free_standing(p, params.FLOOR + base.LOOP_H_IN / 2)
-            if s.bounding_box().min.X > fence.max.X]
-    assert legs, "no cable loops standing between the fence and the +X wall"
-    return legs
 
 
 def _pocket_port_face_x(p):
@@ -584,131 +574,28 @@ def test_the_long_walls_carry_no_openings():
         assert not face.inner_wires(), f"a hole is left in the {sign:+d}Y wall"
 
 
-# --- cable loops -------------------------------------------------------------
-CABLE_D = 4.0     # a fat charging cable, for the pass-under probe
-LOOP_CLEAR = 2.0  # floor a loop foot must leave round the fence, the tie
-                  # holes and the cavity wall
+# --- charger ports ------------------------------------------------------------
 
-
-def test_six_cable_loops_stand_over_the_charger_ports():
-    """One inverted-U loop per charger port: its crown is solid and the
-    opening under it is void, probed on the solid at every port centre."""
-    p = base.build_base()
-    assert len(base.LOOP_YS) == 6
-    for y in base.LOOP_YS:
-        crown = Pos(base.LOOP_XC, y,
-                    params.FLOOR + base.LOOP_H_IN + base.LOOP_T / 2) * Box(
-            base.LOOP_T - 0.02, base.LOOP_W_IN - 0.02, base.LOOP_T - 0.02,
-            align=_CTR)
-        assert _is_solid_in(crown, p), f"no loop crown at y = {y:.1f}"
-        window = Pos(base.LOOP_XC, y, params.FLOOR + base.LOOP_H_IN / 2) * Box(
-            base.LOOP_T + 2, base.LOOP_W_IN - 0.02, base.LOOP_H_IN - 0.02,
-            align=_CTR)
-        assert (window & p).volume < 1e-3, f"loop at y = {y:.1f} is blocked"
-
-
-def test_the_posts_between_the_loops_are_thick_enough_to_print():
-    """On a port pitch narrower than a loop is wide the loops overlap, and
-    what is left between two windows is a post PORT_PITCH - LOOP_W_IN thick.
-    It has to be solid, and at least a wall thick, or the row prints as a
-    row of stripes."""
-    p = base.build_base()
-    post_w = base.PORT_PITCH - base.LOOP_W_IN
-    assert post_w >= params.WALL, f"{post_w:.2f} mm post, thinner than a wall"
-    for a, b in zip(base.LOOP_YS, base.LOOP_YS[1:]):
-        post = Pos(base.LOOP_XC, (a + b) / 2,
-                   params.FLOOR + base.LOOP_H_IN / 2) * Box(
-            base.LOOP_T - 0.02, post_w - 0.02, base.LOOP_H_IN - 0.02,
-            align=_CTR)
-        assert _is_solid_in(post, p), f"no post at y = {(a + b) / 2:.1f}"
-
-
-def test_the_loops_are_evenly_spaced_on_the_port_pitch():
-    steps = {round(b - a, 3) for a, b in zip(base.LOOP_YS, base.LOOP_YS[1:])}
-    assert steps == {base.PORT_PITCH}, steps
-
-
-def test_a_plug_in_every_charger_port_clears_the_loops():
-    """The loop row stands beyond the plugs, not in them.  A USB-A overmold
-    -- the largest of the plug envelopes, used for all six ports -- butted
-    against the charger's port face at each port centre, at the charger's mid
-    height, touches nothing in the base: not a loop, not the fence, not a
-    wall.  This is what the row's standoff is actually set by.
+def test_a_plug_in_every_charger_port_clears_the_base():
+    """A USB-A overmold -- the largest of the plug envelopes, used for all
+    six ports -- butted against the charger's port face at each port centre,
+    at the charger's mid height, touches nothing in the base: not the fence,
+    not a wall.  The Anker A2154 ships with its own silicone cable-management
+    block, so nothing printed has to stand clear of a cable here beyond the
+    plug itself.
 
     Deliberately plug against base only, never plug against plug: on a port
     pitch narrower than an overmold the plugs foul each other, which is the
     charger's problem and the cable set's, not the dock's."""
     p = base.build_base()
+    assert len(base.PORT_YS) == 6
     port_x = _pocket_port_face_x(p)
     plug = params.USB_A_PLUG
-    for y in base.LOOP_YS:
+    for y in base.PORT_YS:
         probe = Pos(port_x, y, params.FLOOR + m.CHARGER.height / 2) * Box(
             plug.length, plug.width, plug.height,
             align=(Align.MIN, Align.CENTER, Align.CENTER))
         assert (probe & p).volume < 1e-3, f"plug at y = {y:.1f} fouls the base"
-        assert probe.bounding_box().max.X < base.LOOP_XC - base.LOOP_T / 2
-
-
-def test_a_cable_passes_under_every_loop():
-    """A CABLE_D cable laid on the cavity floor runs from the charger's port
-    face out to the +X cavity wall under each loop, touching nothing."""
-    p = base.build_base()
-    fence = _fence_section(p).bounding_box()
-    cav = _cavity_bbox(p)
-    for y in base.LOOP_YS:
-        cable = Pos(fence.max.X, y, params.FLOOR) * Box(
-            cav.max.X - fence.max.X, CABLE_D, CABLE_D,
-            align=(Align.MIN, Align.CENTER, Align.MIN))
-        assert (cable & p).volume < 1e-3, f"blocked at y = {y:.1f}"
-
-
-def test_the_loops_clear_the_fence_and_the_tie_holes():
-    """Measured on the solid: the loop row stands off the fence's +X wall,
-    and off the nearest tie hole, by at least LOOP_CLEAR -- so neither a loop
-    foot nor a hole is left standing in the other's wall."""
-    p = base.build_base()
-    legs = [s.bounding_box() for s in _loop_legs(p)]
-    fence = _fence_section(p).bounding_box()
-    gap = min(b.min.X for b in legs) - fence.max.X
-    assert gap >= LOOP_CLEAR, f"only {gap:.2f} mm to the fence"
-    ties = [w.bounding_box() for w in _bottom_wires(p)
-            if abs(w.bounding_box().size.X - base.TIE_D) < 1e-6]
-    assert ties, "no tie holes left to clear"
-    # The grid runs down both sides of the row, so this is a gap in the
-    # floor plane, not along X: the shortest distance between the two
-    # rectangles, zero if they overlap at all.
-    for t in ties:
-        gap = min(_xy_gap(t, b) for b in legs)
-        assert gap >= LOOP_CLEAR, (
-            f"tie hole at ({t.center().X:.1f}, {t.center().Y:.1f}) is "
-            f"{gap:.2f} mm from a loop foot")
-
-
-def test_the_loops_stay_under_the_tray_and_inside_the_cavity():
-    """The loops stop well short of the shelf the tray lands on, and the
-    cavity above them is empty all the way up to it.  The crown height is
-    read off the solid: the highest upward face that lies *entirely* within
-    the loop row's X band.  Entirely, not merely centred there -- the row
-    stands near the middle of the base now, so a face spanning the whole
-    part, the rim's top among them, has its centre in the band too."""
-    p = base.build_base()
-    legs = [s.bounding_box() for s in _loop_legs(p)]
-    cav = _cavity_bbox(p)
-    assert min(b.min.Y for b in legs) - cav.min.Y >= LOOP_CLEAR
-    assert cav.max.Y - max(b.max.Y for b in legs) >= LOOP_CLEAR
-    gap = cav.max.X - max(b.max.X for b in legs)
-    assert gap >= LOOP_CLEAR, f"only {gap:.2f} mm to the +X cavity wall"
-    lo, hi = min(b.min.X for b in legs), max(b.max.X for b in legs)
-    crown_z = max(f.center().Z for f in p.faces().filter_by(Axis.Z)
-                  if f.normal_at().Z > 0
-                  and f.bounding_box().min.X >= lo - 1e-6
-                  and f.bounding_box().max.X <= hi + 1e-6)
-    ledge_z = min(f.center().Z for f in _ledge_faces(p))
-    assert crown_z < ledge_z - base.CABLE_ROOM, f"crown at {crown_z:.1f}"
-    above = Pos((lo + hi) / 2, 0, crown_z) * Box(
-        hi - lo, cav.size.Y - 0.02, ledge_z - crown_z,
-        align=(Align.CENTER, Align.CENTER, Align.MIN))
-    assert (above & p).volume < 1e-3, "something stands above the loops"
 
 
 def test_walls_below_the_rebate_are_two_walls_thick():
@@ -771,25 +658,22 @@ def test_tie_grid_holes_go_right_through_the_floor():
 
 
 def test_tie_grid_sits_between_the_fence_and_the_plus_x_wall():
-    """The free floor in front of the charger, both sides of the loop row:
-    the strip between the fence and the loops carries a column too, because
-    that is where the plugs stand and where the Roam's cable turns back.
-    Measured on the solid: every hole is clear of the fence and inside the
-    cavity, and there is a column each side of the row."""
+    """The free floor in front of the charger, the whole way out to the +X
+    wall, carries the grid now that nothing stands on the floor to break it
+    up.  Measured on the solid: every hole is clear of the fence and inside
+    the cavity, and the columns span from just past the fence to just short
+    of the +X wall."""
     p = base.build_base()
     cav = _cavity_bbox(p)
     fence = _fence_section(p).bounding_box()
-    legs = [s.bounding_box() for s in _loop_legs(p)]
-    row_lo = min(b.min.X for b in legs)
-    row_hi = max(b.max.X for b in legs)
     assert base.TIE_GRID
     for x, y in base.TIE_GRID:
         assert x - base.TIE_D / 2 > fence.max.X
         assert x + base.TIE_D / 2 < cav.max.X
         assert cav.min.Y < y - base.TIE_D / 2 and y + base.TIE_D / 2 < cav.max.Y
     xs = {x for x, _ in base.TIE_GRID}
-    assert any(x < row_lo for x in xs), "no tie column in front of the plugs"
-    assert any(x > row_hi for x in xs), "no tie column beyond the loop row"
+    assert min(xs) - (fence.max.X + base.TIE_MARGIN) < base.TIE_PITCH
+    assert (cav.max.X - base.TIE_MARGIN) - max(xs) < base.TIE_PITCH
 
 
 def test_tie_grid_is_on_a_regular_pitch():
@@ -824,9 +708,9 @@ def test_no_unsupported_ceilings():
     cord port's flat ceiling (SUPPORTED_CEILINGS), identified here by where
     it is (the -X wall) and what it is (a CORD_W-wide face at
     CORD_Z0 + CORD_H) -- not by relaxing MAX_BRIDGE itself.  Everything else
-    that bridges -- the escape port (ESCAPE_W), the crown of each cable loop
-    (LOOP_W_IN), the LED window and the four foot recesses -- still has to
-    clear the same limit.  The notch floors face up, not down."""
+    that bridges -- the escape port (ESCAPE_W), the LED window when there is
+    one, and the four foot recesses -- still has to clear the same limit.
+    The notch floors face up, not down."""
     p = base.build_base()
     bed_z = p.bounding_box().min.Z
     cord_ceiling_z = base.CORD_Z0 + base.CORD_H

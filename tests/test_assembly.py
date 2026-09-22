@@ -152,12 +152,14 @@ def _tray_cutout_footprints():
 
 def test_every_cable_cutout_drops_into_open_cavity():
     """A cable dropped through any cutout in the tray has to reach the cavity
-    floor: it must not land on the charger, on the fence or on a cable loop.
-    With the charger moved to the -X end wall the Roam bay's cutout is over
-    the charger's X range, so this is measured, not assumed -- the column
-    under every cutout, from the cavity floor up to the seated tray, is empty
-    base.  (The Roam's cutout clears the charger in Y as well, so that cable
-    drops straight past the charger's -Y side rather than over its top.)"""
+    floor: it must not land on the fence, the only thing printed into the
+    cavity floor's own X range (the charger itself is not modelled in the
+    base, so nothing else down there is solid).  With the charger moved to
+    the -X end wall the Roam bay's cutout is over the charger's X range, so
+    this is measured, not assumed -- the column under every cutout, from the
+    cavity floor up to the seated tray, is empty base.  (The Roam's cutout
+    clears the charger in Y as well, so that cable drops straight past the
+    charger's -Y side rather than over its top.)"""
     p_base = base.build_base()
     top = _seated_tray().bounding_box().min.Z      # the rebate ledge
     boxes = _tray_cutout_footprints()
