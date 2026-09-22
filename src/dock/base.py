@@ -48,16 +48,19 @@ BASE_Y grows if a remeasured charger needs a wider fence (the rebate stays
 tray-sized, so the extra goes into the walls); BASE_X never does, because the
 charger's long axis runs along Y.
 
-It prints open-top-up.  The cord port is too wide to bridge, so its roof is
-a 45 degree peak; the only remaining ceilings are the escape port above it
+It prints open-top-up.  The cord port's ceiling is a plain CORD_W x CORD_H
+rectangle: CORD_W is too wide to bridge, so unlike every other ceiling in
+the part it prints under a support structure -- SUPPORTED_CEILINGS names it
+as the one ceiling the design accepts that for.  Everything else is a
+self-supporting bridge of 20 mm or less: the escape port above it
 (ESCAPE_W), the crown of each cable loop (LOOP_W_IN), the LED window when
-there is one, and the four foot recesses -- all bridges of 20 mm or less.
-The tie-down holes are through-holes with no ceiling at all.
+there is one, and the four foot recesses.  The tie-down holes are
+through-holes with no ceiling at all.
 """
 import math
 
-from build123d import (Align, Axis, Box, Cylinder, Location, Part, Plane,
-                       Polyline, Pos, chamfer, extrude, fillet, make_face)
+from build123d import (Align, Axis, Box, Cylinder, Location, Part, Pos,
+                       chamfer, fillet)
 
 from dock import measurements as M
 from dock import params as P
@@ -74,28 +77,38 @@ FENCE_H = 8.0            # charger fence height above the cavity floor
 FENCE_CLEAR_Y = 2.0      # minimum cavity clearance beside the fence, per side
 # AC cord port: sized from the moulded C7 end that has to pass through it,
 # plus 1 mm of slack per side.  CORD_W is far past the 20 mm bridge
-# allowance, so the port is not a rectangle: a 45 degree peak of CORD_W / 2
-# sits on top of the rectangular opening, giving a self-supporting roof.
+# allowance, so this ceiling cannot print unsupported -- it is the one
+# ceiling in the part the design accepts printing with supports under, in
+# exchange for a plain rectangular opening (see SUPPORTED_CEILINGS below and
+# docs/printing.md).
 CORD_W = M.CORD_END.width + 2.0    # port width (Y)
 CORD_H = M.CORD_END.height + 2.0   # rectangular part's height (Z)
-CORD_PEAK = CORD_W / 2             # 45 degree roof above it
-CORD_TOP = CORD_H + CORD_PEAK      # total port height
+CORD_TOP = CORD_H                  # total port height: a plain rectangle now
 # The opening is centred on the inlet it has to reach, so the moulded cord
-# end goes in level rather than being pushed up toward the ridge, where the
-# port is already narrowing.  Clamped so that a low inlet cannot drive the
-# sill down onto the cavity floor or under it.
+# end goes in level rather than being pushed toward the top of the
+# rectangle.  Clamped so that a low inlet cannot drive the sill down onto
+# the cavity floor or under it.
 CORD_Z0_MIN = P.FLOOR + 1.0        # lowest sill worth cutting
 CORD_Z0 = max(P.FLOOR + M.CHARGER.inlet_center_z - CORD_H / 2, CORD_Z0_MIN)
 # Device-cable escape port: the CHRGtime stacks it directly above the cord
 # port in the same wall, so it does too.  It is sized for a device-end plug
-# to be posted through, sits 1 mm of wall above the cord roof's peak, and its
-# head stops short of the rebate ledge -- it is a closed hole, so the ledge
-# and the rim stay continuous.  Its flat ceiling is an ESCAPE_W bridge.
+# to be posted through, sits 1 mm of wall above the cord port's flat top,
+# and its head stops short of the rebate ledge -- it is a closed hole, so
+# the ledge and the rim stay continuous.  Its flat ceiling is an ESCAPE_W
+# bridge.
 ESCAPE_W = P.USB_C_PLUG.width + 5.0   # port width (Y)
 ESCAPE_H = 8.0                        # port height (Z), and its bridge
-ESCAPE_Z0 = CORD_Z0 + CORD_TOP + 1.0  # sill, one wall above the cord peak
+ESCAPE_Z0 = CORD_Z0 + CORD_H + 1.0    # sill, 1 mm above the cord port's flat top
 ESCAPE_Z1 = ESCAPE_Z0 + ESCAPE_H      # head, kept clear of the rebate ledge
 ESCAPE_LEDGE_GAP_MIN = 1.0            # wall left between the head and the ledge
+
+# The one ceiling in the part that needs print supports: CORD_W is too wide
+# for its flat ceiling to bridge, so it is the sole exception to "no
+# unsupported ceilings" (see tests/test_base.py and docs/printing.md).
+# Everything else is either upward-facing, a through-hole, or a bridge of
+# MAX_BRIDGE or less.
+SUPPORTED_CEILINGS = ("cord port",)
+
 # Finger notches in the rim, one at each end, for lifting the tray out: the
 # tray sits flush with the rim, so without them there is nothing to grip.
 NOTCH_W = 40.0           # notch width (Y), a two-finger grip
@@ -298,19 +311,15 @@ def _rounded_box(sx: float, sy: float, sz: float, r: float, align) -> Part:
 
 
 def _cord_cutter(depth: float) -> Part:
-    """The AC cord port's cutter: a CORD_W x CORD_H opening under a 45 degree
-    peak, lying on Z = 0 and running `depth` along +X from X = 0.
+    """The AC cord port's cutter: a plain CORD_W x CORD_H rectangular
+    opening, lying on Z = 0 and running `depth` along +X from X = 0.
 
-    The peak is what makes the port printable.  A CORD_W-wide flat ceiling
-    would be a bridge half as long again as the printer will cross; two 45
-    degree planes meeting at a ridge are the steepest roof it needs no
-    support for at all.
+    CORD_W is well past MAX_BRIDGE, so this ceiling cannot print
+    unsupported; it is the one ceiling in SUPPORTED_CEILINGS, and prints
+    with a support structure under it rather than dodging the bridge with a
+    peaked roof.
     """
-    half = CORD_W / 2
-    section = Plane.YZ * make_face(Polyline(
-        (-half, 0), (half, 0), (half, CORD_H), (0, CORD_TOP), (-half, CORD_H),
-        close=True))
-    return extrude(section, amount=depth)
+    return Box(depth, CORD_W, CORD_H, align=_END_LO)
 
 
 def _notch_cutter(depth: float) -> Part:
@@ -404,8 +413,8 @@ def build_base() -> Part:
     # -X end wall: AC cord port facing the mains inlet.  A closed hole, not a
     # notch open to the top: the rim and the rebate ledge stay continuous all
     # round, which is what keeps a 2.4 mm rim stiff.  Its rectangular opening
-    # is centred on the inlet's height and its roof is a 45 degree peak, not
-    # a bridge.
+    # is centred on the inlet's height; its flat ceiling is the one ceiling
+    # in the part printed with supports (SUPPORTED_CEILINGS).
     body -= Pos(_END_CUT_X0, 0, CORD_Z0) * _cord_cutter(_WALL_CUT_D)
 
     # +X end wall: LED window, centred on the LED in Y and on the charger's
@@ -416,9 +425,9 @@ def build_base() -> Part:
             _WALL_CUT_D, LED_W, LED_H, align=_END_HI)
 
     # -X end wall again, directly above the cord port: the device-cable
-    # escape port.  Its sill clears the cord roof's peak by 1 mm and its head
-    # stops ESCAPE_LEDGE_GAP_MIN below the rebate ledge, so this is a closed
-    # hole like the cord port and the ledge stays continuous.
+    # escape port.  Its sill clears the cord port's flat top by 1 mm and its
+    # head stops ESCAPE_LEDGE_GAP_MIN below the rebate ledge, so this is a
+    # closed hole like the cord port and the ledge stays continuous.
     body -= Pos(_END_CUT_X0, 0, ESCAPE_Z0) * Box(
         _WALL_CUT_D, ESCAPE_W, ESCAPE_H, align=_END_LO)
 

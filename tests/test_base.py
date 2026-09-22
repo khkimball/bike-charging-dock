@@ -328,13 +328,13 @@ def test_cord_port_is_a_closed_hole_in_the_minus_x_wall_on_the_inlet():
     p = base.build_base()
     bb, _ = _cord_and_escape_holes(p)
     assert abs(bb.size.Y - base.CORD_W) < 1e-6
-    assert abs(bb.size.Z - (base.CORD_H + base.CORD_W / 2)) < 1e-6
+    assert abs(bb.size.Z - base.CORD_H) < 1e-6
     assert abs(bb.center().Y) < 1e-6
     assert bb.min.Z < params.FLOOR + m.CHARGER.inlet_center_z < bb.max.Z
-    # ... and at full width there, not somewhere up in the 45 degree peak:
-    # a bar across the whole opening at the inlet's centre height passes
-    # through the wall.  A taller charger walks its inlet up toward the peak,
-    # and this is what notices.
+    # ... and at full width there, not pinched down near either edge of the
+    # rectangle: a bar across the whole opening at the inlet's centre height
+    # passes through the wall.  A taller charger walks its inlet toward the
+    # top of the opening, and this is what notices.
     inlet_z = params.FLOOR + m.CHARGER.inlet_center_z
     span = Pos(-1, 0, inlet_z) * Box(
         2 * params.WALL + 2, base.CORD_W - 0.02, 0.4,
@@ -370,44 +370,40 @@ def test_the_moulded_cord_end_reaches_the_inlet_through_the_wall():
     assert (probe & p).volume < 1e-3
 
 
-def test_cord_port_roof_is_a_self_supporting_peak():
-    """CORD_W is well past the 20 mm bridge allowance, so the port's ceiling
-    is not a bridge at all: two 45 degree planes meeting at a ridge over the
-    port's centre line, measured on the solid."""
+def test_cord_port_is_a_plain_rectangle_needing_supports():
+    """CORD_W is well past MAX_BRIDGE, so the port's ceiling is a plain flat
+    rectangle that cannot print unsupported -- it is the one ceiling in
+    SUPPORTED_CEILINGS, printed with supports rather than dodged with a
+    peaked roof.  Measured on the solid."""
     p = base.build_base()
-    roof = [f for f in p.faces()
-            if 0 < f.center().X < 2 * params.WALL
-            and f.center().Z > base.CORD_Z0 + base.CORD_H   # clear of the
-            and abs(f.center().Y) < base.CORD_W             # bottom chamfer
-            and abs(-f.normal_at().Z - math.sin(math.radians(45))) < 1e-6]
-    assert len(roof) == 2, f"expected two 45 degree roof planes, got {len(roof)}"
-    ys = sorted(f.center().Y for f in roof)
-    assert ys[0] < 0 < ys[1], "the two planes should fall away either side"
-    apex = max(f.bounding_box().max.Z for f in roof)
-    assert abs(apex - (base.CORD_Z0 + base.CORD_H + base.CORD_W / 2)) < 1e-6
-    # The rectangular opening under the peak is centred on the inlet, so the
-    # cord end goes in level instead of being pushed up toward the ridge --
-    # measured between the sill and the shoulder the roof springs from.
-    sill = _cord_and_escape_holes(p)[0].min.Z
-    shoulder = min(f.bounding_box().min.Z for f in roof)
-    inlet_z = params.FLOOR + m.CHARGER.inlet_center_z
-    if base.CORD_Z0 > base.CORD_Z0_MIN + 1e-9:
-        assert abs((sill + shoulder) / 2 - inlet_z) < 1e-6, (
-            f"opening {sill:.2f}..{shoulder:.2f} is not centred on {inlet_z:.2f}")
-    else:
-        # A low inlet would drive the sill into the cavity floor; it is
-        # clamped there instead, and the inlet still has to fall inside.
-        assert abs(sill - base.CORD_Z0_MIN) < 1e-6
-        assert sill < inlet_z < shoulder
-    # the ridge is a line, not a flat: no horizontal ceiling over the port,
-    # anywhere between its sill and the apex.  (The escape port stacked above
-    # it does have a flat ceiling -- that one is a bridge, and short enough.)
-    flat = [f for f in p.faces().filter_by(Axis.Z)
-            if f.normal_at().Z < 0
-            and 0 < f.center().X < 2 * params.WALL
-            and abs(f.center().Y) < base.CORD_W / 2
-            and base.CORD_Z0 < f.center().Z <= apex + 1e-6]
-    assert not flat, "the cord port still has a flat ceiling to bridge"
+    assert base.CORD_W > MAX_BRIDGE
+
+    # the opening itself: CORD_W x CORD_H, nothing more
+    bb, _ = _cord_and_escape_holes(p)
+    assert abs(bb.size.Y - base.CORD_W) < 1e-6
+    assert abs(bb.size.Z - base.CORD_H) < 1e-6
+
+    # the ceiling is a single flat downward face spanning the full CORD_W,
+    # at the top of the opening
+    ceiling_z = base.CORD_Z0 + base.CORD_H
+    ceiling = [f for f in p.faces().filter_by(Axis.Z)
+               if f.normal_at().Z < 0
+               and abs(f.center().Z - ceiling_z) < 1e-6
+               and 0 <= f.center().X <= 2 * params.WALL
+               and abs(f.center().Y) < base.CORD_W / 2 - 1e-3]
+    assert len(ceiling) == 1, f"expected one flat ceiling face, got {len(ceiling)}"
+    span = ceiling[0].bounding_box().size.Y
+    assert abs(span - base.CORD_W) < 1e-6
+    assert span > MAX_BRIDGE, "a self-supporting ceiling would not need this test"
+
+    # the moulded cord end still reaches the inlet through it, centred and
+    # touching nothing
+    end = m.CORD_END
+    back = _cavity_bbox(p).min.X + base.POCKET_BACK_SLACK
+    probe = Pos(back, 0, params.FLOOR + m.CHARGER.inlet_center_z) * Box(
+        end.length, end.width, end.height,
+        align=(Align.MAX, Align.CENTER, Align.CENTER))
+    assert (probe & p).volume < 1e-3
 
 
 def test_the_rim_and_the_ledge_are_continuous_all_round():
@@ -546,7 +542,7 @@ def test_escape_port_sits_directly_above_the_cord_port():
     assert abs(escape.center().Y) < 1e-6
     assert abs(escape.center().Y - cord.center().Y) < 1e-6
     # a ligament of material between the two: the sill sits at least the
-    # 1 mm the design asks for above the cord port's 45 degree peak
+    # 1 mm the design asks for above the cord port's flat top
     assert escape.min.Z - cord.max.Z >= 1.0 - 1e-6
     # sized for a device-end plug: a USB-C overmold with slack either side
     assert escape.size.Y >= params.USB_C_PLUG.width + 4.0
@@ -823,13 +819,17 @@ def test_tie_holes_clear_the_foot_recesses():
 # --- printability ------------------------------------------------------------
 
 def test_no_unsupported_ceilings():
-    """Open-top-up.  The cord port's roof is a 45 degree peak, steep enough
-    to need no allowlisting at all; the ceilings that do bridge are the
-    escape port above it (ESCAPE_W), the crown of each cable loop
-    (LOOP_W_IN), the LED window and the four foot recesses, and every one of
-    them spans MAX_BRIDGE or less.  The notch floors face up, not down."""
+    """Open-top-up.  Every downward ceiling steeper than 45 degrees has to
+    span MAX_BRIDGE or less, with exactly one allowlisted exception: the
+    cord port's flat ceiling (SUPPORTED_CEILINGS), identified here by where
+    it is (the -X wall) and what it is (a CORD_W-wide face at
+    CORD_Z0 + CORD_H) -- not by relaxing MAX_BRIDGE itself.  Everything else
+    that bridges -- the escape port (ESCAPE_W), the crown of each cable loop
+    (LOOP_W_IN), the LED window and the four foot recesses -- still has to
+    clear the same limit.  The notch floors face up, not down."""
     p = base.build_base()
     bed_z = p.bounding_box().min.Z
+    cord_ceiling_z = base.CORD_Z0 + base.CORD_H
     for f in p.faces():
         n = f.normal_at()
         if n.Z >= -1e-6 or abs(f.center().Z - bed_z) < 1e-6:
@@ -838,6 +838,10 @@ def test_no_unsupported_ceilings():
         if overhang <= 45.0 + 1e-6:
             continue
         s = f.bounding_box().size
+        if (0 <= f.center().X <= 2 * params.WALL
+                and abs(f.center().Z - cord_ceiling_z) < 1e-6
+                and abs(s.Y - base.CORD_W) < 1e-6):
+            continue  # the one ceiling in base.SUPPORTED_CEILINGS
         assert max(s.X, s.Y) <= MAX_BRIDGE, (
             f"{overhang:.1f} deg ceiling spanning {max(s.X, s.Y):.1f} mm "
             f"at {f.center()}")

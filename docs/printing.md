@@ -12,7 +12,7 @@ printed in PETG. Profile: 0.4 mm nozzle, 0.2 mm layers.
 | coupon_plate, coupon_peg | as exported | 3 | 15 % | none |
 | divider (print two) | as exported: stands on its long bottom edge, the two end rails acting as feet -- use a brim | 3 | 100 % | none |
 | tray | as exported: flat plate on the bed, bays up | 3 | 15 % | none |
-| base | as exported: open top up | 3 | 15 % | none |
+| base | as exported: open top up | 3 | 15 % | yes, for the cord port ceiling only (26 mm bridge); paint-on/"support only the cord port" or normal supports -- the rest of the part is self-supporting |
 | lid | as exported: top face down, skirt up | 3 | 15 % | none |
 
 The tray is a flat plate at the bed face with its bay walls built up from its
@@ -30,17 +30,19 @@ and the cavity's end wall is the fourth side, a fit clearance behind the
 charger's inlet face.
 
 The base prints open-top-up. The AC cord port in the -X end wall is sized
-from the moulded C7 cord end, which makes it too wide to bridge, so it is
-roofed with a 45 degree peak instead: it needs no support. Directly above it
-in the same wall -- where the Trek CHRGtime puts its own -- sits the device
-cable escape port, a closed 16 x 8 mm hole that clears the peak of the cord
-roof by 1 mm and stops well below the rebate ledge. The ceilings that do
-bridge are that escape port (16 mm), the crown of each cable loop (10 mm)
-and the four foot recesses in the underside -- all short bridges the printer
-clears without supports. There is no LED window in the +X end wall: the
-A2154 has no status LED, so that wall is blind. Both -X wall ports are
-closed holes rather than notches, so the rim and the rebate ledge stay
-continuous all the way round.
+from the moulded C7 cord end, which makes it a plain 26 x 16 mm rectangular
+opening too wide to bridge: it is the one ceiling in the part that prints
+with supports under it (`base.SUPPORTED_CEILINGS`), rather than the 45
+degree peaked roof an earlier design used to dodge the bridge. Directly
+above it in the same wall -- where the Trek CHRGtime puts its own -- sits
+the device cable escape port, a closed hole that clears the cord port's
+flat top by 1 mm and stops well below the rebate ledge. The other ceilings
+that do bridge, all self-supporting, are that escape port (16 mm), the
+crown of each cable loop (10 mm) and the four foot recesses in the
+underside -- all short bridges the printer clears without supports. There
+is no LED window in the +X end wall: the A2154 has no status LED, so that
+wall is blind. Both -X wall ports are closed holes rather than notches, so
+the rim and the rebate ledge stay continuous all the way round.
 
 The mains cord plugs in from outside: push the moulded C7 end through the
 cord port and it goes straight into the inlet, which sits right behind the
