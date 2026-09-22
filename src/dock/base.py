@@ -29,13 +29,21 @@ The tray lands flush with the rim, so each end rim carries a finger notch
 NOTCH_W wide and NOTCH_D deep to lift it out by.  The notches cut the rim
 only: they stop far above the rebate ledge, which stays continuous.
 
+The lower band of the outer wall is a plinth, like the Trek CHRGtime's:
+over the bottom PLINTH_H the outer faces lean inward toward the bed, so the
+dock reads lighter than a slab and a cable dragged past it meets a sloping
+face instead of a square edge.  The taper is shallow enough to print
+unsupported, and it takes PLINTH_INSET = WALL off the 2*WALL lower walls, so
+they still carry a full WALL where the plinth is thinnest.
+
 Wall stack-up, bottom to top: the shell below the rebate is 2*WALL thick so
 the rebate can be cut back to the tray's own footprint and still leave a
 continuous ledge all round; above the ledge the rim is WALL thick.  The outer
-vertical corners are CORNER_R, the cavity corners CORNER_R - 2*WALL, and the
-rebate corners the tray's OUTER_R + CLR_FIT -- all three arcs share a centre,
-so the ledge is a band of uniform width.  The bottom outer edge is chamfered,
-never filleted: it is a downward edge.
+vertical corners are CORNER_R above the plinth, and CORNER_R less whatever
+the plinth has stepped in below it; the cavity corners are CORNER_R - 2*WALL
+and the rebate corners the tray's OUTER_R + CLR_FIT -- all three arcs share
+a centre, so the ledge is a band of uniform width.  The bottom outer edge
+is chamfered, never filleted: it is a downward edge.
 
 BASE_Y grows if a remeasured charger needs a wider fence (the rebate stays
 tray-sized, so the extra goes into the walls); BASE_X never does, because the
@@ -51,8 +59,8 @@ The tie-down holes are through-holes with no ceiling at all.
 """
 import math
 
-from build123d import (Align, Axis, Box, Cylinder, Location, Part, Pos,
-                       chamfer, fillet)
+from build123d import (Align, Axis, Box, Cylinder, Location, Part, Plane,
+                       Pos, RectangleRounded, Sketch, fillet, loft)
 
 from dock import measurements as M
 from dock import params as P
@@ -130,6 +138,19 @@ TIE_D = 4.0              # tie-down hole diameter
 TIE_PITCH = 24.0         # tie-down grid pitch
 TIE_MARGIN = 6.0         # grid edge in from the fence and the cavity walls
 
+# --- plinth -----------------------------------------------------------------
+# The lower band of the outer wall tapers in toward the bed.  PLINTH_INSET is
+# one WALL, so the 2*WALL walls below the rebate still carry a full WALL at
+# the plinth's thinnest section -- which is at Z = CHAMFER, the top of the
+# elephant-foot chamfer, not at the bed itself.  Below that the chamfer takes
+# the outline CHAMFER further in again, exactly as it always did; the bed face
+# is therefore PLINTH_INSET + CHAMFER in from the footprint on every side.
+PLINTH_H = 12.0          # height of the tapered band above the bed
+PLINTH_INSET = P.WALL    # step in at the top of the bottom chamfer
+# How far the taper leans off vertical.  Well inside the 45 degrees this part
+# holds every downward face to, so the plinth prints without supports.
+PLINTH_TAPER_DEG = math.degrees(math.atan2(PLINTH_INSET, PLINTH_H - P.CHAMFER))
+
 # --- charger pocket ---------------------------------------------------------
 # Sized before the box, because a wider charger grows BASE_Y.
 # X runs inlet face -> port face; Y runs along the long, six-port face.
@@ -205,6 +226,10 @@ PORT_YS: list[float] = [PORT_Y1 + i * PORT_PITCH for i in range(6)]
 
 # Wall cutters span the 2*WALL wall plus a sliver either side, no more.
 _WALL_CUT_D = 2 * P.WALL + 0.5
+# The plinth only ever moves an outer face inward, so a cutter that starts
+# 0.25 mm outside the nominal footprint starts outside the tapered face too,
+# wherever in the band it crosses it -- and it still has to reach the cavity
+# wall at the far end, which is what _WALL_CUT_D is measured for.
 _END_CUT_X0 = -0.25              # -X end wall: start just outside the face
 _END_CUT_X1 = BASE_X + 0.25      # +X end wall: end just outside the face
 # Rim cutters go through the WALL-thick rim and a sliver into the rebate.
@@ -256,6 +281,38 @@ def _rounded_box(sx: float, sy: float, sz: float, r: float, align) -> Part:
     """A box with its four vertical edges filleted to `r`."""
     b = Box(sx, sy, sz, align=align)
     return fillet(b.edges().filter_by(Axis.Z), r) if r > 0 else b
+
+
+def _plinth_profile(inset: float, z: float) -> Sketch:
+    """The outer outline at height `z`, `inset` in from the nominal footprint
+    on every side, centred on X = Y = 0.
+
+    The corner radius shrinks with the inset, so every arc keeps the same
+    centre and the taper runs smoothly through the corners instead of
+    pinching them.
+    """
+    return Plane.XY.offset(z) * RectangleRounded(
+        BASE_X - 2 * inset, BASE_Y - 2 * inset, P.CORNER_R - inset)
+
+
+def _outer_body() -> Part:
+    """The base's outer solid, centred on X = Y = 0 and standing up from the
+    bed: a plinth for the bottom PLINTH_H, the plain rounded box above it.
+
+    A ruled loft through three concentric outlines, so the walls taper on a
+    plane and the corners on a cone.  The bottom segment, from the bed to
+    Z = CHAMFER, is the elephant-foot chamfer: built into the loft rather
+    than chamfered onto the finished edge, because an equal-distance chamfer
+    taken off a leaning wall comes out steeper than 45 degrees, and every
+    downward face in this part is held to 45.  As the loft has it, that face
+    is exactly 45 -- CHAMFER in over CHAMFER up -- and the taper above it is
+    PLINTH_TAPER_DEG.
+    """
+    plinth = loft([_plinth_profile(PLINTH_INSET + P.CHAMFER, 0.0),
+                   _plinth_profile(PLINTH_INSET, P.CHAMFER),
+                   _plinth_profile(0.0, PLINTH_H)], ruled=True)
+    return plinth + Pos(0, 0, PLINTH_H) * _rounded_box(
+        BASE_X, BASE_Y, BASE_H - PLINTH_H, P.CORNER_R, _MIN)
 
 
 def _cord_cutter(depth: float) -> Part:
@@ -313,10 +370,10 @@ def _fence() -> Part:
 def build_base() -> Part:
     """The base, underside-down on the bed: X 0..BASE_X, Y centred, Z 0..BASE_H."""
     cx = BASE_X / 2
-    body = Pos(cx, 0, 0) * _rounded_box(BASE_X, BASE_Y, BASE_H, P.CORNER_R, _MIN)
-    # Downward outer edge of the box: chamfer, never a fillet.  Done before
-    # any cavity is cut, so only the outer profile is chamfered.
-    body = chamfer(body.faces().sort_by(Axis.Z)[0].edges(), P.CHAMFER)
+    # Outer profile complete before anything is cut out of it: the plinth's
+    # taper and the bottom chamfer are both in _outer_body(), so only the
+    # outer profile carries them.
+    body = Pos(cx, 0, 0) * _outer_body()
 
     # Lower cavity: walls 2*WALL thick, corners concentric with the outer ones.
     body -= Pos(cx, 0, P.FLOOR) * _rounded_box(

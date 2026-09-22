@@ -44,6 +44,18 @@ def _is_solid_in(probe, p):
     return abs((probe & p).volume - probe.volume) < 1e-3
 
 
+def _is_clear_of(probe, p):
+    """Nothing of `p` is inside `probe`.  Relative, not absolute: a point
+    probe can be smaller than the absolute tolerance used elsewhere, and
+    then an absolute test would pass however solid it was."""
+    return (probe & p).volume < probe.volume * 1e-6
+
+
+def _outer_at(p, z):
+    """The part's outer outline at height `z`, on a hair-thin slab."""
+    return _slab(p, z, 2e-3).bounding_box()
+
+
 def _cavity_bbox(p):
     """The lower cavity opening, measured clear of the fence and the ports."""
     ring = _slab(p, CLEAR_Z)
@@ -57,14 +69,17 @@ def _free_standing(p, z):
     """Everything standing clear of the shell in the slab at height `z`.
 
     The cavity floor carries the fence, so a slab down there is no longer
-    two pieces.  The shell is the one piece that reaches the part's own
-    outline; whatever is left stands free of the walls."""
-    outline = p.bounding_box()
+    two pieces.  The shell is the one piece that reaches the section's own
+    outline; whatever is left stands free of the walls.  The section's
+    outline, not the part's: inside the plinth band the outer wall is drawn
+    in from the footprint, so the part's bounding box is the wrong ruler."""
+    slab = _slab(p, z)
+    outline = slab.bounding_box()
 
     def is_shell(s):
         return s.bounding_box().min.X <= outline.min.X + 1e-6
 
-    solids = _slab(p, z).solids()
+    solids = slab.solids()
     shell = [s for s in solids if is_shell(s)]
     free = [s for s in solids if not is_shell(s)]
     assert len(shell) == 1, f"expected one shell ring at z = {z:.1f}"
@@ -89,11 +104,23 @@ def _pocket_port_face_x(p):
 def _end_wall_holes(p, sign):
     """Bounding boxes of the holes in an end wall, lowest first.  `sign` is
     the wall's outward X normal: -1 for the cord/escape wall, +1 for the LED
-    wall."""
-    face = (max if sign > 0 else min)(
-        (f for f in p.faces().filter_by(Axis.X) if f.normal_at().X * sign > 0),
-        key=lambda f: f.center().X)
-    return sorted((w.bounding_box() for w in face.inner_wires()),
+    wall.
+
+    Read off the wall's cavity face rather than its outer one.  The plinth
+    splits each outer end face into a tapered band and the upright above it,
+    and the cord port straddles that join, so outside there is no single
+    face left to read the holes from.  The cavity face is one unbroken plane
+    from the floor to the ledge, and a hole that shows up in it is a hole
+    that went all the way through the wall -- which is what these tests are
+    really after."""
+    cav = _cavity_bbox(p)
+    x = cav.min.X if sign < 0 else cav.max.X
+    faces = [f for f in p.faces().filter_by(Axis.X)
+             if f.normal_at().X * sign < 0 and abs(f.center().X - x) < 1e-6]
+    assert len(faces) == 1, (
+        f"expected one cavity face on the {sign:+d}X end wall, "
+        f"found {len(faces)}")
+    return sorted((w.bounding_box() for w in faces[0].inner_wires()),
                   key=lambda b: b.min.Z)
 
 
@@ -157,20 +184,142 @@ def test_outer_vertical_corners_are_rounded():
 
 def test_bottom_outer_edge_is_chamfered_not_filleted():
     """Downward edges get a chamfer: the bed face is CHAMFER in from the
-    outer profile all round, and the foot recesses stay inside it."""
+    plinth's own outline all round -- from the top of the chamfer, not from
+    the part's footprint, which the plinth has already stepped away from --
+    and the foot recesses stay inside it.  The flats are at 45 degrees,
+    which is what makes it a chamfer and not a fillet."""
     p = base.build_base()
-    bb = p.bounding_box().size
     bottom = p.faces().sort_by(Axis.Z)[0]
     fb = bottom.bounding_box().size
-    assert abs(fb.X - (bb.X - 2 * params.CHAMFER)) < 1e-6
-    assert abs(fb.Y - (bb.Y - 2 * params.CHAMFER)) < 1e-6
+    plinth = _outer_at(p, params.CHAMFER).size
+    assert abs(fb.X - (plinth.X - 2 * params.CHAMFER)) < 1e-3
+    assert abs(fb.Y - (plinth.Y - 2 * params.CHAMFER)) < 1e-3
     assert len(bottom.inner_wires()) == len(base.TIE_GRID) + 4
+    flats = [f for f in p.faces()
+             if f.geom_type == GeomType.PLANE
+             and abs(f.center().Z - params.CHAMFER / 2) < 1e-6
+             and abs(math.degrees(math.acos(min(1.0, abs(f.normal_at().Z))))
+                     - 45.0) < 1e-6]
+    assert len(flats) == 4, "no 45 degree chamfer flats round the bed face"
 
 
 def test_base_is_tall_enough_for_charger_cable_room_and_tray():
     p = base.build_base()
     h = p.bounding_box().size.Z
     assert h >= params.FLOOR + m.CHARGER.height + base.CABLE_ROOM + tray.TRAY_H - 1e-6
+
+
+# --- plinth ------------------------------------------------------------------
+
+def test_the_plinth_steps_the_lower_walls_in_toward_the_bed():
+    """The bottom PLINTH_H of the outer wall leans inward toward the bed, the
+    way the Trek CHRGtime's does: PLINTH_INSET off every face by the top of
+    the bottom chamfer, back to full size by PLINTH_H, and full size all the
+    way up from there.  Measured on the solid at three heights."""
+    p = base.build_base()
+    full = p.bounding_box().size
+    low = _outer_at(p, params.CHAMFER).size
+    assert abs(low.X - (full.X - 2 * base.PLINTH_INSET)) < 1e-3
+    assert abs(low.Y - (full.Y - 2 * base.PLINTH_INSET)) < 1e-3
+    for z in (base.PLINTH_H + 1.0, base.BASE_H - 1.0):
+        s = _outer_at(p, z).size
+        assert abs(s.X - full.X) < 1e-6 and abs(s.Y - full.Y) < 1e-6, z
+
+
+def test_the_step_in_happens_only_in_the_plinth_band():
+    """A skin hugging the inside of the nominal footprint is empty all the
+    way up the plinth and solid everywhere above it: the taper proved by
+    where the wall is and is not, rather than by reading its faces."""
+    p = base.build_base()
+    bb = p.bounding_box()
+
+    def skin(z0, z1):
+        return Pos(base.BASE_X / 2, bb.max.Y - 0.05, (z0 + z1) / 2) * Box(
+            40.0, 0.08, z1 - z0, align=_CTR)
+
+    assert (skin(0.0, base.PLINTH_H - 0.5) & p).volume < 1e-3, (
+        "the outer wall still reaches the full footprint down in the plinth")
+    above = skin(base.PLINTH_H + 1.0, base.BASE_H - base.NOTCH_D)
+    assert _is_solid_in(above, p), (
+        "the wall does not come back out to the footprint above the plinth")
+
+
+def test_the_plinth_leaves_a_full_wall_at_its_thinnest():
+    """The shell below the rebate is 2*WALL thick and the plinth takes
+    PLINTH_INSET off it, so at the top of the bottom chamfer -- the thinnest
+    the plinth ever gets -- a full WALL of material is still there, corners
+    included.  Measured as a band hugging the cavity outline: solid out to
+    WALL, void a hair beyond it."""
+    p = base.build_base()
+    z, eps = params.CHAMFER, 5e-4
+    assert _is_solid_in(_band(eps, params.WALL - eps, z, 2e-3), p), (
+        "the plinth eats into the wall somewhere round the band")
+    beyond = _band(params.WALL + 0.05, params.WALL + 0.15, z, 2e-3)
+    assert _is_clear_of(beyond, p), (
+        "the wall is not stepped in down there at all")
+
+
+def test_plinth_wall_thickness_on_every_side_and_through_a_corner():
+    """The same thing read side by side, so a failure says which wall: the
+    outer face at the top of the chamfer against the cavity face, on all
+    four sides, and then out along each corner's diagonal, where the taper
+    runs on a cone rather than a plane."""
+    p = base.build_base()
+    cav = _cavity_bbox(p)
+    out = _outer_at(p, params.CHAMFER)
+    sides = {"-X": cav.min.X - out.min.X, "+X": out.max.X - cav.max.X,
+             "-Y": cav.min.Y - out.min.Y, "+Y": out.max.Y - cav.max.Y}
+    for name, t in sides.items():
+        assert t >= params.WALL - 0.05, f"{name} wall is only {t:.3f} mm"
+    # Out of each corner arc's centre along the diagonal: material half a
+    # wall out past the cavity arc, and none of it a hair past a full wall.
+    cr, u = base.CAVITY_R, math.sqrt(0.5)
+    for cx, sx in ((cav.min.X + cr, -1), (cav.max.X - cr, +1)):
+        for cy, sy in ((cav.min.Y + cr, -1), (cav.max.Y - cr, +1)):
+            def probe(d):
+                return Pos(cx + sx * (cr + d) * u, cy + sy * (cr + d) * u,
+                           params.CHAMFER + 1e-3) * Box(0.05, 0.05, 2e-3,
+                                                        align=_CTR)
+            assert _is_solid_in(probe(params.WALL / 2), p), ("corner", cx, cy)
+            assert _is_clear_of(probe(params.WALL + 0.1), p), ("corner", cx, cy)
+
+
+def test_the_plinth_taper_prints_unsupported():
+    """The taper faces down and out, so it is an overhang -- but a shallow
+    one: PLINTH_INSET over the PLINTH_H it has, less the chamfer it starts
+    above.  Every downward face in the band is at that one angle, four walls
+    and four corners, and nowhere near the 45 degrees this part is held to."""
+    p = base.build_base()
+    want = math.degrees(math.atan2(base.PLINTH_INSET,
+                                   base.PLINTH_H - params.CHAMFER))
+    faces = [f for f in p.faces()
+             if f.normal_at().Z < -1e-6
+             and params.CHAMFER + 1e-6 < f.center().Z < base.PLINTH_H - 1e-6]
+    assert len(faces) == 8, (
+        f"expected four taper walls and four taper corners, got {len(faces)}")
+    for f in faces:
+        got = math.degrees(math.asin(min(1.0, -f.normal_at().Z)))
+        assert abs(got - want) < 1e-6, f"{got:.2f} deg at {f.center()}"
+    assert want < 45.0 - 1e-6, f"the taper overhangs {want:.1f} deg"
+    assert abs(want - base.PLINTH_TAPER_DEG) < 1e-9
+
+
+def test_foot_recesses_stay_inside_the_plinth_bed_face():
+    """The plinth shrinks the bed face, but FOOT_INSET is measured from the
+    nominal footprint, so the feet have to still land wholly on it.  They
+    are inner wires of that face -- a recess that broke its outline would
+    not be one -- with room to spare on every side."""
+    p = base.build_base()
+    bottom = p.faces().sort_by(Axis.Z)[0]
+    bed = bottom.bounding_box()
+    feet = [w.bounding_box() for w in bottom.inner_wires()
+            if abs(w.bounding_box().size.X - 2 * base.FOOT_R) < 1e-6]
+    assert len(feet) == 4
+    for f in feet:
+        for margin in (f.min.X - bed.min.X, bed.max.X - f.max.X,
+                       f.min.Y - bed.min.Y, bed.max.Y - f.max.Y):
+            assert margin >= 2.0, (
+                f"a foot recess is {margin:.2f} mm from the bed edge")
 
 
 # --- rebate ------------------------------------------------------------------

@@ -44,6 +44,11 @@ no status LED, so that wall is blind. Both -X wall ports are closed holes
 rather than notches, so the rim and the rebate ledge stay continuous all
 the way round.
 
+The bottom 12 mm of the outer wall is a plinth, as on the Trek CHRGtime: it
+leans 2.4 mm inward toward the bed on every side, 12.3 degrees off vertical,
+so it prints unsupported like the rest of the outer profile, with the 1 mm
+elephant-foot chamfer at its foot.
+
 The mains cord plugs in from outside: push the moulded C7 end through the
 cord port and it goes straight into the inlet, which sits right behind the
 wall. Nothing about the cord is inside the dock but the last few
