@@ -50,7 +50,7 @@ cover. v1 stood devices upright in shaped cradles; that is replaced.
 - Clearances: CLR_FIT 0.15 (coupon, PLA), CLR_RAIL 0.20, CLR_BAY 3.0.
 - Bed limit raised to 250 × 250 (U1 is 270 cube); target footprint about
   205 × 140 mm, base height about 75 mm.
-- Base height = FLOOR + charger height + CABLE_ROOM 15 + tray height (plate +
+- Base height = FLOOR + charger height + CABLE_ROOM 6 + tray height (plate +
   bay depth).
 - Charger (Anker A2154 since 2026-09-21; 3 USB-C + 3 USB-A, no LED): its back
   sits against the −X end wall (2 mm slack) with the fence a U of two sides and
