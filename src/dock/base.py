@@ -72,7 +72,7 @@ _END_LO = (Align.MIN, Align.CENTER, Align.MIN)
 # +X end-wall cutters: ending at their given X, centred in Y and Z
 _END_HI = (Align.MAX, Align.CENTER, Align.CENTER)
 
-CABLE_ROOM = 15.0        # plug bodies below the tray plus the cable bend
+CABLE_ROOM = 6.0     # headroom above the charger: only an escape cable crosses it (v2.5: was 15)
 FENCE_H = 8.0            # charger fence height above the cavity floor
 FENCE_CLEAR_Y = 2.0      # minimum cavity clearance beside the fence, per side
 # AC cord port: sized from the moulded C7 end that has to pass through it,
