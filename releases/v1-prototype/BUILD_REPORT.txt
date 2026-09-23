@@ -1,0 +1,6 @@
+build report (mm)
+  base    232.20 x  163.70 x  81.60
+  tray    227.10 x  158.60 x  41.00
+  lid     237.30 x  168.80 x  10.40
+  cavity room past the fence: X 135.90 in front, Y 36.00 per side
+  charger backed against the -X wall; port room 138.30 (need 40.00)
