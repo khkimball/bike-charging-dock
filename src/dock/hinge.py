@@ -8,8 +8,8 @@ into the tray.  Two stations stand HINGE_INSET in from each end.
 At each station the base carries two cheeks with a pin between them.  A
 cheek is a disc round the axis hulled with a 45 degree chin that runs down
 into the wall, so it prints open-top-up without supports; the pin's
-underside is cut flat at PIN_FLAT*PIN_R, a 3 mm bridge, which keeps it
-inside the bore circle.
+underside is cut flat at PIN_FLAT*PIN_R -- a flat 3 mm wide, bridged between
+the cheeks -- which keeps it inside the bore circle.
 
 The lid carries a hook between the cheeks: a ring round the pin (a teardrop
 bore, point up as printed) hulled into the lid's back wall and top, so it
@@ -123,6 +123,10 @@ def _heel_closed_deg() -> float:
     """Where the heel tip points with the lid closed: the angle that puts it
     HEEL_TIP_R off the outer wall when the lid is at OPEN_DEG."""
     lo, hi = -175.0, -95.0      # wall_gap at hi is > HEEL_TIP_R, at lo < it
+    g_lo, g_hi = wall_gap(*_polar(HEEL_R, lo)), wall_gap(*_polar(HEEL_R, hi))
+    assert g_hi > HEEL_TIP_R > g_lo, (
+        f"heel bisection bracket [{lo}, {hi}] does not bracket the root: "
+        f"wall_gap(lo)={g_lo:.3f}, wall_gap(hi)={g_hi:.3f}, target={HEEL_TIP_R}")
     for _ in range(60):
         mid = (lo + hi) / 2
         if wall_gap(*_polar(HEEL_R, mid)) > HEEL_TIP_R:

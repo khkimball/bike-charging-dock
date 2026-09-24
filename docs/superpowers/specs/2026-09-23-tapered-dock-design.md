@@ -33,11 +33,15 @@ stay marked NOMINAL until measured).
   height ≈ 79.7 (FLOOR + charger + CABLE_ROOM + TRAY_SINK + tray height).
   Everything grows from the tray; nothing is hard-coded.
 - **Two-tone base**: dark foot band, light body. The colour line is at
-  BAND_H = 8 mm, below the cord port's sill (Z 10.1), so both kinds of port
-  sit entirely in the light body. A reveal groove 1.2 mm tall × 0.6 mm deep,
-  V-profiled at 45°, is centred on the colour line. The tool change can be
-  set at any layer inside the groove, so it works at both 0.20 and 0.28 mm
-  layers. One tool change per base; no painted colour.
+  BAND_H = 8 mm; both kinds of wall port have their sill clamped to sit at
+  least 0.5 mm above the groove's top flank (`BAND_H + GROOVE_UP + 0.5`,
+  taking whatever is higher against the port's own geometry), so both sit
+  entirely in the light body. A reveal groove 1.2 mm tall × 0.6 mm deep is
+  centred on the colour line, with asymmetric flanks -- 0.3 mm below, 0.9 mm
+  above -- rather than a symmetric 45° V, which would overhang about 52°
+  once drafted by TAPER_DEG. The tool change can be set at any layer inside
+  the groove, so it works at both 0.20 and 0.28 mm layers. One tool change
+  per base; no painted colour.
 - **Lid**: LID_H = 8 mm tall with a 1.2 mm top plate (LID_PLATE) and 1.6 mm
   walls (THIN_WALL). The lower 5 mm continues the 15° slope from the base
   rim; the top 3 mm is a flared lip standing 2 mm proud of the slope. The lip
@@ -73,7 +77,9 @@ One print, plate down, bays up, no supports.
   - R6 on every vertical inside corner, where internal walls meet each other
     or an outer wall.
   - R3 where every wall meets the bay floor.
-  - A full round on the top edge of every internal wall.
+  - R0.8 on the top edge of every internal wall, not a full round: a full
+    round of a WALL-thick (2.0 mm) top would leave no flat face to fillet
+    from.
 
   All of these face up or sideways, so the chamfer-on-downward-edges rule
   does not apply.
@@ -109,13 +115,15 @@ Prints open-top-up. Supports are for the cord port only.
 - **Cord port**: unchanged, a 26 × 16 rectangle through the −X wall,
   centred on the inlet. It is still the one supported ceiling
   (SUPPORTED_CEILINGS).
-- **Escape ports**: two stadium-shaped holes (nearly oval, about 14 × 8
-  with full R4 ends) in the −X wall, one each side of the fence. Each is
-  centred in Y in the gap between the fence and the side wall, with its sill
-  above the colour groove (sill at BAND_H + 0.6 + 1.5). This replaces the single port above the cord port,
-  which the charger's height covered. Each port's width is derived so that a
-  full WALL of material remains to the corner arc at that height. Their 6 mm
-  flat heads are short bridges.
+- **Escape ports**: two stadium-shaped holes (nearly oval, up to 14 × 8 with
+  full R4 ends) in the −X wall, one each side of the fence. Each is centred
+  in Y in the gap between the fence and the side wall, with its sill above
+  the colour groove (sill at `BAND_H + GROOVE_UP + 1.5`, i.e. 10.4). This
+  replaces the single port above the cord port, which the charger's height
+  covered. Each port's length (ESCAPE_L) is derived, capped at 14, so a full
+  WALL of material remains to both the fence and the corner arc at that
+  height. Their flat heads (ESCAPE_L − ESCAPE_H, up to 6 mm at the cap) are
+  short bridges.
 - **Cable drop**: the cutouts at the bays' outer ends sit over the leaning
   wall, so a cable falls clear for at least 15 mm below the tray and then
   follows the wall down. v1's rule (clear all the way to the cavity floor)

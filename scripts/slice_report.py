@@ -118,7 +118,8 @@ def slice_part(stl: Path, layer: str, prof: dict[str, Path]) -> tuple[float, flo
 
 
 def _fmt(minutes: float) -> str:
-    return f"{int(minutes // 60)}h{int(round(minutes % 60)):02d}"
+    total = round(minutes)          # round first, so h/m split never carries a 60
+    return f"{total // 60}h{total % 60:02d}"
 
 
 def main() -> int:
@@ -142,6 +143,10 @@ def main() -> int:
         "machine": _write(_flatten(_index(root, "machine"), MACHINE), OUT / "machine.json"),
         "filament": _write(_flatten(_index(root, "filament"), FILAMENT), OUT / "filament.json"),
         "plain": _write({**proc, "enable_support": "0"}, OUT / f"process_{args.layer}.json"),
+        # The CLI has no way to restrict supports to just the cord port
+        # ceiling, so this blankets the whole base plate with them -- the
+        # base's reported time/filament are slightly overstated here, which
+        # is conservative for the v1/v2 comparison, not an inaccuracy to fix.
         "support": _write({**proc, "enable_support": "1"}, OUT / f"process_{args.layer}_s.json"),
     }
 

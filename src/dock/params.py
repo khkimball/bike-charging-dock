@@ -31,7 +31,7 @@ class Plug:
 
 
 # Typical overmold sizes; refine from the actual cables when measured.  The
-# tray's cable cutouts are one size for all of them (see tray.CUTOUT), so
+# tray's cable cutouts are one size for all of them (see layout.CUTOUT), so
 # these are sanity limits, not cutter inputs.
 USB_A_PLUG = Plug(width=15.0, height=8.0, length=20.0)
 USB_C_PLUG = Plug(width=11.0, height=6.0, length=18.0)

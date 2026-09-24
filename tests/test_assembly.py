@@ -4,7 +4,7 @@ from functools import lru_cache
 
 from build123d import Align, Box, Pos
 
-from dock import base, hinge as H, layout as L, lid, params, taper, tray
+from dock import base, hinge as H, layout as L, lid, params, tray
 
 _MIN = (Align.CENTER, Align.CENTER, Align.MIN)
 

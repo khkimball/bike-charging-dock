@@ -30,8 +30,9 @@ class Charger:
     port_pitch: float           # centre to centre, adjacent ports in the row
     inlet_center_z: float       # AC inlet centre height above charger bottom
     # Port 1's centre to the LED centre, along the port face and away from
-    # the other ports.  None on a charger with no status LED at all, which is
-    # what tells the base to leave its +X end wall blind.
+    # the other ports.  None on a charger with no status LED at all.  The v2
+    # (tapered) base has no LED window and never reads this field; it is
+    # kept for a future charger that has one.
     led_offset_from_ports: float | None = None
     # Radius of the body's rounded vertical edges, seen from above: the
     # charger pocket's corners follow it.  See docs/measuring.md.

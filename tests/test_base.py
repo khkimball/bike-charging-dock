@@ -103,7 +103,6 @@ def test_the_floor_is_floor_thick():
 
 def test_the_ledge_is_a_ledge_wide_shelf_at_the_tray_underside():
     z = base.LEDGE_Z
-    below = _slab(_base(), z - 0.01)
     top = _section_face(_base(), z - 0.01)
     shelf = min(w.bounding_box().min.Y for w in top.inner_wires())
     wall = L.RIM.at(z, taper.horiz(params.WALL))[1] / 2

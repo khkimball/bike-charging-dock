@@ -53,8 +53,9 @@ charger flat, ports toward you.
   narrows into a 45 degree peak above its rectangular part, so an inlet
   higher than expected is a real failure -- `test_base.py` measures it.
 - led_offset_from_ports: `None` when the charger has no status LED.  The
-  A2154 has none, and the base then cuts no window and leaves its +X end
-  wall blind.  If yours does have one, measure from port 1's centre to the
+  A2154 has none, and the base (this tapered v2 design) has no LED window and
+  never reads this field regardless -- it is kept for a future charger that
+  has one.  If yours does have an LED, measure from port 1's centre to the
   LED centre along the port face, *away* from the other ports: the LED sits
   at the end of the row, outboard of port 1, not between the ports.
 - corner_r: the radius of the body's rounded vertical edges, seen from

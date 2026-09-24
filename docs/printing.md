@@ -54,7 +54,8 @@ down to the foot; the corners run from R30 at the rim to about R8 at the
 bed. The base walls lean outward as they rise, well inside 45 degrees, so
 the whole shell prints unsupported; the only supported ceiling is the AC
 cord port's flat top (`base.SUPPORTED_CEILINGS`). The escape ports' heads,
-the foot recesses and the hinge pins' 3 mm flats are short bridges.
+the foot recesses and the hinge pins' flats (3 mm wide, bridged between the
+cheeks) are short bridges.
 
 The charger (Anker A2154) stands in a U fence backed onto the -X end wall;
 its corners follow the charger's rounded edges (`CHARGER.corner_r`). The
