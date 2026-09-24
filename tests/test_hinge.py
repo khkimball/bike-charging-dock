@@ -50,12 +50,23 @@ def test_the_mouth_neck_is_narrower_than_the_pin_by_the_snap():
     assert H.MOUTH_W < 2 * H.PIN_R
 
 
-def test_the_pin_underside_is_a_short_bridge_and_the_cheeks_print_unsupported():
+def test_the_pin_underside_bridges_the_hook_gap_and_the_cheeks_print_unsupported():
     steep = steep_faces(H.base_knuckles())
     assert steep, "expected the pins' flat undersides"
     for f in steep:
-        assert span(f) <= MAX_BRIDGE
+        assert span(f) <= H.HOOK_W + 2 * H.SIDE_CLR + 1.0 + 1e-6
         assert math.isclose(f.center().Z, H.AXIS_Z - H.PIN_FLAT * H.PIN_R, abs_tol=1e-6)
+
+
+def test_the_mouth_faces_straight_down_with_the_lid_closed():
+    hooks = H.lid_hooks()
+    xs = H.STATIONS[0]
+    below = Pos(xs, H.AXIS_Y, H.AXIS_Z - H.KNUCKLE_R) * Box(H.HOOK_W - 2, H.MOUTH_W - 0.2, 2 * H.KNUCKLE_R - 2 * H.BORE_R,
+                                                           align=(Align.CENTER, Align.CENTER, Align.MIN))
+    assert (below & hooks).volume < 1e-6
+    above = Pos(xs, H.AXIS_Y, H.AXIS_Z + H.BORE_R + 0.2) * Box(H.HOOK_W - 2, H.MOUTH_W - 0.2, 1.0,
+                                                              align=(Align.CENTER, Align.CENTER, Align.MIN))
+    assert (above & hooks).volume > 1e-3
 
 
 def test_the_axis_is_behind_the_rim_and_the_knuckle_sweep_clears_the_tray():

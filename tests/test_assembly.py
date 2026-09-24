@@ -66,16 +66,9 @@ def test_the_heel_stops_the_lid_just_past_open():
     assert _hit(_lid(H.OPEN_DEG + 3), _base()) > 1e-3
 
 
-def test_a_closed_lid_lifted_catches_on_the_pins():
-    assert _hit(Pos(0, 0, 1.0) * _lid(), _base()) > 1e-3
-
-
-def test_at_full_open_the_lid_lifts_off_along_the_wall_over_the_snap():
-    t = math.radians(params.TAPER_DEG)
-    def lifted(s):
-        return Pos(0, s * math.sin(t), s * math.cos(t)) * _lid(H.OPEN_DEG - 1)
-    assert _hit(lifted(H.BORE_R), _base()) > 1e-3             # the neck snaps over the pin
-    assert _hit(lifted(2 * H.BORE_R + 2.0), _base()) < 1e-3   # and then it is off
+def test_the_closed_lid_snaps_straight_up_off_the_pins():
+    assert _hit(Pos(0, 0, H.BORE_R) * _lid(), _base()) > 1e-3        # the neck snaps over the pin
+    assert _hit(Pos(0, 0, 2 * H.BORE_R + 2.0) * _lid(), _base()) < 1e-3   # and then it is off
 
 
 def test_the_assembled_dock_fits_the_bed_footprint():

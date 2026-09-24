@@ -1,4 +1,4 @@
-"""Snap-on, lift-off lid hinge: the base carries the pins, the lid the hooks.
+"""Snap-on lid hinge: the base carries the pins, the lid the hooks.
 
 Everything here is in base coordinates, with the lid modelled closed on the
 rim; lid.py turns the lid over for printing.  The axis runs along X at rim
@@ -9,19 +9,20 @@ At each station the base carries two cheeks with a pin between them.  A
 cheek is a disc round the axis hulled with a 45 degree chin that runs down
 into the wall, so it prints open-top-up without supports; the pin's
 underside is cut flat at PIN_FLAT*PIN_R -- a flat 3 mm wide, bridged between
-the cheeks -- which keeps it inside the bore circle.
+the cheeks (base.LONG_BRIDGES) -- which keeps it inside the bore circle.
 
-The lid carries a hook between the cheeks: a ring round the pin (a teardrop
-bore, point up as printed) hulled into the lid's back wall and top, so it
-prints top-down.  Its mouth has a neck SNAP narrower than the pin and then
-flares.  The mouth points MOUTH_DEG above +Y with the lid closed, which at
-OPEN_DEG is straight down the base's outer wall: at full open the lid lifts
-off along the wall, snapping the neck over the pin.  Lift a closed lid and
-the pin goes to the bottom of the bore instead, so it stays on.
+The lid carries a hook between the cheeks: a ring round the pin with a plain
+round bore, hulled into the lid's back wall and top.  Its mouth faces
+straight down with the lid closed (MOUTH_DEG): a neck SNAP narrower than the
+pin, then a flare.  The lid presses straight down onto the pins and pulls
+straight up off them, with a light snap either way.  As printed (top face
+down) the mouths face up, so the bores print on supports.
 
 A heel tab at X = 0 stops the lid at OPEN_DEG: its tip lands on the base's
-outer wall there.  It is its own piece rather than part of a hook, so the
-mouths can face where they must.
+outer wall there.  OPEN_DEG is kept short of 110 on purpose: resting on the
+heel, the lid pushes its hooks toward the front, which is close to the
+mouths' direction once the lid is open, and the further it leans back the
+harder that push.
 
 Each part's knuckles turn inside relief discs (RELIEF_R round the axis) cut
 out of the other part.  A disc round the axis is the same at every angle, so
@@ -37,22 +38,22 @@ from dock import taper
 
 PIN_R = 2.5
 PIN_FLAT = 0.8            # pin underside cut flat this far (x PIN_R) below the axis
-BORE_CLR = 0.3            # tune on the hinge coupon
+BORE_CLR = 0.4            # tune on the hinge coupon
 BORE_R = PIN_R + BORE_CLR
-SNAP = 0.4                # neck narrower than the pin by this; tune on the coupon
+SNAP = 0.2                # neck narrower than the pin by this: a light snap; tune on the coupon
 MOUTH_W = 2 * PIN_R - SNAP
 THROAT = 1.0              # neck length past the bore before the mouth flares
 KNUCKLE_R = 5.5
 RELIEF_R = KNUCKLE_R + 0.5
-HOOK_W = 8.0
-CHEEK_W = 4.0
+HOOK_W = 24.0
+CHEEK_W = 12.0
 SIDE_CLR = 0.3            # hook to cheek, along X
 HINGE_INSET = 60.0        # station centre in from each end of the rim
-OPEN_DEG = 110.0
-MOUTH_DEG = OPEN_DEG - 90.0 - P.TAPER_DEG   # closed-lid mouth angle, from +Y toward +Z
+OPEN_DEG = 100.0
+MOUTH_DEG = -90.0          # closed-lid mouth angle, from +Y toward +Z: straight down
 HEEL_R = 7.0              # heel tip centre, from the axis
 HEEL_TIP_R = 1.0
-HEEL_W = 8.0
+HEEL_W = 24.0
 AXIS_GAP = 0.2            # knuckle sweep to tray, at the rim
 
 AXIS_Y = L.TRAY_OUTLINE.sy / 2 + RELIEF_R + AXIS_GAP
@@ -202,8 +203,7 @@ def lid_hooks(stations=STATIONS) -> Part:
     k = KNUCKLE_R
     prof = hull2d(_circle(AXIS_Y, AXIS_Z, k) + [
         (_LID_WALL_Y, AXIS_Z), (_LID_WALL_Y, _LID_TOP), (AXIS_Y + k, _LID_TOP)])
-    # teardrop: the point is down here, which is up as the lid prints
-    bore = hull2d(_circle(AXIS_Y, AXIS_Z, BORE_R) + [(AXIS_Y, AXIS_Z - BORE_R * math.sqrt(2))])
+    bore = _circle(AXIS_Y, AXIS_Z, BORE_R, 96)
     mouth = _mouth_profile()
     part = None
     for xs in stations:

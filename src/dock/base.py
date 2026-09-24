@@ -13,15 +13,14 @@ tray's underside; the ledge's underside leans in, so it prints unsupported.
 The tray sits TRAY_SINK below the rim, so the lid lands on the base.
 
 The charger is the v1 arrangement: backed onto the -X end wall in a U
-fence, its AC inlet reached from outside through the cord port.  The fence
-corners follow the charger's own rounded corners.  Two stadium-shaped
-escape ports flank the charger in the same wall, on its flat between the
-fence and the corner arcs, above the colour groove.
+fence, its AC inlet reached from outside through the cord port, an oval
+like every other cable hole.  The fence corners follow the charger's own
+rounded corners.  Two oval escape ports flank the charger in the same wall,
+on its flat between the fence and the corner arcs, above the colour groove.
 
-It prints open-top-up.  The cord port's flat top is too wide to bridge, so
-it is the one ceiling printed on supports (SUPPORTED_CEILINGS); everything
-else that faces down is a bridge of 20 mm or less: the escape ports' heads,
-the foot recesses and the hinge pins' flats.
+It prints open-top-up with no supports.  Everything that faces down is a
+bridge of 20 mm or less -- the ports' flat heads, the foot recesses -- except
+the hinge pins' flats, which span the wide hook gap (LONG_BRIDGES).
 
 Base coordinates: XY centred, bed at Z = 0.
 """
@@ -79,7 +78,9 @@ CORD_H = M.CORD_END.height + 2.0
 # it before, and the groove floor is the higher constraint here.
 CORD_Z0 = max(P.FLOOR + M.CHARGER.inlet_center_z - CORD_H / 2,
               P.BAND_H + GROOVE_UP + 0.5)
-SUPPORTED_CEILINGS = ("cord port",)
+# Downward faces longer than a 20 mm bridge, printed as bridges anyway: the
+# hinge pins' flats span the wide hook gap between the cheeks.
+LONG_BRIDGES = ("hinge pins",)
 
 # --- escape ports --------------------------------------------------------------------
 ESCAPE_H = 8.0                         # along Z; the ends are full rounds
@@ -167,8 +168,11 @@ def _fence() -> Part:
 
 
 def _cord_cutter() -> Part:
-    return Pos(_OUTSIDE_X, 0, CORD_Z0) * Box(CAVITY_MIN_X + 1.0 - _OUTSIDE_X,
-                                             CORD_W, CORD_H, align=_END_LO)
+    """An oval, like the escape ports: a figure-8 cord end's two lobes fit
+    its round ends, and its flat top is short enough to bridge."""
+    slot = Plane.YZ.offset(_OUTSIDE_X) * Pos(0, CORD_Z0 + CORD_H / 2) * \
+        SlotCenterToCenter(CORD_W - CORD_H, CORD_H)
+    return extrude(slot, amount=CAVITY_MIN_X + 1.0 - _OUTSIDE_X)
 
 
 def _escape_cutters() -> Part:

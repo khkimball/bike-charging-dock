@@ -117,6 +117,21 @@ def test_six_cable_cutouts_through_the_plate_where_the_layout_puts_them():
         assert math.isclose(hx, wx, abs_tol=0.01) and math.isclose(hy, wy, abs_tol=0.01)
 
 
+def test_the_cable_cutouts_are_ovals():
+    for _, cx, cy, sx, sy in L.cutouts():
+        long_x = sx >= sy
+        length, width = (sx, sy) if long_x else (sy, sx)
+        z = params.TRAY_PLATE / 2
+        # the straight middle is open the full width
+        mid = _box(cx, cy, z, *(((length - width), width - 0.1) if long_x
+                                else (width - 0.1, (length - width))), 0.2)
+        assert _clear(mid)
+        # but the corner of the bounding rectangle is plate: the ends are round
+        ex = cx + (length / 2 - 0.3 if long_x else width / 2 - 0.3)
+        ey = cy + (width / 2 - 0.3 if long_x else length / 2 - 0.3)
+        assert _solid(_box(ex, ey, z, 0.2, 0.2, 0.2))
+
+
 def test_the_finger_slot_goes_through_the_partition_under_a_45_degree_arch():
     top = L.TRAY_H - tray.SLOT_TOP_DROP
     x = tray.PARTITION_X

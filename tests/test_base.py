@@ -2,7 +2,7 @@
 import math
 from functools import lru_cache
 
-from build123d import Align, Axis, Box, Cylinder, Pos, fillet
+from build123d import Align, Axis, Box, Cylinder, Plane, Pos, SlotCenterToCenter, extrude, fillet
 
 from dock import measurements as m
 from dock import base, hinge as H, layout as L, params, taper
@@ -175,9 +175,21 @@ def _wall_solid(y, z, sy, sz):
     return _solid(_box(cx, y, z, sx, sy, sz))
 
 
-def test_the_cord_port_goes_through_the_minus_x_wall_on_the_inlet():
+def _oval_through_minus_x(y, z, length, height):
+    """A stadium-shaped probe (long along Y) right through the -X wall."""
+    x0 = -L.RIM.sx / 2 - 1.0
+    face = Plane.YZ.offset(x0) * Pos(y, z) * SlotCenterToCenter(length - height, height)
+    return extrude(face, amount=base.CAVITY_MIN_X - x0 + 0.5)
+
+
+def test_the_cord_port_is_an_oval_on_the_inlet_that_a_c7_end_passes():
     z = params.FLOOR + m.CHARGER.inlet_center_z
-    assert _clear(_through_minus_x(0, z, base.CORD_W - 0.1, base.CORD_H - 0.1))
+    c7 = m.CORD_END                   # a figure-of-8 end: two round lobes
+    assert _clear(_oval_through_minus_x(0, z, c7.width, c7.height))
+    assert _clear(_oval_through_minus_x(0, z, base.CORD_W - 0.1, base.CORD_H - 0.1))
+    # rounded ends: the corner of the port's bounding rectangle is still wall
+    cy, cz = base.CORD_W / 2 - 0.3, z + base.CORD_H / 2 - 0.3
+    assert not _clear(_through_minus_x(cy, cz, 0.2, 0.2))
     assert not _clear(_through_minus_x(0, z, base.CORD_W + 0.5, base.CORD_H + 0.5))
 
 
@@ -234,10 +246,15 @@ def test_the_hinge_pins_and_relief_are_in_the_base():
 
 # --- printability -----------------------------------------------------------------
 
-def test_no_unsupported_ceilings_but_the_cord_port():
-    cord_top = base.CORD_Z0 + base.CORD_H
+def test_no_ceiling_longer_than_a_bridge_but_the_hinge_pins():
+    """Open-top-up, no supports anywhere: every steep downward face is a
+    bridge of MAX_BRIDGE or less, except the hinge pins' flat undersides
+    (base.LONG_BRIDGES), which span the wide hook gap between the cheeks."""
+    pin_flat_z = H.AXIS_Z - H.PIN_FLAT * H.PIN_R
+    pin_span = H.HOOK_W + 2 * H.SIDE_CLR + 1.0
     for f in steep_faces(_base()):
         c = f.center()
-        if abs(c.Z - cord_top) < 1e-6 and c.X < base.CAVITY_MIN_X and math.isclose(f.bounding_box().size.Y, base.CORD_W, abs_tol=1e-6):
-            continue
-        assert span(f) <= MAX_BRIDGE, f"{span(f):.1f} mm ceiling at {c}"
+        on_pin = (abs(c.Z - pin_flat_z) < 1e-6
+                  and min(abs(c.X - xs) for xs in H.STATIONS) < 1e-6)
+        limit = pin_span if on_pin else MAX_BRIDGE
+        assert span(f) <= limit + 1e-6, f"{span(f):.1f} mm ceiling at {c}"

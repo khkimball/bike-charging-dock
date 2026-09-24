@@ -67,7 +67,8 @@ One print, plate down, bays up, no supports.
   Bay floors are sized to device + CLR_BAY_OUTER (3.0) at the sloped outer
   walls, which opens to about 13 mm at the top for cables, and device +
   CLR_BAY (8.0) at the vertical internal walls, as in v1. BAY_DEPTH stays 38.
-- **Cable cutouts**: unchanged, 28 × 16, one at each bay's outer end; the
+- **Cable cutouts**: ovals (stadiums, full round ends) 28 × 16, like every
+  cable hole in the dock (revision 2026-09-24), one at each bay's outer end; the
   Ion bay keeps three along its length (UNDERSIDE_PORT_CUTOUTS). They sit
   within each bay's floor, clear of the sloped wall.
 - **Fixed internal walls**: the centre partition and the two right-column
@@ -89,7 +90,7 @@ One print, plate down, bays up, no supports.
 
 ## Base
 
-Prints open-top-up. Supports are for the cord port only.
+Prints open-top-up with no supports (revision 2026-09-24: the cord port became an oval whose flat top bridges).
 
 - **Shell**: a single WALL (2.0) sloped wall and a FLOOR (1.2) floor. This
   replaces v1's 2·WALL lower walls, which existed only to carry the rebate
@@ -112,9 +113,10 @@ Prints open-top-up. Supports are for the cord port only.
     bend.
   - **No fingernail notch**: v1's notch in the +Y fence wall is removed.
     The charger lifts out easily without it.
-- **Cord port**: unchanged, a 26 × 16 rectangle through the −X wall,
-  centred on the inlet. It is still the one supported ceiling
-  (SUPPORTED_CEILINGS).
+- **Cord port**: a 26 × 16 oval (stadium, R8 ends) through the −X wall,
+  centred on the inlet (revision 2026-09-24; was a rectangle printed on
+  supports). A figure-8 (C7) end of CORD_END size passes; its 10 mm flat top
+  bridges.
 - **Escape ports**: two stadium-shaped holes (nearly oval, up to 14 × 8 with
   full R4 ends) in the −X wall, one each side of the fence. Each is centred
   in Y in the gap between the fence and the side wall, with its sill above
@@ -135,8 +137,10 @@ Prints open-top-up. Supports are for the cord port only.
 
 ## Hinge
 
-Snap-on and lift-off, with no hardware. It sits on the +Y long side, at two
-stations about 60 mm in from each end.
+Snap-on, no hardware. It sits on the +Y long side, at two stations about
+60 mm in from each end. Revision 2026-09-24: hooks, cheeks and heel 3× wider
+(HOOK_W 24, CHEEK_W 12, HEEL_W 24) for strength; mouths face straight down
+with the lid closed; round bores; a lighter snap; OPEN_DEG 100.
 
 - **Axis**: runs along X at rim height, far enough behind the rim
   (AXIS_Y) that the knuckles' swing clears the tray. Every knuckle turns
@@ -145,21 +149,20 @@ stations about 60 mm in from each end.
 - **Base**: each station has two cheeks with a horizontal Ø5 pin between
   them. Each cheek is a disc round the axis hulled with a 45° chin that runs
   into the wall, so it prints without supports. The pin's underside is cut
-  flat at 0.8·r, a 3 mm bridge, which keeps the pin inside the bore circle.
-- **Lid**: a C-hook at each station. It is a ring round the pin (teardrop
-  bore, 0.3 mm clearance), hulled up into the lid's back wall and top so it
-  prints top-down. Its mouth has a neck narrower than the pin by SNAP
-  (initially 0.4 mm; clearance and snap are tuned on the hinge coupon), and
-  it flares open beyond the neck.
-  - **Mouth direction**: set so that at OPEN_DEG (110°) the mouth points
-    straight down the base's outer wall. At full open, pulling the lid up
-    along the wall unsnaps it.
-  - **Captive when closed**: lifting a closed lid pulls the pin into the
-    bottom of the bore. Pulling a closed lid hard straight forward can still
-    unsnap it, which is accepted.
-- **Heel stop**: a separate tab on the lid at X = 0, between the stations.
-  At OPEN_DEG its tip rests on the base's outer wall, so the lid stays open.
-  It is kept off the hooks so the mouth can face where it must.
+  flat at 0.8·r, which keeps the pin inside the bore circle. The flat is
+  3 mm wide and bridges the ~25 mm hook gap (base.LONG_BRIDGES).
+- **Lid**: a C-hook at each station. It is a ring round the pin with a
+  plain round bore (0.4 mm clearance), hulled up into the lid's back wall
+  and top. Its mouth faces straight down with the lid closed: a neck
+  narrower than the pin by SNAP (0.2 mm, a light snap; clearance and snap
+  are tuned on the hinge coupon), flaring open beyond the neck. The lid
+  presses straight down onto the pins and lifts straight off. As printed
+  (top face down) the mouths face up, so the bores print on supports.
+- **Heel stop**: a separate 24 mm tab on the lid at X = 0, between the
+  stations. At OPEN_DEG (100°) its tip rests on the base's outer wall, so
+  the lid stays open. The angle is kept short of 110° because, resting on
+  the heel, the lid pushes its hooks forward -- close to the mouths'
+  direction once open -- and the further it leans back the harder the push.
 - **Hinge coupon**: `coupon.py` gains a small hinge coupon (one base pin
   station plus one lid hook) that tunes the pin clearance and snap
   interference before the base is printed.
@@ -226,13 +229,14 @@ stations about 60 mm in from each end.
     - swept from 0° to just short of OPEN_DEG it intersects neither the
       base nor the seated tray;
     - past OPEN_DEG the heel meets the wall;
-    - lifted while closed, it catches on the pins;
-    - just short of open, it lifts off along the wall and the neck snaps
-      over the pin on the way.
+    - lifted straight up while closed, the neck snaps over the pins and
+      the lid comes off.
   - **Printability**: no downward face past 45°, with these allowlisted:
-    - base: bridges of 20 mm or less (escape port heads, foot recesses, the
-      pin's 3 mm flat), and the cord port as the only supported ceiling;
-    - lid: the hook mouth's roof, no wider than a hook;
+    - base: bridges of 20 mm or less (the ports' flat heads, foot recesses),
+      and the hinge pins' flats across the hook gap (LONG_BRIDGES); no
+      supports;
+    - lid: the hook bores and mouths, no wider than a hook (printed on
+      supports);
     - tray: none (the finger slot is a 45° arch).
   - **Parts**: every exported part is a single valid solid with its bed face
     at Z = 0 and fits BED_X × BED_Y.

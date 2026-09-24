@@ -14,13 +14,13 @@ FLOOR_FILLET_R, and once all four are cut the tops of the walls are rounded
 TOP_ROUND_R.  All of these face up or sideways, so they print.
 
 The tray is lifted out by the partition, through a finger slot with a 45
-degree pointed head.  Cable cutouts go through the plate where layout.py
-puts them.
+degree pointed head.  Cable cutouts are ovals through the plate, where
+layout.py puts them.
 
 Tray coordinates: XY centred, plate underside at Z = 0.  Printed plate-down,
 bays up; nothing overhangs.
 """
-from build123d import Align, Axis, Box, Part, Plane, Polygon, Pos, extrude, fillet, loft
+from build123d import Axis, Part, Plane, Polygon, Pos, SlotCenterToCenter, extrude, fillet, loft
 
 from dock import layout as L
 from dock import params as P
@@ -74,6 +74,7 @@ def build_tray() -> Part:
     part = fillet([e for w in top.inner_wires() for e in w.edges()], TOP_ROUND_R)
     part -= _finger_slot()
     for _, cx, cy, sx, sy in L.cutouts():
-        part -= Pos(cx, cy, -1.0) * Box(sx, sy, P.TRAY_PLATE + 2.0,
-                                        align=(Align.CENTER, Align.CENTER, Align.MIN))
+        long, short = max(sx, sy), min(sx, sy)
+        oval = SlotCenterToCenter(long - short, short, rotation=0 if sx >= sy else 90)
+        part -= Pos(cx, cy, -1.0) * extrude(oval, amount=P.TRAY_PLATE + 2.0)
     return part
