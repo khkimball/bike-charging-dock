@@ -6,11 +6,9 @@ from build123d import Part
 from dock.export import write_all
 from dock import base
 from dock import coupon
-from dock import divider
 from dock import hinge
 from dock import layout
 from dock import lid
-from dock import params
 from dock import tray
 
 
@@ -35,20 +33,10 @@ PARTS: dict[str, Callable[[], Part]] = {
     "coupon_peg": _coupon_peg,
     "hinge_coupon_base": _hinge_coupon_base,
     "hinge_coupon_lid": _hinge_coupon_lid,
-}
-
-PARTS.update({
     "base": base.build_base,
     "tray": tray.build_tray,
     "lid": lid.build_lid,
-    # Sized from the tray's right column: the slab is narrower than the bay by
-    # CLR_RAIL, and each rail adds RAIL_D beyond it into the wall slots.  It
-    # is half a millimetre shorter than the bay is deep, so the lid lands on
-    # the tray rim and never on a divider that has not quite seated.
-    "divider": lambda: divider.build_divider(
-        height=params.BAY_DEPTH - 0.5,
-        width=tray.RIGHT_BAY_W - params.CLR_RAIL),
-})
+}
 
 
 def build_report() -> str:

@@ -20,6 +20,10 @@ def test_design_rules_match_spec():
     assert params.CORNER_R == 30.0
     assert params.BAND_H == 8.0
     assert (params.BED_X, params.BED_Y) == (250, 250)
+    # removed with the removable dividers and the last v1 module
+    assert not hasattr(params, "CLR_RAIL")
+    for name in ("V1_WALL", "V1_FLOOR", "V1_CORNER_R", "V1_TRAY_PLATE"):
+        assert not hasattr(params, name)
 
 
 def test_plug_sizes_are_positive():

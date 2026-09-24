@@ -21,14 +21,6 @@ BED_X = 250        # U1 usable X with margin
 BED_Y = 250        # U1 usable Y with margin
 THRU = 400.0       # cutter length; longer than any part in this design
 
-# v1 values, kept only until the v1 modules that use them are replaced
-# (Tasks 4-6).  Task 6 deletes these three lines.
-V1_WALL = 2.4
-V1_FLOOR = 1.6
-V1_CORNER_R = 8.0
-V1_TRAY_PLATE = 3.0
-CLR_RAIL = 0.20    # one step above CLR_FIT so the divider drops in by hand
-
 
 @dataclass(frozen=True)
 class Plug:
