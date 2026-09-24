@@ -95,7 +95,16 @@ Prints open-top-up. Supports are for the cord port only.
   height, not a taper wedge.
 - **Charger**: the v1 U fence, backed onto the −X end wall. That wall leans
   away above the floor, so POCKET_BACK_SLACK (2) is measured at floor level.
-  CABLE_ROOM stays 6.
+  CABLE_ROOM stays 6. Two changes from v1:
+  - **Rounded to the charger**: the A2154's vertical edges are rounded. A new
+    measurement field, `Charger.corner_r` (NOMINAL until measured; see
+    docs/measuring.md), sets the fillet on the pocket's two inner vertical
+    corners at the port-face end: corner_r + CLR_FIT, concentric with the
+    charger's own edge. The fence's outer vertical corners are rounded
+    corner_r + CLR_FIT + WALL, so the U keeps a uniform WALL through each
+    bend.
+  - **No fingernail notch**: v1's notch in the +Y fence wall is removed.
+    The charger lifts out easily without it.
 - **Cord port**: unchanged, a 26 × 16 rectangle through the −X wall,
   centred on the inlet. It is still the one supported ceiling
   (SUPPORTED_CEILINGS).
@@ -136,8 +145,8 @@ stations about 60 mm in from each end.
 - The `divider` part and `divider.py`, with its tests and its export entry.
 - Rail slots, RAIL_WALL and CLR_RAIL. CLR_RAIL stays only if the coupon
   still uses it.
-- The plinth, rebate, notch and single-escape-port geometry, with their
-  tests.
+- The plinth, rebate, rim notch, fence fingernail notch and
+  single-escape-port geometry, with their tests.
 
 ## Print efficiency and verification
 
@@ -194,9 +203,12 @@ stations about 60 mm in from each end.
   - two-tone base: the tool-change layer, and the prime tower off
   - the 0.28 draft profile
   - hinge assembly: snap the lid on at full open
+- docs/measuring.md: how to measure the charger's corner radius
+  (`Charger.corner_r`).
 - CLAUDE.md: note scripts/slice_report.py and the efficiency target.
 
 ## Out of scope
 
 Lid latch or magnets, lettering, stickers, LED window, remeasuring the
-devices (still NOMINAL, and v1 fit was fine).
+devices (still NOMINAL, and v1 fit was fine). The charger's corner radius is
+the one new measurement.
