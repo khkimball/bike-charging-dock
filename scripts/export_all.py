@@ -7,6 +7,8 @@ from dock.export import write_all
 from dock import base
 from dock import coupon
 from dock import divider
+from dock import hinge
+from dock import layout
 from dock import lid
 from dock import params
 from dock import tray
@@ -50,19 +52,19 @@ PARTS.update({
 
 
 def build_report() -> str:
-    """The derived sizes and clearances, in mm.  Every one of them moves on
-    its own when a measurement or a design rule changes, so print them where
-    they can be read before committing to a six-hour print."""
-    return "\n".join((
-        "build report (mm)",
-        f"  base   {base.BASE_X:7.2f} x {base.BASE_Y:7.2f} x {base.BASE_H:6.2f}",
-        f"  tray   {tray.TRAY_X:7.2f} x {tray.TRAY_Y:7.2f} x {tray.TRAY_H:6.2f}",
-        f"  lid    {lid.LID_X:7.2f} x {lid.LID_Y:7.2f} x {lid.LID_H:6.2f}",
-        f"  cavity room past the fence: X {base.FENCE_MARGIN_X:.2f} in "
-        f"front, Y {base.FENCE_MARGIN_Y:.2f} per side",
-        f"  charger backed against the -X wall; port room "
+    """The derived sizes and clearances, in mm, read off the built parts.
+    Every one of them moves on its own when a measurement or a design rule
+    changes, so print them where they can be read before a long print."""
+    lines = ["build report (mm, as printed)"]
+    for name in ("base", "tray", "lid"):
+        s = PARTS[name]().bounding_box().size
+        lines.append(f"  {name:<5}{s.X:8.2f} x {s.Y:7.2f} x {s.Z:6.2f}")
+    lines += [
+        f"  charger fence: {base.FENCE_MARGIN_Y:.2f} free each side; port room "
         f"{base.PORT_PLUG_ROOM:.2f} (need {base.PORT_PLUG_ROOM_MIN:.2f})",
-    ))
+        f"  lid lip {layout.LIP_W:.2f} proud; hinge opens to {hinge.OPEN_DEG:.0f} deg",
+    ]
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":
