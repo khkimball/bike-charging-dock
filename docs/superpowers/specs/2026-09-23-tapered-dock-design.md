@@ -68,9 +68,11 @@ One print, plate down, bays up, no supports.
   walls, which opens to about 13 mm at the top for cables, and device +
   CLR_BAY (8.0) at the vertical internal walls, as in v1. BAY_DEPTH stays 38.
 - **Cable cutouts**: ovals (stadiums, full round ends) 28 × 16, like every
-  cable hole in the dock (revision 2026-09-24), one at each bay's outer end; the
-  Ion bay keeps three along its length (UNDERSIDE_PORT_CUTOUTS). They sit
-  within each bay's floor, clear of the sloped wall.
+  cable hole in the dock (revision 2026-09-24), one at each bay's outer end,
+  the headlight bay included (revision 2026-09-24: the Ion's underside
+  socket needed three along its bay; its replacement charges from the back,
+  so the bay stays Ion-sized with one cutout at the end). They sit within
+  each bay's floor, clear of the sloped wall.
 - **Fixed internal walls**: the centre partition and the two right-column
   dividers are fused to the plate and outer walls, full bay depth, WALL (2.0)
   thick. There are no rail slots and no RAIL_WALL thickening.
@@ -84,9 +86,8 @@ One print, plate down, bays up, no supports.
 
   All of these face up or sideways, so the chamfer-on-downward-edges rule
   does not apply.
-- **Lift-out**: a finger slot through the centre partition near its top,
-  about 25 wide × 15 tall with a pointed-arch (45°) head so it prints
-  unsupported. It replaces the rim notches.
+- **Lift-out**: by the walls; no finger slot (removed in the 2026-09-24
+  revision -- the tray pulls out easily by its walls).
 
 ## Base
 
@@ -129,7 +130,7 @@ Prints open-top-up with no supports (revision 2026-09-24: the cord port became a
 - **Cable drop**: the cutouts at the bays' outer ends sit over the leaning
   wall, so a cable falls clear for at least 15 mm below the tray and then
   follows the wall down. v1's rule (clear all the way to the cavity floor)
-  cannot hold with a 15° wall. The inner Ion cutouts drop clear to the floor.
+  cannot hold with a 15° wall.
 - **Tie grid and feet**: the tie-down grid (Ø4 on a 24 mm pitch) and the
   four foot recesses stay, re-fitted to the smaller tapered floor.
 - **Rim**: plain WALL rim, with no rebate and no notches.
@@ -237,7 +238,7 @@ with the lid closed; round bores; a lighter snap; OPEN_DEG 100.
       supports;
     - lid: the hook bores and mouths, no wider than a hook (printed on
       supports);
-    - tray: none (the finger slot is a 45° arch).
+    - tray: none.
   - **Parts**: every exported part is a single valid solid with its bed face
     at Z = 0 and fits BED_X × BED_Y.
   - **Colour line**: the groove is at BAND_H, and both kinds of port are

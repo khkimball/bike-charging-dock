@@ -13,14 +13,13 @@ thickness through those corners.  Its floor edges are rounded
 FLOOR_FILLET_R, and once all four are cut the tops of the walls are rounded
 TOP_ROUND_R.  All of these face up or sideways, so they print.
 
-The tray is lifted out by the partition, through a finger slot with a 45
-degree pointed head.  Cable cutouts are ovals through the plate, where
-layout.py puts them.
+The tray lifts out by its walls.  Cable cutouts are ovals through the
+plate, one at each bay's outer end, where layout.py puts them.
 
 Tray coordinates: XY centred, plate underside at Z = 0.  Printed plate-down,
 bays up; nothing overhangs.
 """
-from build123d import Axis, Part, Plane, Polygon, Pos, SlotCenterToCenter, extrude, fillet, loft
+from build123d import Axis, Part, Pos, SlotCenterToCenter, extrude, fillet, loft
 
 from dock import layout as L
 from dock import params as P
@@ -30,9 +29,6 @@ WALL_H = taper.horiz(P.THIN_WALL)      # the outer wall, measured horizontally
 TRAY_H = L.TRAY_H
 TRAY_X, TRAY_Y = L.TRAY_OUTLINE.sx, L.TRAY_OUTLINE.sy     # at the rim
 TOP_ROUND_R = 0.8     # a full round of a WALL-thick top would leave no face to fillet
-SLOT_W = 25.0
-SLOT_H = 15.0
-SLOT_TOP_DROP = 5.0   # slot apex below the rim
 PARTITION_X = L.BAYS["roam"].x1 + P.WALL / 2
 _OVER = 5.0           # voids run this far past the rim
 _CORNER_SIDES = {"--": (0, 2), "+-": (1, 2), "++": (1, 3), "-+": (0, 3)}
@@ -54,16 +50,6 @@ def _bay_void(b: L.Bay) -> Part:
     return fillet(void.faces().sort_by(Axis.Z)[0].edges(), L.FLOOR_FILLET_R)
 
 
-def _finger_slot() -> Part:
-    top = TRAY_H - SLOT_TOP_DROP
-    bot = top - SLOT_H
-    shoulder = top - SLOT_W / 2          # 45-degree head
-    pts = [(-SLOT_W / 2, bot), (SLOT_W / 2, bot), (SLOT_W / 2, shoulder),
-           (0.0, top), (-SLOT_W / 2, shoulder)]
-    face = Plane.YZ.offset(PARTITION_X - P.WALL) * Polygon(*pts, align=None)
-    return extrude(face, amount=2 * P.WALL)
-
-
 def build_tray() -> Part:
     part = L.TRAY_OUTLINE.solid(P.CHAMFER, TRAY_H) + loft(
         [L.TRAY_OUTLINE.section(0.0, taper.bed_chamfer_inset()),
@@ -72,7 +58,6 @@ def build_tray() -> Part:
         part -= _bay_void(b)
     top = part.faces().sort_by(Axis.Z)[-1]
     part = fillet([e for w in top.inner_wires() for e in w.edges()], TOP_ROUND_R)
-    part -= _finger_slot()
     for _, cx, cy, sx, sy in L.cutouts():
         long, short = max(sx, sy), min(sx, sy)
         oval = SlotCenterToCenter(long - short, short, rotation=0 if sx >= sy else 90)

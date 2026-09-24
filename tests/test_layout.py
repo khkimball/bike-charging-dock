@@ -39,16 +39,16 @@ def test_cutouts_sit_in_their_bays_clear_of_the_floor_fillet_and_the_device():
         bay = L.BAYS[name]
         assert bay.x0 + L.FLOOR_FILLET_R < cx - sx / 2 and cx + sx / 2 < bay.x1 - L.FLOOR_FILLET_R
         assert bay.y0 + L.FLOOR_FILLET_R < cy - sy / 2 and cy + sy / 2 < bay.y1 - L.FLOOR_FILLET_R
-        if name in L.DEVICES and name not in L.UNDERSIDE_PORT_CUTOUTS:
+        if name in L.DEVICES:
             x0, x1, y0, y1 = L.device_footprint(name)
             clear_x = cx + sx / 2 <= x0 or cx - sx / 2 >= x1
             clear_y = cy + sy / 2 <= y0 or cy - sy / 2 >= y1
             assert clear_x or clear_y, name
 
 
-def test_six_cutouts_three_under_the_ion():
+def test_one_cutout_per_bay():
     names = [c[0] for c in L.cutouts()]
-    assert len(names) == 6 and names.count("ion") == 3
+    assert sorted(names) == sorted(L.BAYS)
 
 
 def test_the_stack_up_puts_the_tray_on_the_cable_room_above_the_charger():

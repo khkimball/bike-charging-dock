@@ -74,7 +74,7 @@ ports, one each side of the charger in the same wall, let a cable out to
 charge something outside the dock.
 
 The tray rests on a ledge ring 0.3 mm below the rim, so the lid lands on the
-base. Lift it out by the finger slot in the centre partition. The cable
+base. Lift it out by its walls. The cable
 cutouts at the bays' outer ends drop past the leaning base wall: the cable
 falls clear for at least 15 mm, then follows the wall down.
 

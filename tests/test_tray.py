@@ -108,11 +108,11 @@ def test_the_internal_wall_tops_are_rounded():
     assert _solid(_box(tray.PARTITION_X, 40.0, L.TRAY_H - 0.1, 0.1, 1, 0.1))
 
 
-def test_six_cable_cutouts_through_the_plate_where_the_layout_puts_them():
+def test_one_cable_cutout_per_bay_through_the_plate_where_the_layout_puts_it():
     bottom = _tray().faces().sort_by(Axis.Z)[0]
     holes = sorted((w.bounding_box().center().X, w.bounding_box().center().Y) for w in bottom.inner_wires())
     want = sorted((c[1], c[2]) for c in L.cutouts())
-    assert len(holes) == len(want) == 6
+    assert len(holes) == len(want) == len(L.BAYS)
     for (hx, hy), (wx, wy) in zip(holes, want):
         assert math.isclose(hx, wx, abs_tol=0.01) and math.isclose(hy, wy, abs_tol=0.01)
 
@@ -132,12 +132,13 @@ def test_the_cable_cutouts_are_ovals():
         assert _solid(_box(ex, ey, z, 0.2, 0.2, 0.2))
 
 
-def test_the_finger_slot_goes_through_the_partition_under_a_45_degree_arch():
-    top = L.TRAY_H - tray.SLOT_TOP_DROP
-    x = tray.PARTITION_X
-    assert _clear(_box(x, 0, top - tray.SLOT_H / 2, params.WALL + 0.2, 4, 4))
-    assert _clear(_box(x, 0, top - 0.5, params.WALL + 0.2, 0.2, 0.2))
-    assert _solid(_box(x, tray.SLOT_W / 2 - 0.5, top - 0.5, params.WALL - 0.1, 0.2, 0.2))
+def test_the_partition_is_unbroken():
+    """No finger slot: the tray lifts out by its walls, so the partition is
+    solid full height and full length."""
+    y0, y1 = -L.FLOOR_Y / 2 + 8.0, L.FLOOR_Y / 2 - 8.0
+    z0, z1 = params.TRAY_PLATE + 4.0, L.TRAY_H - 2.0
+    assert _solid(_box(tray.PARTITION_X, (y0 + y1) / 2, (z0 + z1) / 2,
+                       params.WALL - 0.2, y1 - y0, z1 - z0))
 
 
 def test_the_tray_prints_with_no_overhang():

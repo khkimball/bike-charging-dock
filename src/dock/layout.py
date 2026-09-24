@@ -25,9 +25,6 @@ CABLE_ROOM = 6.0          # headroom over the charger, under the tray
 CUTOUT = (28.0, 16.0)     # cable cutout: (along the bay, across it), as v1
 CUTOUT_INSET = 3.5        # cutout to the bay's end, clear of the R3 floor fillet
 CUTOUT_GAP = 6.0          # cutout to the device, as v1
-# The Ion Pro RT charges through a socket on its underside, so its bay has
-# cutouts spread along it instead of one at the end.
-UNDERSIDE_PORT_CUTOUTS = {"ion": 3}
 SPARE_L = 46.0            # the spare bay: no device chosen yet
 INNER_FILLET_R = 6.0      # vertical inside corners of the bays
 FLOOR_FILLET_R = 3.0      # where every bay wall meets the floor
@@ -130,16 +127,11 @@ def device_footprint(name: str) -> tuple[float, float, float, float]:
 
 
 def cutouts() -> list[tuple[str, float, float, float, float]]:
-    """(bay, cx, cy, sx, sy) of every cable cutout, tray coordinates."""
+    """(bay, cx, cy, sx, sy) of every cable cutout, tray coordinates: one
+    per bay, at its outer end."""
     b = BAYS["roam"]
     out = [("roam", b.cx, b.y0 + CUTOUT_INSET + CUTOUT[0] / 2, CUTOUT[1], CUTOUT[0])]
     for name in ("spare", "trackr", "ion"):
         b = BAYS[name]
-        n = UNDERSIDE_PORT_CUTOUTS.get(name, 1)
-        if n == 1:
-            xs = [b.x1 - CUTOUT_INSET - CUTOUT[0] / 2]
-        else:
-            step = (b.x1 - b.x0 - 2 * CUTOUT_INSET) / n
-            xs = [b.x0 + CUTOUT_INSET + step * (i + 0.5) for i in range(n)]
-        out += [(name, x, b.cy, CUTOUT[0], CUTOUT[1]) for x in xs]
+        out.append((name, b.x1 - CUTOUT_INSET - CUTOUT[0] / 2, b.cy, CUTOUT[0], CUTOUT[1]))
     return out
