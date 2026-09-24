@@ -161,13 +161,39 @@ def _through_minus_x(y, z, sy, sz):
     return Pos(x0, y, z) * Box(base.CAVITY_MIN_X - x0 + 0.5, sy, sz, align=(Align.MIN, Align.CENTER, Align.CENTER))
 
 
+def _wall_x(z, margin=0.2):
+    """Midpoint X and thickness (a hair inside each face) of the -X wall's
+    cross-section at height z."""
+    outer = -L.RIM.at(z)[0] / 2
+    inner = -L.RIM.at(z, base.WALL_H)[0] / 2
+    return (outer + inner) / 2, inner - outer - 2 * margin
+
+
+def _wall_solid(y, z, sy, sz):
+    """True if the -X wall's full thickness is solid material at (y, z),
+    over a sy x sz patch (a probe confined to the wall, not through it)."""
+    cx, sx = _wall_x(z)
+    return _solid(_box(cx, y, z, sx, sy, sz))
+
+
 def test_the_cord_port_goes_through_the_minus_x_wall_on_the_inlet():
     z = params.FLOOR + m.CHARGER.inlet_center_z
     assert _clear(_through_minus_x(0, z, base.CORD_W - 0.1, base.CORD_H - 0.1))
     assert not _clear(_through_minus_x(0, z, base.CORD_W + 0.5, base.CORD_H + 0.5))
 
 
+def test_the_cord_port_sill_clears_the_groove():
+    """Spec: both kinds of wall port sit wholly above the colour groove --
+    the sill must leave at least half a millimetre of solid wall above the
+    groove's top flank."""
+    z0 = params.BAND_H + base.GROOVE_UP
+    z1 = base.CORD_Z0
+    assert z1 - z0 >= 0.5 - 1e-9
+    assert _wall_solid(0, (z0 + z1) / 2, base.CORD_W - 0.4, z1 - z0 - 0.2)
+
+
 def test_two_oval_escape_ports_flank_the_charger():
+    assert base.ESCAPE_L >= base.ESCAPE_H     # stays a valid stadium
     for s in (-1, 1):
         y, z = s * base.ESCAPE_Y, base.ESCAPE_ZC
         core = _through_minus_x(y, z, base.ESCAPE_L - base.ESCAPE_H, base.ESCAPE_H - 0.1)
@@ -175,10 +201,15 @@ def test_two_oval_escape_ports_flank_the_charger():
         # a rounded end: the rectangle's corner is still wall
         cx, cz = y + s * (base.ESCAPE_L / 2 - 0.3), z + base.ESCAPE_H / 2 - 0.3
         assert not _clear(_through_minus_x(cx, cz, 0.2, 0.2))
-        # clear of the fence, and all on the -X wall's flat
-        assert abs(y) - base.ESCAPE_L / 2 > base.FENCE_Y / 2
-        assert abs(y) + base.ESCAPE_L / 2 < base.ESCAPE_FLAT_Y
         assert base.ESCAPE_ZC - base.ESCAPE_H / 2 > params.BAND_H + base.GROOVE_UP
+        # a full WALL of material remains from each end of the port outward:
+        # toward the fence on the inboard end, the corner arc on the outboard
+        y_margin = 0.3
+        probe_sy = params.WALL - 2 * y_margin
+        for direction in (-1, 1):
+            end = y + direction * base.ESCAPE_L / 2
+            probe_y = end + direction * (y_margin + probe_sy / 2)
+            assert _wall_solid(probe_y, z, probe_sy, 0.4)
 
 
 # --- floor features -------------------------------------------------------------

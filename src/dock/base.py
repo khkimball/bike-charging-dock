@@ -74,16 +74,24 @@ FENCE_MARGIN_Y = (CAVITY_FLOOR[1] - FENCE_Y) / 2
 # --- cord port (as v1) --------------------------------------------------------------
 CORD_W = M.CORD_END.width + 2.0
 CORD_H = M.CORD_END.height + 2.0
-CORD_Z0 = max(P.FLOOR + M.CHARGER.inlet_center_z - CORD_H / 2, P.FLOOR + 1.0)
+# The sill must clear the colour groove by at least 0.5 mm; the NOMINAL
+# inlet height puts it comfortably above that today, but nothing enforced
+# it before, and the groove floor is the higher constraint here.
+CORD_Z0 = max(P.FLOOR + M.CHARGER.inlet_center_z - CORD_H / 2,
+              P.BAND_H + GROOVE_UP + 0.5)
 SUPPORTED_CEILINGS = ("cord port",)
 
 # --- escape ports --------------------------------------------------------------------
-ESCAPE_L = 14.0                        # along Y
 ESCAPE_H = 8.0                         # along Z; the ends are full rounds
 ESCAPE_Z0 = P.BAND_H + GROOVE_UP + 1.5
 ESCAPE_ZC = ESCAPE_Z0 + ESCAPE_H / 2
 _ESC = RIM.at(ESCAPE_ZC)
 ESCAPE_FLAT_Y = _ESC[1] / 2 - _ESC[2]  # where the -X wall's flat meets its corner arc
+# Derived so a full WALL of material remains to the corner arc (and to the
+# fence) at this height; 14 is a cap, not a target -- a bigger gap does not
+# widen the port past what looks right.
+ESCAPE_L = min(14.0, (ESCAPE_FLAT_Y - FENCE_Y / 2) - 2 * P.WALL)
+assert ESCAPE_L >= ESCAPE_H, f"escape port too narrow to stay a stadium: {ESCAPE_L:.2f} < {ESCAPE_H}"
 ESCAPE_Y = (FENCE_Y / 2 + ESCAPE_FLAT_Y) / 2
 
 # --- floor ---------------------------------------------------------------------------
