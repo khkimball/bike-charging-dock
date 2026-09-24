@@ -29,8 +29,8 @@ stay marked NOMINAL until measured).
 - **Corners**: R30 at the base rim (CORNER_R), shrinking to about R8 at the
   foot. The lid's corners continue the same surface upward (radius grows
   with height).
-- **Size (derived, not frozen)**: rim ≈ 244 × 179, foot ≈ 202 × 137, base
-  height ≈ 80.1 (FLOOR + charger + CABLE_ROOM + TRAY_SINK + tray height).
+- **Size (derived, not frozen)**: rim ≈ 243 × 178, foot ≈ 200 × 135, base
+  height ≈ 79.7 (FLOOR + charger + CABLE_ROOM + TRAY_SINK + tray height).
   Everything grows from the tray; nothing is hard-coded.
 - **Two-tone base**: dark foot band, light body. The colour line is at
   BAND_H = 8 mm, below the cord port's sill (Z 10.1), so both kinds of port
@@ -47,7 +47,7 @@ stay marked NOMINAL until measured).
   overhang. The bed-face edge gets the usual 1 mm chamfer.
 - **Removed**: the v1 plinth (the full taper replaces it), the lid skirt,
   the rim rebate and the rim finger notches.
-- **Bed limit**: the lid is the largest part (≈ 250 × 182 with the lip). If
+- **Bed limit**: the lid is the largest part (≈ 249.5 × 192 with the lip and hinge hooks). If
   a derived size exceeds BED_X/BED_Y (250) the lip width shrinks first;
   the U1's physical bed is 270.
 
