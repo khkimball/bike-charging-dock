@@ -43,3 +43,8 @@ def test_devices_are_slabs_with_published_sizes():
     assert m.ROAM == Slab(96.0, 53.0, 24.0)
     assert m.ION.width == 34.7 and m.ION.thickness == 30.2
     assert m.TRACKR.length == 89.9
+
+
+def test_the_charger_corner_radius_fits_the_body():
+    c = m.CHARGER
+    assert 0 < c.corner_r < min(c.port_face_width, c.port_to_inlet) / 2

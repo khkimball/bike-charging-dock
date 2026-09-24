@@ -26,14 +26,14 @@ from dock import base as B
 from dock import params as P
 
 SKIRT_H = 8.0                           # how far the skirt reaches down the base
-LID_H = P.WALL + SKIRT_H                # plate plus skirt: the printed height
+LID_H = P.V1_WALL + SKIRT_H                # plate plus skirt: the printed height
 
 # The skirt clears the base by CLR_FIT per side and is WALL thick beyond that.
-_OVER = P.WALL + P.CLR_FIT
+_OVER = P.V1_WALL + P.CLR_FIT
 LID_X = B.BASE_X + 2 * _OVER
 LID_Y = B.BASE_Y + 2 * _OVER
-OUTER_R = P.CORNER_R + _OVER            # concentric with the base's CORNER_R
-INNER_R = P.CORNER_R + P.CLR_FIT        # likewise
+OUTER_R = P.V1_CORNER_R + _OVER            # concentric with the base's CORNER_R
+INNER_R = P.V1_CORNER_R + P.CLR_FIT        # likewise
 OPENING_X = B.BASE_X + 2 * P.CLR_FIT
 OPENING_Y = B.BASE_Y + 2 * P.CLR_FIT
 
@@ -54,7 +54,7 @@ def lid_seat() -> Location:
     BASE_H + WALL, and the skirt hangs SKIRT_H down the base's outside.  The
     lid is centred on the base footprint, which runs X = 0..BASE_X.
     """
-    return Location((-_OVER, 0, B.BASE_H + P.WALL), (180, 0, 0))
+    return Location((-_OVER, 0, B.BASE_H + P.V1_WALL), (180, 0, 0))
 
 
 def build_lid() -> Part:
@@ -68,6 +68,6 @@ def build_lid() -> Part:
 
     # Hollow out everything above the plate: what is left is the skirt.
     # Run the cutter past the rim for a clean top edge.
-    body -= Pos(cx, 0, P.WALL) * _rounded_box(
+    body -= Pos(cx, 0, P.V1_WALL) * _rounded_box(
         OPENING_X, OPENING_Y, SKIRT_H + 1.0, INNER_R)
     return body

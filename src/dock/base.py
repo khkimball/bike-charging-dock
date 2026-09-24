@@ -88,8 +88,8 @@ CORD_TOP = CORD_H                  # total port height: a plain rectangle now
 # end goes in level rather than being pushed toward the top of the
 # rectangle.  Clamped so that a low inlet cannot drive the sill down onto
 # the cavity floor or under it.
-CORD_Z0_MIN = P.FLOOR + 1.0        # lowest sill worth cutting
-CORD_Z0 = max(P.FLOOR + M.CHARGER.inlet_center_z - CORD_H / 2, CORD_Z0_MIN)
+CORD_Z0_MIN = P.V1_FLOOR + 1.0        # lowest sill worth cutting
+CORD_Z0 = max(P.V1_FLOOR + M.CHARGER.inlet_center_z - CORD_H / 2, CORD_Z0_MIN)
 # Device-cable escape port: the CHRGtime stacks it directly above the cord
 # port in the same wall, so it does too.  It is sized for a device-end plug
 # to be posted through, sits 1 mm of wall above the cord port's flat top,
@@ -146,7 +146,7 @@ TIE_MARGIN = 6.0         # grid edge in from the fence and the cavity walls
 # the outline CHAMFER further in again, exactly as it always did; the bed face
 # is therefore PLINTH_INSET + CHAMFER in from the footprint on every side.
 PLINTH_H = 12.0          # height of the tapered band above the bed
-PLINTH_INSET = P.WALL    # step in at the top of the bottom chamfer
+PLINTH_INSET = P.V1_WALL    # step in at the top of the bottom chamfer
 # How far the taper leans off vertical.  Well inside the 45 degrees this part
 # holds every downward face to, so the plinth prints without supports.
 PLINTH_TAPER_DEG = math.degrees(math.atan2(PLINTH_INSET, PLINTH_H - P.CHAMFER))
@@ -160,24 +160,24 @@ POCKET_Y = M.CHARGER.port_face_width + 2 * P.CLR_FIT
 # because the cavity's own end wall is the charger's back stop.  FENCE_Y still
 # has a wall each side, and it is FENCE_Y that can grow BASE_Y; the U's own X
 # extent depends on where the cavity wall lands, so FENCE_X waits for it.
-FENCE_Y = POCKET_Y + 2 * P.WALL
+FENCE_Y = POCKET_Y + 2 * P.V1_WALL
 
 # --- the box ----------------------------------------------------------------
 REBATE_D = T.TRAY_H
-BASE_X = T.TRAY_X + 2 * (P.WALL + P.CLR_FIT)
+BASE_X = T.TRAY_X + 2 * (P.V1_WALL + P.CLR_FIT)
 # The tray sets the floor; a fence that will not fit between the 2*WALL side
 # walls with FENCE_CLEAR_Y to spare raises it.  The rebate stays tray-sized,
 # so any growth lands in the walls, not in the opening.
-BASE_Y = max(T.TRAY_Y + 2 * (P.WALL + P.CLR_FIT),
-             FENCE_Y + 2 * FENCE_CLEAR_Y + 4 * P.WALL)
-BASE_H = P.FLOOR + M.CHARGER.height + CABLE_ROOM + REBATE_D
+BASE_Y = max(T.TRAY_Y + 2 * (P.V1_WALL + P.CLR_FIT),
+             FENCE_Y + 2 * FENCE_CLEAR_Y + 4 * P.V1_WALL)
+BASE_H = P.V1_FLOOR + M.CHARGER.height + CABLE_ROOM + REBATE_D
 
 # Walls below the rebate are 2*WALL thick, so the rebate leaves a ledge.
-CAVITY_X = BASE_X - 4 * P.WALL
-CAVITY_Y = BASE_Y - 4 * P.WALL
-CAVITY_MIN_X, CAVITY_MAX_X = 2 * P.WALL, BASE_X - 2 * P.WALL
+CAVITY_X = BASE_X - 4 * P.V1_WALL
+CAVITY_Y = BASE_Y - 4 * P.V1_WALL
+CAVITY_MIN_X, CAVITY_MAX_X = 2 * P.V1_WALL, BASE_X - 2 * P.V1_WALL
 CAVITY_MIN_Y, CAVITY_MAX_Y = -CAVITY_Y / 2, CAVITY_Y / 2
-CAVITY_R = P.CORNER_R - 2 * P.WALL   # concentric with the outer CORNER_R
+CAVITY_R = P.V1_CORNER_R - 2 * P.V1_WALL   # concentric with the outer CORNER_R
 
 REBATE_X = T.TRAY_X + 2 * P.CLR_FIT
 REBATE_Y = T.TRAY_Y + 2 * P.CLR_FIT
@@ -204,7 +204,7 @@ POCKET_MIN_Y = -POCKET_Y / 2
 FENCE_CX = POCKET_MIN_X + POCKET_X / 2   # the pocket's centre, not the U's
 # The U's side walls run back to a hair (CLR_FIT) off the cavity wall, so
 # they reach behind the pocket and guide the charger the whole way in.
-FENCE_MIN_X, FENCE_MAX_X = CAVITY_MIN_X + P.CLR_FIT, POCKET_MAX_X + P.WALL
+FENCE_MIN_X, FENCE_MAX_X = CAVITY_MIN_X + P.CLR_FIT, POCKET_MAX_X + P.V1_WALL
 FENCE_X = FENCE_MAX_X - FENCE_MIN_X
 # Clearances left over inside the cavity, for the build report.
 FENCE_MARGIN_X = CAVITY_MAX_X - FENCE_MAX_X    # free floor in front of the U
@@ -225,7 +225,7 @@ PORT_PITCH = M.CHARGER.port_pitch   # centre to centre along the port face
 PORT_YS: list[float] = [PORT_Y1 + i * PORT_PITCH for i in range(6)]
 
 # Wall cutters span the 2*WALL wall plus a sliver either side, no more.
-_WALL_CUT_D = 2 * P.WALL + 0.5
+_WALL_CUT_D = 2 * P.V1_WALL + 0.5
 # The plinth only ever moves an outer face inward, so a cutter that starts
 # 0.25 mm outside the nominal footprint starts outside the tapered face too,
 # wherever in the band it crosses it -- and it still has to reach the cavity
@@ -233,7 +233,7 @@ _WALL_CUT_D = 2 * P.WALL + 0.5
 _END_CUT_X0 = -0.25              # -X end wall: start just outside the face
 _END_CUT_X1 = BASE_X + 0.25      # +X end wall: end just outside the face
 # Rim cutters go through the WALL-thick rim and a sliver into the rebate.
-_RIM_CUT_D = P.WALL + 0.5
+_RIM_CUT_D = P.V1_WALL + 0.5
 
 FOOT_CENTRES: list[tuple[float, float]] = [
     (x, y)
@@ -274,7 +274,7 @@ TIE_GRID: list[tuple[float, float]] = _tie_grid()
 
 def tray_seat() -> Location:
     """Where `tray.build_tray()` goes to seat in the rebate."""
-    return Pos(P.WALL + P.CLR_FIT, 0, BASE_H - REBATE_D)
+    return Pos(P.V1_WALL + P.CLR_FIT, 0, BASE_H - REBATE_D)
 
 
 def _rounded_box(sx: float, sy: float, sz: float, r: float, align) -> Part:
@@ -292,7 +292,7 @@ def _plinth_profile(inset: float, z: float) -> Sketch:
     pinching them.
     """
     return Plane.XY.offset(z) * RectangleRounded(
-        BASE_X - 2 * inset, BASE_Y - 2 * inset, P.CORNER_R - inset)
+        BASE_X - 2 * inset, BASE_Y - 2 * inset, P.V1_CORNER_R - inset)
 
 
 def _outer_body() -> Part:
@@ -312,7 +312,7 @@ def _outer_body() -> Part:
                    _plinth_profile(PLINTH_INSET, P.CHAMFER),
                    _plinth_profile(0.0, PLINTH_H)], ruled=True)
     return plinth + Pos(0, 0, PLINTH_H) * _rounded_box(
-        BASE_X, BASE_Y, BASE_H - PLINTH_H, P.CORNER_R, _MIN)
+        BASE_X, BASE_Y, BASE_H - PLINTH_H, P.V1_CORNER_R, _MIN)
 
 
 def _cord_cutter(depth: float) -> Part:
@@ -357,12 +357,12 @@ def _fence() -> Part:
     the +Y wall.
     """
     fence = Pos(FENCE_MIN_X, 0, 0) * Box(
-        FENCE_X, FENCE_Y, FENCE_H + P.FLOOR, align=_END_LO)
+        FENCE_X, FENCE_Y, FENCE_H + P.V1_FLOOR, align=_END_LO)
     # the pocket, cut open toward -X so the cavity wall closes it
-    fence -= Pos(FENCE_MIN_X - 1.0, 0, P.FLOOR) * Box(
+    fence -= Pos(FENCE_MIN_X - 1.0, 0, P.V1_FLOOR) * Box(
         POCKET_MAX_X - FENCE_MIN_X + 1.0, POCKET_Y, FENCE_H, align=_END_LO)
     # fingernail notch through the +Y fence wall, to lift the charger out
-    fence -= Pos(FENCE_CX, POCKET_Y / 2, P.FLOOR) * Box(20, 2 * P.WALL + 2,
+    fence -= Pos(FENCE_CX, POCKET_Y / 2, P.V1_FLOOR) * Box(20, 2 * P.V1_WALL + 2,
                                                         FENCE_H, align=_MIN)
     return fence
 
@@ -376,7 +376,7 @@ def build_base() -> Part:
     body = Pos(cx, 0, 0) * _outer_body()
 
     # Lower cavity: walls 2*WALL thick, corners concentric with the outer ones.
-    body -= Pos(cx, 0, P.FLOOR) * _rounded_box(
+    body -= Pos(cx, 0, P.V1_FLOOR) * _rounded_box(
         CAVITY_X, CAVITY_Y, BASE_H, CAVITY_R, _MIN)
 
     # Rebate that receives the tray flush with the rim.
@@ -396,7 +396,7 @@ def build_base() -> Part:
     # mid-height in Z.  Skipped outright on a charger with no LED -- that
     # wall stays blind rather than carrying a hole onto nothing.
     if HAS_LED:
-        body -= Pos(_END_CUT_X1, LED_Y, P.FLOOR + M.CHARGER.height / 2) * Box(
+        body -= Pos(_END_CUT_X1, LED_Y, P.V1_FLOOR + M.CHARGER.height / 2) * Box(
             _WALL_CUT_D, LED_W, LED_H, align=_END_HI)
 
     # -X end wall again, directly above the cord port: the device-cable
@@ -415,7 +415,7 @@ def build_base() -> Part:
     # Tie-down grid: through-holes in the floor, so a tie threads from the
     # cavity down under the base and back up.
     for x, y in TIE_GRID:
-        body -= Pos(x, y, -1.0) * Cylinder(TIE_D / 2, P.FLOOR + 2.0, align=_MIN)
+        body -= Pos(x, y, -1.0) * Cylinder(TIE_D / 2, P.V1_FLOOR + 2.0, align=_MIN)
 
     # Foot recesses: self-adhesive pads sit in them, so the dock does not rock
     # on a squeezed-out bead of adhesive.

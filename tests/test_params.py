@@ -7,19 +7,19 @@ from dock.export import write_all
 
 
 def test_design_rules_match_spec():
-    assert params.WALL == 2.4
-    assert params.FLOOR == 1.6
+    assert params.WALL == 2.0
+    assert params.THIN_WALL == 1.6
+    assert params.FLOOR == 1.2
     assert params.CLR_FIT == 0.15
-    assert params.CLR_RAIL == 0.20
     assert params.CLR_BAY == 8.0
-    assert params.TRAY_PLATE == 3.0
+    assert params.CLR_BAY_OUTER == 3.0
+    assert params.TRAY_PLATE == 1.2
+    assert params.LID_PLATE == 1.2
     assert params.BAY_DEPTH == 38.0
-    assert params.CORNER_R == 8.0
+    assert params.TAPER_DEG == 15.0
+    assert params.CORNER_R == 30.0
+    assert params.BAND_H == 8.0
     assert (params.BED_X, params.BED_Y) == (250, 250)
-    assert not hasattr(params, "CLR_DEVICE")
-    # v1 leftovers: the tray dock cuts one cutout size and has no cradle
-    assert not hasattr(params, "plug_cutter")
-    assert not hasattr(params, "USB_C_CABLE")
 
 
 def test_plug_sizes_are_positive():

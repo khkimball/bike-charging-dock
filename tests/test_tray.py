@@ -57,7 +57,7 @@ def test_bays_are_open_voids_of_full_depth():
         if round_min_x:
             box = fillet(box.edges().filter_by(Axis.Z).group_by(Axis.X)[0],
                          tray.BAY_CORNER_R)
-        probe = Pos(x0 + w / 2, y0 + l / 2, params.TRAY_PLATE) * box
+        probe = Pos(x0 + w / 2, y0 + l / 2, params.V1_TRAY_PLATE) * box
         assert (probe & p).volume < 1e-3, (x0, y0)
 
 
@@ -69,7 +69,7 @@ def test_the_roam_still_fits_its_bay_between_the_rounded_corners():
     x0, y0, w, l = tray.ROAM_BAY
     probe = Pos(x0 + params.CLR_BAY,
                 y0 + l - params.CLR_BAY - m.ROAM.length,
-                params.TRAY_PLATE) * Box(
+                params.V1_TRAY_PLATE) * Box(
         m.ROAM.width, m.ROAM.length, m.ROAM.thickness,
         align=(Align.MIN, Align.MIN, Align.MIN))
     assert (probe & p).volume < 1e-3
@@ -79,7 +79,7 @@ def test_divider_drops_into_both_rail_positions():
     p = tray.build_tray()
     d = divider.build_divider(height=params.BAY_DEPTH, width=tray.RIGHT_BAY_W - params.CLR_RAIL)
     for y in tray.RAIL_YS:
-        placed = Pos(tray.RIGHT_BAYS["ion"][0] + tray.RIGHT_BAY_W / 2, y, params.TRAY_PLATE) * d
+        placed = Pos(tray.RIGHT_BAYS["ion"][0] + tray.RIGHT_BAY_W / 2, y, params.V1_TRAY_PLATE) * d
         assert (placed & p).volume < 1e-3
 
 
@@ -89,10 +89,10 @@ def test_walls_keep_full_thickness_behind_rail_slots():
     p = tray.build_tray()
     x_part = tray.RIGHT_BAYS["ion"][0]                          # partition's +X face
     x_out = x_part + tray.RIGHT_BAY_W                           # +X outer wall's -X face
-    back = divider.RAIL_D + params.CLR_RAIL + params.WALL / 2   # slot depth + half the remnant
+    back = divider.RAIL_D + params.CLR_RAIL + params.V1_WALL / 2   # slot depth + half the remnant
     for y in tray.RAIL_YS:
         for x in (x_part - back, x_out + back):
-            probe = Pos(x, y, params.TRAY_PLATE + 1) * Box(params.WALL - 0.02, 2, params.BAY_DEPTH - 2, align=(Align.CENTER, Align.CENTER, Align.MIN))
+            probe = Pos(x, y, params.V1_TRAY_PLATE + 1) * Box(params.V1_WALL - 0.02, 2, params.BAY_DEPTH - 2, align=(Align.CENTER, Align.CENTER, Align.MIN))
             assert abs((probe & p).volume - probe.volume) < 1e-3, (x, y)
 
 
@@ -131,7 +131,7 @@ def test_left_cutout_sits_at_the_near_end_centred_in_its_bay():
     along_y, along_x = _bottom_cutout_wires(p)
     assert len(along_y) == 1 and len(along_x) == _expected_cutout_count() - 1
     b = along_y[0].bounding_box()
-    assert abs(b.min.Y - (-tray.TRAY_Y / 2 + params.WALL + tray.CUTOUT_INSET)) < 1e-6
+    assert abs(b.min.Y - (-tray.TRAY_Y / 2 + params.V1_WALL + tray.CUTOUT_INSET)) < 1e-6
     x0, _, w, _ = tray.ROAM_BAY
     assert abs(b.center().X - (x0 + w / 2)) < 1e-6
 
@@ -190,7 +190,7 @@ def test_partition_and_outer_wall_are_rail_wall_thick():
     assert all(abs(y - ry) > divider.RAIL_W for ry in tray.RAIL_YS)
 
     def probe(xc, thick):
-        return Pos(xc, y, params.TRAY_PLATE + 1) * Box(thick, 2, params.BAY_DEPTH - 2, align=(Align.CENTER, Align.CENTER, Align.MIN))
+        return Pos(xc, y, params.V1_TRAY_PLATE + 1) * Box(thick, 2, params.BAY_DEPTH - 2, align=(Align.CENTER, Align.CENTER, Align.MIN))
 
     for face_x, sign in ((x_part, -1), (x_out, +1)):
         solid = probe(face_x + sign * tray.RAIL_WALL / 2, tray.RAIL_WALL - 0.02)
@@ -220,7 +220,7 @@ def _corner_probe(cx, cy, angle, length, width=0.2):
     mid = tray.OUTER_R - 0.02 - length / 2
     return (Pos(cx + mid * math.cos(math.radians(angle)),
                 cy + mid * math.sin(math.radians(angle)),
-                params.TRAY_PLATE + 2)
+                params.V1_TRAY_PLATE + 2)
             * Rot(0, 0, angle)
             * Box(length, width, params.BAY_DEPTH - 6,
                   align=(Align.CENTER, Align.CENTER, Align.MIN)))
@@ -234,5 +234,5 @@ def test_outer_corner_walls_are_at_least_wall_thick():
     p = tray.build_tray()
     assert len(_CORNERS) == 4
     for cx, cy, angle in _CORNERS:
-        probe = _corner_probe(cx, cy, angle, params.WALL - 0.05)
+        probe = _corner_probe(cx, cy, angle, params.V1_WALL - 0.05)
         assert abs((probe & p).volume - probe.volume) < 1e-3, (cx, cy, angle)

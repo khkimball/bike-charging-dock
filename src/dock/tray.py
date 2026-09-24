@@ -31,14 +31,14 @@ CUTOUT_INSET = 2.0   # cutout edge to the bay's end wall
 UNDERSIDE_PORT_CUTOUTS = {"ion": 3}
 
 # Outer vertical corner radius: the tray drops inside the base's R8 corners.
-OUTER_R = P.CORNER_R - P.WALL - P.CLR_FIT
+OUTER_R = P.V1_CORNER_R - P.V1_WALL - P.CLR_FIT
 # The -X bay void's corners are rounded concentric with the outer corner, so
 # the shell keeps WALL on the diagonal -- the shortest line through a corner.
 # A square void behind a rounded corner would leave only 1.1 mm there.
-BAY_CORNER_R = OUTER_R - P.WALL
+BAY_CORNER_R = OUTER_R - P.V1_WALL
 
 # Walls carrying rail slots must keep WALL of material behind the slot.
-RAIL_WALL = P.WALL + D.RAIL_D + P.CLR_RAIL
+RAIL_WALL = P.V1_WALL + D.RAIL_D + P.CLR_RAIL
 
 # --- bay interiors -----------------------------------------------------------
 # Left bay: ROAM lying face-up, long axis along Y, cutout at the -Y end.
@@ -62,12 +62,12 @@ _BAY_L = max(_LEFT_L, _RIGHT_L)
 # No frozen numbers on these three: every one of them moves when a
 # measurement or a design rule does, and they go stale silently.  The current
 # values are in the build report that scripts/export_all.py prints.
-TRAY_X = P.WALL + _LEFT_W + RAIL_WALL + RIGHT_BAY_W + RAIL_WALL
-TRAY_Y = 2 * P.WALL + _BAY_L
-TRAY_H = P.TRAY_PLATE + P.BAY_DEPTH
+TRAY_X = P.V1_WALL + _LEFT_W + RAIL_WALL + RIGHT_BAY_W + RAIL_WALL
+TRAY_Y = 2 * P.V1_WALL + _BAY_L
+TRAY_H = P.V1_TRAY_PLATE + P.BAY_DEPTH
 
-_Y0 = -TRAY_Y / 2 + P.WALL          # inner face of the -Y wall
-_LEFT_X0 = P.WALL
+_Y0 = -TRAY_Y / 2 + P.V1_WALL          # inner face of the -Y wall
+_LEFT_X0 = P.V1_WALL
 _RIGHT_X0 = _LEFT_X0 + _LEFT_W + RAIL_WALL    # partition's +X face
 _RIGHT_X1 = _RIGHT_X0 + RIGHT_BAY_W           # +X outer wall's -X face
 
@@ -136,14 +136,14 @@ def build_tray() -> Part:
         if round_min_x:
             void = fillet(void.edges().filter_by(Axis.Z).group_by(Axis.X)[0],
                           BAY_CORNER_R)
-        part -= Pos(x0, y0, P.TRAY_PLATE) * void
+        part -= Pos(x0, y0, P.V1_TRAY_PLATE) * void
 
     # Rail slots: partition's +X face and the +X outer wall's -X face.
     slot = D.rail_cutter(P.BAY_DEPTH + over)
     slot_dx = (D.RAIL_D + P.CLR_RAIL) / 2
     for y in RAIL_YS:
-        part -= Pos(_RIGHT_X0 - slot_dx, y, P.TRAY_PLATE) * slot
-        part -= Pos(_RIGHT_X1 + slot_dx, y, P.TRAY_PLATE) * slot
+        part -= Pos(_RIGHT_X0 - slot_dx, y, P.V1_TRAY_PLATE) * slot
+        part -= Pos(_RIGHT_X1 + slot_dx, y, P.V1_TRAY_PLATE) * slot
 
     # Cable cutouts through the plate, inset from each bay's end wall.  They
     # sit well inside the bay footprint, so they never touch a wall.

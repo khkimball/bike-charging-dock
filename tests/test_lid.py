@@ -59,7 +59,7 @@ def test_lid_wraps_the_base_outside_with_a_wall_and_fit_clearance():
     """The lid drops over the OUTSIDE of the base: one wall plus the fit
     clearance beyond the base's footprint, on every side."""
     s = lid.build_lid().bounding_box().size
-    over = params.WALL + params.CLR_FIT
+    over = params.V1_WALL + params.CLR_FIT
     assert abs(s.X - (base.BASE_X + 2 * over)) < 1e-6
     assert abs(s.Y - (base.BASE_Y + 2 * over)) < 1e-6
 
@@ -79,7 +79,7 @@ def test_plate_is_one_wall_thick_and_the_skirt_stands_clear_of_it():
     """Measured between the bed face, the cavity floor and the skirt rim."""
     p = lid.build_lid()
     floor_z = _cavity_floor(p).center().Z
-    assert abs(floor_z - params.WALL) < 1e-6
+    assert abs(floor_z - params.V1_WALL) < 1e-6
     assert abs(_top_face(p).center().Z - floor_z - lid.SKIRT_H) < 1e-6
 
 
@@ -87,15 +87,15 @@ def test_skirt_is_one_wall_thick_all_round():
     """At mid-skirt height the section is a closed ring exactly WALL thick:
     solid from the opening out to the outer face, open just inside it."""
     p = lid.build_lid()
-    ring = _slab(p, params.WALL + lid.SKIRT_H / 2)
+    ring = _slab(p, params.V1_WALL + lid.SKIRT_H / 2)
     assert len(ring.solids()) == 1
     top = ring.faces().filter_by(Axis.Z).sort_by(Axis.Z)[-1]
     assert len(top.inner_wires()) == 1, "the skirt is not a closed ring"
     bb = top.inner_wires()[0].bounding_box()
     assert abs(bb.size.X - (base.BASE_X + 2 * params.CLR_FIT)) < 1e-6
     outer = top.bounding_box()
-    assert abs((outer.size.X - bb.size.X) / 2 - params.WALL) < 1e-6
-    assert abs((outer.size.Y - bb.size.Y) / 2 - params.WALL) < 1e-6
+    assert abs((outer.size.X - bb.size.X) / 2 - params.V1_WALL) < 1e-6
+    assert abs((outer.size.Y - bb.size.Y) / 2 - params.V1_WALL) < 1e-6
 
 
 def test_outer_vertical_corners_are_rounded():
@@ -123,7 +123,7 @@ def test_skirt_inner_corners_are_concentric_with_the_base_corners():
         u = n if (mid.X - c.X) * n.X + (mid.Y - c.Y) * n.Y > 0 else -n
         return (round(c.X + u.X * f.radius, 3), round(c.Y + u.Y * f.radius, 3))
 
-    inner, outer = arcs(params.CORNER_R + params.CLR_FIT), arcs(lid.OUTER_R)
+    inner, outer = arcs(params.V1_CORNER_R + params.CLR_FIT), arcs(lid.OUTER_R)
     assert len(inner) >= 4 and len(outer) >= 4
     assert {centre(f) for f in inner} == {centre(f) for f in outer}
 
@@ -165,12 +165,12 @@ def test_lid_seats_over_the_base_without_interference():
     seated = lid.lid_seat() * lid.build_lid()
     assert (seated & p).volume < 1e-3
     bb = seated.bounding_box()
-    over = params.WALL + params.CLR_FIT
+    over = params.V1_WALL + params.CLR_FIT
     assert abs(bb.min.X + over) < 1e-6
     assert abs(bb.max.X - (base.BASE_X + over)) < 1e-6
     assert abs(bb.center().Y) < 1e-6
     assert abs(bb.min.Z - (base.BASE_H - lid.SKIRT_H)) < 1e-6
-    assert abs(bb.max.Z - (base.BASE_H + params.WALL)) < 1e-6
+    assert abs(bb.max.Z - (base.BASE_H + params.V1_WALL)) < 1e-6
 
 
 def test_seated_lid_rests_on_the_base_rim():
@@ -184,11 +184,11 @@ def test_seated_lid_rests_on_the_base_rim():
               if f.normal_at().Z < 0 and abs(f.center().Z - rim_z) < 1e-6]
     assert unders, "nothing of the lid sits on the base rim"
     # on the rim ring, half a wall in from the base's +Y outer face
-    y = base.BASE_Y / 2 - params.WALL / 2
+    y = base.BASE_Y / 2 - params.V1_WALL / 2
 
     def probe(z0, h):
         return Pos(base.BASE_X / 2, y, z0 + h / 2) * Box(
-            20, params.WALL - 0.02, h, align=_CTR)
+            20, params.V1_WALL - 0.02, h, align=_CTR)
 
     assert _is_solid_in(probe(rim_z - 0.2, 0.2), p), "no rim under the lid"
     assert _is_solid_in(probe(rim_z + 0.05, 0.2), seated), "the lid is not on it"
@@ -201,8 +201,8 @@ def test_seated_skirt_hangs_down_the_outside_of_the_base():
     seated = lid.lid_seat() * lid.build_lid()
     z = base.BASE_H - lid.SKIRT_H / 2
     y0 = base.BASE_Y / 2 + params.CLR_FIT
-    skirt = Pos(base.BASE_X / 2, y0 + params.WALL / 2, z) * Box(
-        20, params.WALL - 0.02, 1.0, align=_CTR)
+    skirt = Pos(base.BASE_X / 2, y0 + params.V1_WALL / 2, z) * Box(
+        20, params.V1_WALL - 0.02, 1.0, align=_CTR)
     assert _is_solid_in(skirt, seated), "the skirt does not reach down the side"
     gap = Pos(base.BASE_X / 2, base.BASE_Y / 2 + params.CLR_FIT / 2, z) * Box(
         20, params.CLR_FIT - 0.02, 1.0, align=_CTR)

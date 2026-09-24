@@ -33,6 +33,9 @@ class Charger:
     # the other ports.  None on a charger with no status LED at all, which is
     # what tells the base to leave its +X end wall blind.
     led_offset_from_ports: float | None = None
+    # Radius of the body's rounded vertical edges, seen from above: the
+    # charger pocket's corners follow it.  See docs/measuring.md.
+    corner_r: float = 6.0
 
 
 # PUBLISHED Wahoo ROAM 3 spec (96 x 53 x 24 mm, 109 g), lying flat in its bay.
@@ -54,7 +57,8 @@ CHARGER = Charger(port_face_width=77.0, port_to_inlet=82.0, height=33.0,
                   port_face_margin=7.25,     # NOMINAL, from the pitch
                   port_pitch=12.5,           # NOMINAL A2154
                   inlet_center_z=16.5,       # NOMINAL, height / 2
-                  led_offset_from_ports=None)   # the A2154 has no LED
+                  led_offset_from_ports=None,   # the A2154 has no LED
+                  corner_r=6.0)                 # NOMINAL until measured
 # The moulded end of the mains cord -- an IEC C7 "figure of 8" connector --
 # measured across the two lobes (width), across the flats (height) and along
 # the cord axis (length).  This is what the base's cord port has to pass, so

@@ -48,7 +48,7 @@ def _device_box(x0, y0, w, l, length, width, thickness, *, along_x, near_min):
         x_lo = x0 + P.CLR_BAY
         y_lo = y0 + P.CLR_BAY if near_min else y0 + l - P.CLR_BAY - length
         sx, sy = width, length
-    box = Pos(x_lo, y_lo, P.TRAY_PLATE) * Box(sx, sy, thickness, align=_MIN)
+    box = Pos(x_lo, y_lo, P.V1_TRAY_PLATE) * Box(sx, sy, thickness, align=_MIN)
     return base.tray_seat() * box
 
 
@@ -75,7 +75,7 @@ def _seated_divider(y):
     """The divider as exported -- the stack clearance only means anything
     against the part that actually gets printed."""
     x0, _, _, _ = tray.RIGHT_BAYS["ion"]
-    placed = Pos(x0 + tray.RIGHT_BAY_W / 2, y, P.TRAY_PLATE) * PARTS["divider"]()
+    placed = Pos(x0 + tray.RIGHT_BAY_W / 2, y, P.V1_TRAY_PLATE) * PARTS["divider"]()
     return base.tray_seat() * placed
 
 
@@ -165,8 +165,8 @@ def test_every_cable_cutout_drops_into_open_cavity():
     boxes = _tray_cutout_footprints()
     assert len(boxes) == 6, f"expected six cable cutouts, found {len(boxes)}"
     for bb in boxes:
-        column = Pos(bb.center().X, bb.center().Y, P.FLOOR) * Box(
-            bb.size.X - 0.02, bb.size.Y - 0.02, top - P.FLOOR,
+        column = Pos(bb.center().X, bb.center().Y, P.V1_FLOOR) * Box(
+            bb.size.X - 0.02, bb.size.Y - 0.02, top - P.V1_FLOOR,
             align=(Align.CENTER, Align.CENTER, Align.MIN))
         assert (column & p_base).volume < 1e-3, (
             f"a cutout at ({bb.center().X:.1f}, {bb.center().Y:.1f}) drops "
