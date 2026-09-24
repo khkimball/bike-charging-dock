@@ -29,8 +29,8 @@ stay marked NOMINAL until measured).
 - **Corners**: R30 at the base rim (CORNER_R), shrinking to about R8 at the
   foot. The lid's corners continue the same surface upward (radius grows
   with height).
-- **Size (derived, not frozen)**: rim ≈ 242 × 174, foot ≈ 198 × 130, base
-  height 81.6 as in v1 (FLOOR + charger + CABLE_ROOM + tray height).
+- **Size (derived, not frozen)**: rim ≈ 244 × 179, foot ≈ 202 × 137, base
+  height ≈ 80.1 (FLOOR + charger + CABLE_ROOM + TRAY_SINK + tray height).
   Everything grows from the tray; nothing is hard-coded.
 - **Two-tone base**: dark foot band, light body. The colour line is at
   BAND_H = 8 mm, below the cord port's sill (Z 10.1), so both kinds of port
@@ -38,7 +38,7 @@ stay marked NOMINAL until measured).
   V-profiled at 45°, is centred on the colour line. The tool change can be
   set at any layer inside the groove, so it works at both 0.20 and 0.28 mm
   layers. One tool change per base; no painted colour.
-- **Lid**: LID_H = 8 mm tall with a 2.0 mm top plate (LID_PLATE) and 1.6 mm
+- **Lid**: LID_H = 8 mm tall with a 1.2 mm top plate (LID_PLATE) and 1.6 mm
   walls (THIN_WALL). The lower 5 mm continues the 15° slope from the base
   rim; the top 3 mm is a flared lip standing 2 mm proud of the slope. The lip
   is the finger grip for opening and echoes the reference's flared lid edge.
@@ -57,7 +57,7 @@ One print, plate down, bays up, no supports.
 
 - **Shell**: its outer walls lean at 15°, parallel to the base wall, and are
   THIN_WALL (1.6) thick; they are hidden inside the base. Plate TRAY_PLATE
-  = 2.0 (was 3.0). Its rim is flush with the base rim.
+  = 1.2 (was 3.0). Its rim is flush with the base rim.
 - **Bays**: the same four bays and devices as v1 (ROAM on the left, long
   axis along Y; Ion Pro RT, TRACKR and spare stacked in the right column).
   Bay floors are sized to device + CLR_BAY_OUTER (3.0) at the sloped outer
@@ -67,7 +67,7 @@ One print, plate down, bays up, no supports.
   Ion bay keeps three along its length (UNDERSIDE_PORT_CUTOUTS). They sit
   within each bay's floor, clear of the sloped wall.
 - **Fixed internal walls**: the centre partition and the two right-column
-  dividers are fused to the plate and outer walls, full bay depth, WALL (2.4)
+  dividers are fused to the plate and outer walls, full bay depth, WALL (2.0)
   thick. There are no rail slots and no RAIL_WALL thickening.
 - **Rounding**:
   - R6 on every vertical inside corner, where internal walls meet each other
@@ -85,12 +85,13 @@ One print, plate down, bays up, no supports.
 
 Prints open-top-up. Supports are for the cord port only.
 
-- **Shell**: a single WALL (2.4) sloped wall and a FLOOR (1.6) floor. This
+- **Shell**: a single WALL (2.0) sloped wall and a FLOOR (1.2) floor. This
   replaces v1's 2·WALL lower walls, which existed only to carry the rebate
   ledge.
 - **Tray ledge**: a continuous ring on the inner wall at the tray's floor
-  depth that the tray rests on. It stands 2.5 mm proud of the wall and is
-  chamfered 45° underneath, so it prints unsupported. The tray's outer wall
+  depth that the tray rests on. It stands 3.0 mm proud of the wall
+  (LEDGE_W) and is chamfered underneath, so it prints unsupported. The tray
+  rim sits TRAY_SINK = 0.3 below the base rim, so the lid lands on the base. The tray's outer wall
   runs CLR_FIT + 0.3 clear of the base wall, so the ledge sets the tray's
   height, not a taper wedge.
 - **Charger**: the v1 U fence, backed onto the −X end wall. That wall leans
@@ -111,10 +112,14 @@ Prints open-top-up. Supports are for the cord port only.
 - **Escape ports**: two stadium-shaped holes (nearly oval, about 14 × 8
   with full R4 ends) in the −X wall, one each side of the fence. Each is
   centred in Y in the gap between the fence and the side wall, with its sill
-  above the colour line. This replaces the single port above the cord port,
+  above the colour groove (sill at BAND_H + 0.6 + 1.5). This replaces the single port above the cord port,
   which the charger's height covered. Each port's width is derived so that a
   full WALL of material remains to the corner arc at that height. Their 6 mm
   flat heads are short bridges.
+- **Cable drop**: the cutouts at the bays' outer ends sit over the leaning
+  wall, so a cable falls clear for at least 15 mm below the tray and then
+  follows the wall down. v1's rule (clear all the way to the cavity floor)
+  cannot hold with a 15° wall. The inner Ion cutouts drop clear to the floor.
 - **Tie grid and feet**: the tie-down grid (Ø4 on a 24 mm pitch) and the
   four foot recesses stay, re-fitted to the smaller tapered floor.
 - **Rim**: plain WALL rim, with no rebate and no notches.
@@ -125,17 +130,28 @@ Prints open-top-up. Supports are for the cord port only.
 Snap-on and lift-off, with no hardware. It sits on the +Y long side, at two
 stations about 60 mm in from each end.
 
+- **Axis**: runs along X at rim height, far enough behind the rim
+  (AXIS_Y) that the knuckles' swing clears the tray. Every knuckle turns
+  inside a relief disc (RELIEF_R) cut out of the other part, and the discs
+  are round the axis, so they stay clear at any angle.
 - **Base**: each station has two cheeks with a horizontal Ø5 pin between
-  them. The pin axis runs along X, just outside the rim at rim height. The
-  pin has a teardrop profile with its 45° point down, and the cheeks'
-  undersides are chamfered 45° into the sloped wall, so everything prints
-  without supports.
-- **Lid**: a C-hook at each station wraps about 270° of the pin. Its mouth
-  is narrower than the pin by a snap interference (initially 0.4 mm, with
-  0.3 mm pin-to-bore clearance; both tuned from the hinge coupon) and faces so that the hook passes over the pin only at the fully
-  open angle (≈ 110°). At 110° a heel on the lid rests against the base
-  cheeks, so the lid stays open on its own. Below that angle the lid is
-  captive.
+  them. Each cheek is a disc round the axis hulled with a 45° chin that runs
+  into the wall, so it prints without supports. The pin's underside is cut
+  flat at 0.8·r, a 3 mm bridge, which keeps the pin inside the bore circle.
+- **Lid**: a C-hook at each station. It is a ring round the pin (teardrop
+  bore, 0.3 mm clearance), hulled up into the lid's back wall and top so it
+  prints top-down. Its mouth has a neck narrower than the pin by SNAP
+  (initially 0.4 mm; clearance and snap are tuned on the hinge coupon), and
+  it flares open beyond the neck.
+  - **Mouth direction**: set so that at OPEN_DEG (110°) the mouth points
+    straight down the base's outer wall. At full open, pulling the lid up
+    along the wall unsnaps it.
+  - **Captive when closed**: lifting a closed lid pulls the pin into the
+    bottom of the bore. Pulling a closed lid hard straight forward can still
+    unsnap it, which is accepted.
+- **Heel stop**: a separate tab on the lid at X = 0, between the stations.
+  At OPEN_DEG its tip rests on the base's outer wall, so the lid stays open.
+  It is kept off the hooks so the mouth can face where it must.
 - **Hinge coupon**: `coupon.py` gains a small hinge coupon (one base pin
   station plus one lid hook) that tunes the pin clearance and snap
   interference before the base is printed.
@@ -162,7 +178,19 @@ stations about 60 mm in from each end.
   | **Total** | **14 h 00 m** | **588** |
 
 - **Target**: the v2 set at 0.20 is at least 25 % below the baseline in both
-  time and grams. The 0.28 mm draft layer for the base and lid is reported
+  time and grams.
+- **Measured during planning** (scratch build, slice_report.py, 0.20, PETG;
+  v1 through the same script: 14 h 00 m / 582 g):
+
+  | Thicknesses | Time | Grams |
+  |---|---|---|
+  | 2.0 plates, 2.4 walls (first draft) | 12 h 14 m (−13 %) | 508 (−13 %) |
+  | 1.2 plates, 2.4 walls | 10 h 48 m (−23 %) | 450 (−23 %) |
+  | **1.2 plates, 2.0 walls (chosen)** | **9 h 53 m (−29 %)** | **412 (−29 %)** |
+
+  The solid plates and walls dominate what the slicer lays down, so the
+  chosen set is WALL 2.0, FLOOR / TRAY_PLATE / LID_PLATE 1.2; THIN_WALL
+  stays 1.6. The 0.28 mm draft layer for the base and lid is reported
   alongside and recommended in docs/printing.md if it slices cleanly.
 - **scripts/slice_report.py**: a new, committed script that slices every
   exported part headlessly with the Snapmaker Orca Flatpak and prints a
@@ -174,8 +202,9 @@ stations about 60 mm in from each end.
   - It passes `--export-3mf` a bare filename.
   - It reads the estimates from the gcode header inside the exported 3mf.
   - It is not part of pytest.
-- **Two-tone cost**: the prime/wipe tower is off for the single tool change;
-  docs/printing.md says so, and the report measures the band's real cost.
+- **Two-tone cost**: the prime/wipe tower is off for the single tool change,
+  and docs/printing.md says so. The slice report slices single-colour, so it
+  does not count the one tool change (about a minute).
 - **Tests** (pytest, all measuring the built solids):
   - **Taper**: the outline sampled at several heights leans 15° ± 0.5°; the
     corner radius is ≈ R30 at the rim and ≈ R8 at the foot.
@@ -184,13 +213,19 @@ stations about 60 mm in from each end.
   - **Tray fit**: seated on the ledge, the tray does not intersect the base,
     its rim is flush within 0.5 mm, and every bay floor holds its device
     plus the specified clearance.
-  - **Lid**: it lies flush on the rim, and swept from 0° to 110° about the
-    hinge axis it intersects neither the base nor the seated tray, except
-    at the heel stop at 110°.
-  - **Printability**: no downward face past 45°. The only allowlisted
-    bridges are the escape port heads and the foot recesses; the finger slot
-    and the hinge pin and bore are 45° teardrops or arches, so they need no
-    bridge. The cord port is the only supported ceiling.
+  - **Lid**:
+    - it lies flush on the rim;
+    - swept from 0° to just short of OPEN_DEG it intersects neither the
+      base nor the seated tray;
+    - past OPEN_DEG the heel meets the wall;
+    - lifted while closed, it catches on the pins;
+    - just short of open, it lifts off along the wall and the neck snaps
+      over the pin on the way.
+  - **Printability**: no downward face past 45°, with these allowlisted:
+    - base: bridges of 20 mm or less (escape port heads, foot recesses, the
+      pin's 3 mm flat), and the cord port as the only supported ceiling;
+    - lid: the hook mouth's roof, no wider than a hook;
+    - tray: none (the finger slot is a 45° arch).
   - **Parts**: every exported part is a single valid solid with its bed face
     at Z = 0 and fits BED_X × BED_Y.
   - **Colour line**: the groove is at BAND_H, and both kinds of port are
