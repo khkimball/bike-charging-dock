@@ -58,12 +58,13 @@ charger flat, ports toward you.
   has one.  If yours does have an LED, measure from port 1's centre to the
   LED centre along the port face, *away* from the other ports: the LED sits
   at the end of the row, outboard of port 1, not between the ports.
-- corner_r: the radius of the body's rounded vertical edges, seen from
-  above.  Hold a square (or a card) against one corner, flat on both faces
-  that meet there, and measure how far back along one face the curve starts
-  -- that distance is the radius.  The base's charger pocket rounds its
-  port-face corners to `corner_r + CLR_FIT` so they follow the body.  NOMINAL
-  6.0 until measured.
+- edge_r: the radius of the rounded bottom edges along the charger's two
+  sides (the faces either side of the port face), seen end-on.  Stand the
+  charger on the bench, hold a square (or a card) flat against the bench and
+  up against one side, and measure how far up the side, or in under the
+  bottom, the curve starts -- that distance is the radius.  The pocket's
+  floor meets its two side walls in a fillet of `edge_r + CLR_FIT` that
+  follows those edges.  NOMINAL 6.0 until measured.
 - Check what the AC inlet actually is while you have the charger in hand.
   `CORD_END` below is still sized for an IEC C7 "figure of 8"; a C13 or C5
   inlet is a different shape and the cord port must be resized from it.

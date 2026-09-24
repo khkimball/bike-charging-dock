@@ -44,7 +44,8 @@ def _box(x, y, z, sx, sy, sz):
 def _charger(dx=0.0, dy=0.0):
     c = m.CHARGER
     body = Box(c.port_to_inlet, c.port_face_width, c.height, align=(Align.MIN, Align.CENTER, Align.MIN))
-    body = fillet(body.edges().filter_by(Axis.Z), c.corner_r)
+    # rounded along its two long bottom edges, the ones that run along X
+    body = fillet(body.edges().filter_by(Axis.X).group_by(Axis.Z)[0], c.edge_r)
     return Pos(base.POCKET_MIN_X + params.CLR_FIT + dx, dy, params.FLOOR) * body
 
 
@@ -130,17 +131,49 @@ def test_the_charger_fits_the_pocket_with_fit_clearance():
     assert (_charger(dx=-(base.POCKET_BACK_SLACK + params.CLR_FIT + 0.1)) & _base()).volume > 1e-3
 
 
-def test_the_pocket_corners_follow_the_charger_corners():
-    c = m.CHARGER
-    x = base.POCKET_MAX_X
+def test_the_fence_corners_are_square():
+    z = params.BAND_H - 0.5           # above the floor fillet
+    # inside the pocket, right into the front corners: air
+    assert _clear(_box(base.POCKET_MAX_X - 0.2, base.POCKET_Y / 2 - 0.2, z, 0.1, 0.1, 0.1))
+    # the fence's own outer front corners: solid right to the corner
+    assert _solid(_box(base.FENCE_MAX_X - 0.2, base.FENCE_Y / 2 - 0.2, z, 0.1, 0.1, 0.1))
+
+
+def test_the_side_walls_meet_the_floor_in_a_fillet_and_the_front_wall_does_not():
+    r = base.POCKET_FILLET_R
+    x_mid = (base.CAVITY_MIN_X + base.POCKET_MAX_X) / 2
     y = base.POCKET_Y / 2
-    d = 0.2 * base.POCKET_R           # inside the fillet: solid; a square corner would be air
-    assert _solid(_box(x - d, y - d, params.FLOOR + 1.0, 0.1, 0.1, 0.5))
+    for s in (-1, 1):
+        assert _solid(_box(x_mid, s * (y - 0.25 * r), params.FLOOR + 0.25 * r, 1, 0.1, 0.1))
+        assert _clear(_box(x_mid, s * (y - 0.35 * r), params.FLOOR + 0.35 * r, 1, 0.1, 0.1))
+    # the front (port-face) wall: square to the floor
+    assert _clear(_box(base.POCKET_MAX_X - 0.25 * r, 0, params.FLOOR + 0.25 * r, 0.1, 1, 0.1))
+
+
+def test_the_fence_top_is_the_colour_line():
+    y = base.POCKET_Y / 2 + params.WALL / 2
+    x = (base.CAVITY_MIN_X + base.POCKET_MAX_X) / 2
+    assert _solid(_box(x, y, params.BAND_H - 0.1, 1, 0.5, 0.1))
+    assert _clear(_box(x, y, params.BAND_H + 0.1, 1, 0.5, 0.1))
+
+
+def test_the_fence_arms_run_into_the_leaning_end_wall():
+    """Fused at the angle: at every height from the floor to the fence top,
+    solid material runs from inside the -X wall along each arm."""
+    y = base.POCKET_Y / 2 + params.WALL / 2
+    for z in (params.FLOOR + 0.5, (params.FLOOR + params.BAND_H) / 2, params.BAND_H - 0.3):
+        x0 = -L.RIM.at(z)[0] / 2 + 0.3          # just inside the wall's outer face
+        x1 = base.CAVITY_MIN_X + 10.0           # well along the arm
+        for s in (-1, 1):
+            assert _solid(_box((x0 + x1) / 2, s * y, z, x1 - x0, 0.5, 0.1)), (s, z)
+        # and nothing pokes out through the outside of the wall
+        assert math.isclose(_slab(_base(), z).bounding_box().min.X, -L.RIM.at(z)[0] / 2,
+                            abs_tol=0.02)
 
 
 def test_the_fence_has_no_fingernail_notch():
     y = base.POCKET_Y / 2 + params.WALL / 2
-    x0, x1 = base.FENCE_MIN_X + 2.0, base.POCKET_MAX_X - base.POCKET_R
+    x0, x1 = base.CAVITY_MIN_X + 2.0, base.POCKET_MAX_X - 1.0
     assert _solid(_box((x0 + x1) / 2, y, params.FLOOR + base.FENCE_H / 2, x1 - x0, 0.5, base.FENCE_H - 0.2))
 
 

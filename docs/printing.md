@@ -46,8 +46,10 @@ it is 1.2 mm tall, so any layer inside it works at 0.20 or 0.28:
 
 1. In Orca, load the dark filament in one toolhead and the light in another,
    and set the base's object filament to the dark one.
-2. Add a filament change at a layer inside the groove -- 8.0 mm at 0.20 --
-   to the light filament (right-click the layer slider, "Change filament").
+2. Add a filament change to the light filament at the first layer above
+   8.0 mm -- 8.2 mm at 0.20 -- on the layer slider ("+" or right-click,
+   "Change filament"). 8.0 mm is also the charger fence's top, so the whole
+   fence prints dark, and 8.2 is still inside the groove.
 3. Turn the prime/wipe tower off for this plate (Others > Prime tower): one
    change on a toolchanger does not need it, and the tower would cost more
    than the whole change.
@@ -66,7 +68,9 @@ The hinge pins' flats (3 mm wide) bridge the 25 mm hook gap between the
 cheeks (`base.LONG_BRIDGES`), which the U1 bridges cleanly.
 
 The charger (Anker A2154) stands in a U fence backed onto the -X end wall;
-its corners follow the charger's rounded edges (`CHARGER.corner_r`). The
+its arms run into the leaning end wall and fuse with it, its top is the
+colour line, and the pocket floor is filleted along its two side walls to
+follow the charger's rounded bottom edges (`CHARGER.edge_r`). The
 mains cord plugs in from outside through the cord port, sized for a
 figure-8 (C7) end; if your cord's moulding is square-cornered, measure it
 (docs/measuring.md) before printing the base. Two oval escape
@@ -98,7 +102,7 @@ and lid. If the hook will not snap on, or falls off, change `SNAP` in
 1. **coupons** -- the clearance coupon and the hinge coupon, in the final
    material. Set `CLR_FIT` (params.py) and `SNAP` / `BORE_CLR` (hinge.py).
 2. **measurements** -- fill in `src/dock/measurements.py` per
-   `docs/measuring.md`; `CHARGER.corner_r` is new.
+   `docs/measuring.md`; `CHARGER.edge_r` is new.
 3. **tray** -- check each device seats in its bay and its cable plugs in
    cleanly through the cutout.
 4. **base** -- check the charger drops into the fence and the tray seats on

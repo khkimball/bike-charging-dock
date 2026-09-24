@@ -14,8 +14,10 @@ The tray sits TRAY_SINK below the rim, so the lid lands on the base.
 
 The charger is the v1 arrangement: backed onto the -X end wall in a U
 fence, its AC inlet reached from outside through the cord port, an oval
-like every other cable hole.  The fence corners follow the charger's own
-rounded corners.  Two oval escape ports flank the charger in the same wall,
+like every other cable hole.  The fence is square-cornered; its arms run
+into the leaning end wall and fuse with it, its top is the colour line (so
+the whole fence prints dark), and the pocket floor is filleted along the two
+side walls to follow the charger's rounded bottom edges.  Two oval escape ports flank the charger in the same wall,
 on its flat between the fence and the corner arcs, above the colour groove.
 
 It prints open-top-up with no supports.  Everything that faces down is a
@@ -53,19 +55,20 @@ GROOVE_UP = 0.9                       # upper flank height: tall enough to print
 GROOVE_H = GROOVE_LOW + GROOVE_UP
 
 # --- charger fence ------------------------------------------------------------------
-FENCE_H = 8.0
+FENCE_H = P.BAND_H - P.FLOOR          # fence top = the colour line: the whole fence prints dark
 POCKET_BACK_SLACK = 2.0               # free X behind the charger, at floor level
 PORT_PLUG_ROOM_MIN = 40.0             # least free X in front of the ports
 POCKET_X = M.CHARGER.port_to_inlet + 2 * P.CLR_FIT
 POCKET_Y = M.CHARGER.port_face_width + 2 * P.CLR_FIT
-POCKET_R = M.CHARGER.corner_r + P.CLR_FIT     # concentric with the charger's corner
-FENCE_R = POCKET_R + P.WALL
+# The charger's long bottom edges are rounded, so the pocket's floor meets its
+# two side walls in a fillet that follows them (not the front wall, and no
+# rounded vertical corners anywhere).  Kept below the fence top.
+POCKET_FILLET_R = min(M.CHARGER.edge_r + P.CLR_FIT, FENCE_H - 0.5)
 FENCE_Y = POCKET_Y + 2 * P.WALL
 CAVITY_FLOOR = RIM.at(P.FLOOR, WALL_H)        # (sx, sy, r) of the cavity at the floor
 CAVITY_MIN_X, CAVITY_MAX_X = -CAVITY_FLOOR[0] / 2, CAVITY_FLOOR[0] / 2
 POCKET_MIN_X = CAVITY_MIN_X + POCKET_BACK_SLACK
 POCKET_MAX_X = POCKET_MIN_X + POCKET_X        # the charger's port face
-FENCE_MIN_X = CAVITY_MIN_X + P.CLR_FIT
 FENCE_MAX_X = POCKET_MAX_X + P.WALL
 PORT_PLUG_ROOM = CAVITY_MAX_X - POCKET_MAX_X
 FENCE_MARGIN_Y = (CAVITY_FLOOR[1] - FENCE_Y) / 2
@@ -157,14 +160,16 @@ def _ledge() -> Part:
 
 
 def _fence() -> Part:
-    fence = Pos(FENCE_MIN_X, 0, 0) * Box(FENCE_MAX_X - FENCE_MIN_X, FENCE_Y,
-                                         P.FLOOR + FENCE_H, align=_END_LO)
-    fence = fillet(fence.edges().filter_by(Axis.Z).group_by(Axis.X)[-1], FENCE_R)
-    # the pocket, open toward -X so the end wall closes it
-    pocket = Pos(FENCE_MIN_X - 1.0, 0, P.FLOOR) * Box(
-        POCKET_MAX_X - FENCE_MIN_X + 1.0, POCKET_Y, FENCE_H + 1.0, align=_END_LO)
-    pocket = fillet(pocket.edges().filter_by(Axis.Z).group_by(Axis.X)[-1], POCKET_R)
-    return fence - pocket
+    """The U: side arms that run on into the leaning -X wall -- trimmed to the
+    base's outside, so they fuse with it along the angle at every height --
+    and a front wall.  The pocket is open toward -X, where the end wall
+    closes it, and its floor is filleted along the two side walls only."""
+    fence = Pos(_OUTSIDE_X, 0, 0) * Box(FENCE_MAX_X - _OUTSIDE_X, FENCE_Y,
+                                        P.FLOOR + FENCE_H, align=_END_LO)
+    pocket = Pos(_OUTSIDE_X - 1.0, 0, P.FLOOR) * Box(
+        POCKET_MAX_X - _OUTSIDE_X + 1.0, POCKET_Y, FENCE_H + 1.0, align=_END_LO)
+    pocket = fillet(pocket.edges().filter_by(Axis.X).group_by(Axis.Z)[0], POCKET_FILLET_R)
+    return (fence - pocket) & _outer()
 
 
 def _cord_cutter() -> Part:

@@ -105,13 +105,17 @@ Prints open-top-up with no supports (revision 2026-09-24: the cord port became a
 - **Charger**: the v1 U fence, backed onto the −X end wall. That wall leans
   away above the floor, so POCKET_BACK_SLACK (2) is measured at floor level.
   CABLE_ROOM stays 6. Two changes from v1:
-  - **Rounded to the charger**: the A2154's vertical edges are rounded. A new
-    measurement field, `Charger.corner_r` (NOMINAL until measured; see
-    docs/measuring.md), sets the fillet on the pocket's two inner vertical
-    corners at the port-face end: corner_r + CLR_FIT, concentric with the
-    charger's own edge. The fence's outer vertical corners are rounded
-    corner_r + CLR_FIT + WALL, so the U keeps a uniform WALL through each
-    bend.
+  - **Fillets along the charger's sides** (revision 2026-09-24): the
+    A2154's long bottom edges are rounded, so the pocket floor meets its two
+    side walls in a concave fillet of `Charger.edge_r` + CLR_FIT (NOMINAL
+    until measured; see docs/measuring.md), capped below the fence top. No
+    fillet on the front wall; all vertical corners square.
+  - **Fused to the end wall** (revision 2026-09-24): the side arms run on
+    into the leaning −X wall and are trimmed to the base's outside, so they
+    join it along the angle at every height.
+  - **Height = colour line** (revision 2026-09-24): FENCE_H = BAND_H − FLOOR,
+    so the fence top is at 8.0 mm and the whole fence prints dark; the
+    filament change goes at the first layer above 8.0.
   - **No fingernail notch**: v1's notch in the +Y fence wall is removed.
     The charger lifts out easily without it.
 - **Cord port**: a 26 × 16 oval (stadium, R8 ends) through the −X wall,

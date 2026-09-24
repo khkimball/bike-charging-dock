@@ -45,6 +45,6 @@ def test_devices_are_slabs_with_published_sizes():
     assert m.TRACKR.length == 89.9
 
 
-def test_the_charger_corner_radius_fits_the_body():
+def test_the_charger_edge_radius_fits_the_body():
     c = m.CHARGER
-    assert 0 < c.corner_r < min(c.port_face_width, c.port_to_inlet) / 2
+    assert 0 < c.edge_r < c.height / 2
