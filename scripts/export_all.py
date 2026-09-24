@@ -20,9 +20,19 @@ def _coupon_peg() -> Part:
     return coupon.build_coupon()[1]
 
 
+def _hinge_coupon_base() -> Part:
+    return coupon.build_hinge_coupon()[0]
+
+
+def _hinge_coupon_lid() -> Part:
+    return coupon.build_hinge_coupon()[1]
+
+
 PARTS: dict[str, Callable[[], Part]] = {
     "coupon_plate": _coupon_plate,
     "coupon_peg": _coupon_peg,
+    "hinge_coupon_base": _hinge_coupon_base,
+    "hinge_coupon_lid": _hinge_coupon_lid,
 }
 
 PARTS.update({
