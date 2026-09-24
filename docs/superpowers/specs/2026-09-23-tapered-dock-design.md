@@ -1,7 +1,7 @@
 # Charging Dock — Tapered Dock Design Spec (physical v2)
 
 Date: 2026-09-23
-Status: approved in chat, sections 1–3
+Status: implemented on branch tapered-dock (plan docs/superpowers/plans/2026-09-24-tapered-dock.md)
 Supersedes: the exterior, lid, divider and base-wall parts of
 2026-09-20-tray-dock-design.md. The bay layout, devices, charger and cable
 routing carry over unless changed here.
