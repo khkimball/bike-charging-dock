@@ -26,7 +26,8 @@ At each station:
 - the tray's back wall steps in round the station (tray_recess) to give the
   leaf's swing and the lips room.
 
-The socket blocks and lip risers have flat undersides and print on supports.
+The socket blocks have 45-degree chins running into the wall, so the base
+prints without supports.
 """
 import math
 from functools import lru_cache
@@ -134,11 +135,15 @@ def _lip_face() -> Sketch:
     return lip & (Pos(AXIS_Y, AXIS_Z) * Rectangle(40, 40, align=(Align.MAX, Align.CENTER)))
 
 
-def _block_face() -> Sketch:
-    inner = AXIS_Y - BORE_R - BLOCK_WALL
+def _block_face(inner: float) -> Sketch:
+    """YZ section of a socket block: from the wall in to `inner`, round the
+    bore, with a 45-degree chin underneath running back into the wall so it
+    prints without supports."""
     bottom = AXIS_Z - BORE_R - BLOCK_WALL
+    # where the chin, running down-and-out at 45 degrees, meets the outer face
+    z_w = (inner + bottom - _RIM_Y + _H * taper.TAN + 0.3) / (1 + taper.TAN)
     return Polygon((y_out(_H) - 0.3, _H), (inner, _H), (inner, bottom),
-                   (y_out(bottom) - 0.3, bottom), align=None)
+                   (inner + bottom - z_w, z_w), align=None)
 
 
 def _ends(xs: float):
@@ -160,7 +165,8 @@ def socket_blocks(stations=STATIONS) -> Part:
     """The socket blocks with their stop lips, to be added to the base."""
     lip = _lip_face()
     bb = lip.bounding_box()
-    block_in = AXIS_Y - BORE_R - BLOCK_WALL
+    # the block reaches in under the lip's riser, so the chin carries both
+    block_in = min(AXIS_Y - BORE_R - BLOCK_WALL, bb.min.X)
     riser = Pos(bb.min.X, _H - 0.5) * Rectangle(max(bb.max.X, block_in + 1.0) - bb.min.X,
                                                   bb.max.Y - (_H - 0.5), align=(Align.MIN, Align.MIN))
     part = None
@@ -168,7 +174,7 @@ def socket_blocks(stations=STATIONS) -> Part:
         for sgn, edge in _ends(xs):
             b0, b1 = sorted((edge, edge + sgn * BLOCK_W))
             l0, l1 = sorted((edge, edge - sgn * LIP_W))
-            piece = _prism(_block_face(), b0, b1) + _prism(lip + riser, b0, b1) + _prism(lip, l0, l1)
+            piece = _prism(_block_face(block_in), b0, b1) + _prism(lip + riser, b0, b1) + _prism(lip, l0, l1)
             part = piece if part is None else part + piece
     return part
 

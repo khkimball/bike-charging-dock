@@ -60,6 +60,18 @@ def test_the_stop_lips_reach_into_the_notch_above_the_rim():
             assert (inside_notch & blocks).volume > 0.1
 
 
+def test_the_socket_blocks_print_without_supports():
+    """Chins run the blocks' undersides into the wall at 45 degrees; all that
+    still faces down is each lip's short ledge reaching into the notch, which
+    the leaf sweeps under before the stop so it cannot have a chin."""
+    from printability import span, steep_faces
+    steep = steep_faces(H.socket_blocks())
+    assert len(steep) == 2 * len(H.STATIONS)
+    for f in steep:
+        assert span(f) <= H.LIP_W + 1e-6
+        assert f.center().Z > L.BASE_H                  # up at the lips, above the rim
+
+
 def test_the_back_relief_raises_the_lid_off_the_rim_along_the_back():
     r = H.back_relief().bounding_box()
     assert math.isclose(r.max.Z, L.BASE_H + H.BACK_GAP, abs_tol=1e-6)

@@ -11,7 +11,7 @@ option for the base and lid, see below.
 | Part | Orientation | Walls | Infill | Supports |
 |---|---|---|---|---|
 | coupon_plate, coupon_peg | as exported | 3 | 15 % | none |
-| hinge_coupon_base | as exported | 3 | 15 % | under the socket blocks and lip risers |
+| hinge_coupon_base | as exported | 3 | 15 % | none |
 | hinge_coupon_lid | as exported: leaf up | 3 | 15 % | under the pins if needed |
 | tray | as exported: plate on the bed, bays up | 3 | 15 % | none |
 | base | as exported: open top up | 3 | 15 % | none |
@@ -25,7 +25,7 @@ There are no dividers to print: the tray's dividers are fixed and print with it.
 lid headlessly with these settings and prints time and grams next to the v1
 prototype (`--layer 0.28` for the draft profile). Last measured
 2026-09-24 (concealed leaf hinge), 0.20 mm PETG: v1 set 14 h 00 m / 582 g,
-this set 9 h 35 m / 411 g (time -32 %, filament -30 %). Re-run it after any
+this set 9 h 38 m / 411 g (time -31 %, filament -29 %). Re-run it after any
 change to params.py and before a reprint.
 
 `uv run python scripts/orca_project.py` builds `out/orca/dock_plates.3mf`,
@@ -61,11 +61,11 @@ Print the lid and the tray in the dark colour.
 Every outer face leans 15 degrees (the CHRGtime's angle), from the lid top
 down to the foot; the corners run from R30 at the rim to about R8 at the
 bed. The base walls lean outward as they rise, well inside 45 degrees, so
-the shell prints unsupported. Every cable hole -- the AC cord port, the two
-escape ports and the tray's cutouts -- is an oval, so the ports' flat heads
-(10 mm at most) and the foot recesses are short bridges. The only supports
-are under the hinge's four socket blocks and their stop-lip risers, inside
-the back wall (paint them on).
+the base prints without supports -- turn them off for it, or Orca's
+automatic ones will fill the ports. Every cable hole -- the AC cord port,
+the two escape ports and the tray's cutouts -- is an oval, so the ports'
+flat heads (10 mm at most) and the foot recesses are short bridges, and the
+hinge's socket blocks inside the back wall sit on 45-degree chins.
 
 The charger (Anker A2154) stands in a U fence backed onto the -X end wall;
 its arms run into the leaning end wall and fuse with it, its top is the

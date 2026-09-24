@@ -91,7 +91,7 @@ One print, plate down, bays up, no supports.
 
 ## Base
 
-Prints open-top-up; supports only under the four hinge socket blocks and their stop-lip risers (revision 2026-09-24b).
+Prints open-top-up with no supports (the hinge socket blocks sit on 45° chins).
 
 - **Shell**: a single WALL (2.0) sloped wall and a FLOOR (1.2) floor. This
   replaces v1's 2·WALL lower walls, which existed only to carry the rebate
@@ -174,9 +174,12 @@ side at two stations about 60 mm in from each end.
   leaf's swing and the lips have room. The headlight moves 3 mm forward in
   its bay (6 mm clear at the back, 5 mm to the divider) to clear the
   right-hand recess.
-- **Printing**: the socket blocks and the lips' risers have flat undersides,
-  printed on supports (the user's choice over 45° chins). The lid's leaf
-  pins are short horizontal stubs as it prints top-down.
+- **Printing**: the socket blocks reach in under the lips' risers and sit
+  on 45° chins running into the wall, so the base prints without supports
+  (revision: the user first chose flat undersides on supports, then asked
+  for the chins after seeing the supports in the slicer). Only each lip's
+  3 mm ledge into the notch overhangs. The lid's leaf pins are short
+  horizontal stubs as it prints top-down.
 - **Hinge coupon**: one station cut from the real base and lid, to tune
   BORE_CLR and SNAP and to try the stop before the long prints.
 
@@ -246,8 +249,7 @@ side at two stations about 60 mm in from each end.
       the lid comes off.
   - **Printability**: no downward face past 45°, with these allowlisted:
     - base: downward faces of 20 mm or less (the ports' flat heads, foot
-      recesses, and the socket blocks' and lip risers' undersides, which
-      print on supports);
+      recesses, the hinge lips' 3 mm ledges); no supports;
     - lid: the leaf pins' undersides;
     - tray: none.
   - **Parts**: every exported part is a single valid solid with its bed face
