@@ -11,11 +11,11 @@ option for the base and lid, see below.
 | Part | Orientation | Walls | Infill | Supports |
 |---|---|---|---|---|
 | coupon_plate, coupon_peg | as exported | 3 | 15 % | none |
-| hinge_coupon_base | as exported | 3 | 15 % | none |
-| hinge_coupon_lid | as exported: hook up | 3 | 15 % | inside the hook's bore |
+| hinge_coupon_base | as exported | 3 | 15 % | under the socket blocks and lip risers |
+| hinge_coupon_lid | as exported: leaf up | 3 | 15 % | under the pins if needed |
 | tray | as exported: plate on the bed, bays up | 3 | 15 % | none |
 | base | as exported: open top up | 3 | 15 % | none |
-| lid | as exported: top face down, hinge hooks up | 3 | 15 % | inside the two hook bores only (paint-on) |
+| lid | as exported: top face down, hinge leaves up | 3 | 15 % | under the leaf pins if needed (paint-on) |
 
 There are no dividers to print: the tray's dividers are fixed and print with it.
 
@@ -24,8 +24,8 @@ There are no dividers to print: the tray's dividers are fixed and print with it.
 `uv run python scripts/slice_report.py` slices the exported base, tray and
 lid headlessly with these settings and prints time and grams next to the v1
 prototype (`--layer 0.28` for the draft profile). Last measured
-2026-09-24 (oval ports, wide hinge), 0.20 mm PETG: v1 set 14 h 00 m / 582 g,
-this set 9 h 33 m / 413 g (time -32 %, filament -29 %). Re-run it after any
+2026-09-24 (concealed leaf hinge), 0.20 mm PETG: v1 set 14 h 00 m / 582 g,
+this set 9 h 35 m / 411 g (time -32 %, filament -30 %). Re-run it after any
 change to params.py and before a reprint.
 
 `uv run python scripts/orca_project.py` builds `out/orca/dock_plates.3mf`,
@@ -61,11 +61,11 @@ Print the lid and the tray in the dark colour.
 Every outer face leans 15 degrees (the CHRGtime's angle), from the lid top
 down to the foot; the corners run from R30 at the rim to about R8 at the
 bed. The base walls lean outward as they rise, well inside 45 degrees, so
-the whole base prints without supports. Every cable hole -- the AC cord
-port, the two escape ports and the tray's cutouts -- is an oval, so the
-ports' flat heads (10 mm at most) and the foot recesses are short bridges.
-The hinge pins' flats (3 mm wide) bridge the 25 mm hook gap between the
-cheeks (`base.LONG_BRIDGES`), which the U1 bridges cleanly.
+the shell prints unsupported. Every cable hole -- the AC cord port, the two
+escape ports and the tray's cutouts -- is an oval, so the ports' flat heads
+(10 mm at most) and the foot recesses are short bridges. The only supports
+are under the hinge's four socket blocks and their stop-lip risers, inside
+the back wall (paint them on).
 
 The charger (Anker A2154) stands in a U fence backed onto the -X end wall;
 its arms run into the leaning end wall and fuse with it, its top is the
@@ -84,18 +84,24 @@ falls clear for at least 15 mm, then follows the wall down.
 
 ## Hinge
 
-The lid hinges on the +Y long side at two 24 mm wide stations. The base
-carries the pins, the lid the hooks, whose round bores open straight down
-with the lid closed. To fit the lid: set it closed on the rim with the hooks
-over the pins and press the back edge down until the hooks snap on; to take
-it off, lift the back edge straight up. The snap is deliberately light.
-Opened fully (about 100 degrees) it rests on the wide heel tab in the middle
-against the base's back wall; it stops short of leaning further back so its
-weight does not push the hooks off the pins.
+A concealed leaf hinge, after the Trek CHRGtime's, at two stations on the
++Y long side. At each, a leaf on the lid hangs into a notch in the base's
+back wall, flush with it, and Ø6 pins on the leaf's ends sit in sockets in
+blocks on the inside of the wall. From behind, a closed dock shows only the
+two leaves in their notches and a 1.5 mm gap along the back seam (the
+lid's back is raised off the rim so it can turn about a pivot inside the
+wall line).
 
-Print the hinge coupon first: it is one station on a short stretch of wall
-and lid. If the hook will not snap on, or falls off, change `SNAP` in
-`src/dock/hinge.py`; if the hinge binds, raise `BORE_CLR`. Then re-export.
+To fit the lid: set it closed on the rim with the leaves over their notches
+and press the back edge down until the pins snap into their sockets; to
+take it off, lift the back edge straight up. The snap is deliberately
+light. Opened fully it stops at about 101 degrees, the leaves' ends resting
+on small lips on the socket blocks.
+
+Print the hinge coupon first: it is one station cut from the real base and
+lid. If the pins will not snap in, or pop out, change `SNAP` in
+`src/dock/hinge.py`; if the hinge binds, raise `BORE_CLR`; check it stops
+at about 100 degrees and the lips hold. Then re-export.
 
 ## Print order and measurement cycle
 
@@ -107,7 +113,7 @@ and lid. If the hook will not snap on, or falls off, change `SNAP` in
    cleanly through the cutout.
 4. **base** -- check the charger drops into the fence and the tray seats on
    the ledge.
-5. **lid** -- check it snaps onto the pins, stays on resting fully open,
+5. **lid** -- check it snaps into its sockets, stays on resting fully open,
    swings shut flush with the
    rim, and clears every device.
 

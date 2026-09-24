@@ -79,16 +79,23 @@ def test_the_plate_is_lid_plate_thick():
     assert (air & _seated()).volume < 1e-6
 
 
-def test_the_lid_prints_with_only_the_hook_mouth_roofs_overhanging():
+def test_the_lid_prints_with_only_the_leaf_pins_overhanging():
     for f in steep_faces(_printed()):
         c = f.center()
-        near = min(abs(c.X - xs) for xs in H.STATIONS)
-        assert near <= H.HOOK_W / 2 + 1e-6, f"overhang away from a hook at {c}"
-        assert span(f) <= H.HOOK_W + 1e-6
+        near = min(abs(abs(c.X - xs) - H.NOTCH_W / 2) for xs in H.STATIONS)
+        assert near <= H.PIN_L + 1e-6, f"overhang away from a pin at {c}"
+        assert span(f) <= H.PIN_L + 1.0
 
 
-def test_the_lid_is_relieved_round_the_base_cheeks():
+def test_the_lid_is_raised_off_the_rim_along_the_back():
+    y = L.RIM.sy / 2 - 1.0                    # over the back rim, between the stations
+    probe = Pos(0, y, L.BASE_H + H.BACK_GAP / 2) * Box(20, 1, H.BACK_GAP - 0.2, align=_CTR)
+    assert (probe & _seated()).volume < 1e-9
+    front = Pos(0, -y, L.BASE_H + 0.3) * Box(20, 1, 0.4, align=_CTR)
+    assert (front & _seated()).volume > 0     # but it sits on the rim at the front
+
+
+def test_the_leaves_hang_into_the_notches():
     for xs in H.STATIONS:
-        a = xs - H.HOOK_W / 2 - H.SIDE_CLR
-        probe = H.x_cylinder(H.RELIEF_R - 0.05, a - H.CHEEK_W, a)
-        assert (probe & _seated()).volume < 1e-6
+        probe = Pos(xs, H.y_out(H.AXIS_Z) - 1.0, H.AXIS_Z) * Box(10, 1, 1, align=_CTR)
+        assert (probe & _seated()).volume >= probe.volume * (1 - 1e-4)

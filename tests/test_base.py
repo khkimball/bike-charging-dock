@@ -269,25 +269,25 @@ def test_tie_holes_go_through_the_floor_and_feet_are_shallow_recesses():
 
 # --- hinge ------------------------------------------------------------------------
 
-def test_the_hinge_pins_and_relief_are_in_the_base():
+def test_the_back_wall_is_notched_for_each_leaf_with_sockets_beside_it():
+    z = H.AXIS_Z
     for xs in H.STATIONS:
-        a, b = xs - H.HOOK_W / 2, xs + H.HOOK_W / 2
-        assert _solid(H.x_cylinder(H.PIN_R * 0.5, a, b))
-        ring = H.x_cylinder(H.RELIEF_R - 0.05, a, b) - H.x_cylinder(H.PIN_R + 0.05, a - 1, b + 1)
-        assert _clear(ring)
+        # the notch: no wall across the leaf's width
+        assert _clear(_box(xs, H.y_out(z) - 1.0, z, H.NOTCH_W - 2, 1.5, 4))
+        for sgn, edge in H._ends(xs):
+            # a bore for the pin, open upward through the neck
+            x = edge + sgn * 2.5
+            assert _clear(H.x_cylinder(H.BORE_R - 0.05, x - 0.5, x + 0.5))
+            assert _clear(_box(x, H.AXIS_Y, L.BASE_H - 0.5, 1.0, 2 * H.PIN_R - H.SNAP - 0.1, 0.5))
+            # and solid block round it
+            assert _solid(_box(x, H.AXIS_Y - H.BORE_R - 1.0, z, 1.0, 1.0, 1.0))
 
 
 # --- printability -----------------------------------------------------------------
 
-def test_no_ceiling_longer_than_a_bridge_but_the_hinge_pins():
-    """Open-top-up, no supports anywhere: every steep downward face is a
-    bridge of MAX_BRIDGE or less, except the hinge pins' flat undersides
-    (base.LONG_BRIDGES), which span the wide hook gap between the cheeks."""
-    pin_flat_z = H.AXIS_Z - H.PIN_FLAT * H.PIN_R
-    pin_span = H.HOOK_W + 2 * H.SIDE_CLR + 1.0
+def test_every_downward_face_is_short():
+    """Open-top-up: every steep downward face spans MAX_BRIDGE or less --
+    the ports' flat heads, the foot recesses, and the flat undersides of the
+    hinge socket blocks and lip risers, which print on supports."""
     for f in steep_faces(_base()):
-        c = f.center()
-        on_pin = (abs(c.Z - pin_flat_z) < 1e-6
-                  and min(abs(c.X - xs) for xs in H.STATIONS) < 1e-6)
-        limit = pin_span if on_pin else MAX_BRIDGE
-        assert span(f) <= limit + 1e-6, f"{span(f):.1f} mm ceiling at {c}"
+        assert span(f) <= MAX_BRIDGE + 1e-6, f"{span(f):.1f} mm ceiling at {f.center()}"

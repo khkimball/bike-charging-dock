@@ -19,8 +19,9 @@ two-tone design. See
   and outer walls.
 - **base** -- the tapered, two-tone lower shell: hides the charger and cable
   slack, and carries the tray on a ledge at its inner wall.
-- **lid** -- a tapered, hinged cap that snaps onto pins on the base and
-  swings open; no hardware.
+- **lid** -- a tapered, hinged cap whose concealed leaves snap their pins
+  into sockets in the base's back wall and swing open to about 100 degrees;
+  no hardware.
 
 ## Workflow
 

@@ -62,7 +62,7 @@ def test_the_lid_swings_open_clear_of_the_base_and_tray():
         assert _hit(_lid(deg), _tray()) < 1e-3, deg
 
 
-def test_the_heel_stops_the_lid_just_past_open():
+def test_the_stop_lips_hold_the_lid_just_past_open():
     assert _hit(_lid(H.OPEN_DEG + 3), _base()) > 1e-3
 
 

@@ -27,12 +27,11 @@ def test_hinge_coupon_halves_are_single_solids_on_the_bed():
         assert abs(p.bounding_box().min.Z) < 1e-6
 
 
-def test_the_hinge_coupon_prints_like_the_dock_hinge():
+def test_the_hinge_coupon_carries_a_whole_station():
+    """Cut from the real parts: the base side has the socket bores (a probe
+    along the axis finds air where the pins go) and the lid side has both
+    pins (it is longer along the hinge than the notch)."""
     from dock import hinge
-    from printability import span, steep_faces
     base_side, lid_side = coupon.build_hinge_coupon()
-    flats = steep_faces(base_side)
-    assert len(flats) == 1          # the pin's flat underside, and nothing else
-    assert span(flats[0]) <= hinge.HOOK_W + 2 * hinge.SIDE_CLR + 1.0
-    for f in steep_faces(lid_side):  # only the mouth's short roof
-        assert span(f) <= hinge.HOOK_W + 1e-6
+    assert lid_side.bounding_box().size.X >= hinge.NOTCH_W - 2 * hinge.SIDE_CLR + 2 * hinge.PIN_L - 0.01
+    assert base_side.bounding_box().size.X >= hinge.NOTCH_W + 2 * hinge.BLOCK_W - 0.01

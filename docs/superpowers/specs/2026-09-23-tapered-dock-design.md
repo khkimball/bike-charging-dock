@@ -91,7 +91,7 @@ One print, plate down, bays up, no supports.
 
 ## Base
 
-Prints open-top-up with no supports (revision 2026-09-24: the cord port became an oval whose flat top bridges).
+Prints open-top-up; supports only under the four hinge socket blocks and their stop-lip risers (revision 2026-09-24b).
 
 - **Shell**: a single WALL (2.0) sloped wall and a FLOOR (1.2) floor. This
   replaces v1's 2·WALL lower walls, which existed only to carry the rebate
@@ -142,35 +142,43 @@ Prints open-top-up with no supports (revision 2026-09-24: the cord port became a
 
 ## Hinge
 
-Snap-on, no hardware. It sits on the +Y long side, at two stations about
-60 mm in from each end. Revision 2026-09-24: hooks, cheeks and heel 3× wider
-(HOOK_W 24, CHEEK_W 12, HEEL_W 24) for strength; mouths face straight down
-with the lid closed; round bores; a lighter snap; OPEN_DEG 100.
+Revision 2026-09-24b: a concealed leaf hinge after the Trek CHRGtime's
+(replacing the knuckle-and-hook hinge). Snap-on, no hardware, on the +Y long
+side at two stations about 60 mm in from each end.
 
-- **Axis**: runs along X at rim height, far enough behind the rim
-  (AXIS_Y) that the knuckles' swing clears the tray. Every knuckle turns
-  inside a relief disc (RELIEF_R) cut out of the other part, and the discs
-  are round the axis, so they stay clear at any angle.
-- **Base**: each station has two cheeks with a horizontal Ø5 pin between
-  them. Each cheek is a disc round the axis hulled with a 45° chin that runs
-  into the wall, so it prints without supports. The pin's underside is cut
-  flat at 0.8·r, which keeps the pin inside the bore circle. The flat is
-  3 mm wide and bridges the ~25 mm hook gap (base.LONG_BRIDGES).
-- **Lid**: a C-hook at each station. It is a ring round the pin with a
-  plain round bore (0.4 mm clearance), hulled up into the lid's back wall
-  and top. Its mouth faces straight down with the lid closed: a neck
-  narrower than the pin by SNAP (0.2 mm, a light snap; clearance and snap
-  are tuned on the hinge coupon), flaring open beyond the neck. The lid
-  presses straight down onto the pins and lifts straight off. As printed
-  (top face down) the mouths face up, so the bores print on supports.
-- **Heel stop**: a separate 24 mm tab on the lid at X = 0, between the
-  stations. At OPEN_DEG (100°) its tip rests on the base's outer wall, so
-  the lid stays open. The angle is kept short of 110° because, resting on
-  the heel, the lid pushes its hooks forward -- close to the mouths'
-  direction once open -- and the further it leans back the harder the push.
-- **Hinge coupon**: `coupon.py` gains a small hinge coupon (one base pin
-  station plus one lid hook) that tunes the pin clearance and snap
-  interference before the base is printed.
+- **Notch**: at each station the base's back wall has a notch NOTCH_W
+  (30) wide, from the rim down past the leaf with a 2 mm gap below it and
+  rounded bottom corners.
+- **Leaf**: the lid carries a leaf that hangs into the notch, flush with
+  the base's outer wall (same 15° slope), 7 mm thick, reaching LEAF_L
+  (8.5) below the pivot, its bottom edge rounded. Closed, the back of the
+  dock shows only the leaf in its notch (as the reference).
+- **Pins and sockets**: heavy-duty Ø6 pins stand out 5 mm from each leaf
+  end along the hinge axis, into sockets in blocks on the inside of the
+  base wall beside the notch. The sockets open upward through a neck
+  SNAP (0.3) narrower than the pin, so the lid presses straight down onto
+  its pins and lifts straight off with a light snap. The axis is 4 mm
+  below the rim and 3.5 mm inside the outer face.
+- **Back gap**: because the axis is inside the wall line, the lid's back
+  edge would dip into the rim as it opens; the lid's back is raised 1.5 mm
+  off the rim (BACK_GAP) along the back and round the back corners, as on
+  the reference.
+- **Stop**: small lips on the socket blocks catch the leaf's ends at about
+  101° (OPEN_DEG). They sit only where the leaf's ends go past about 94°
+  of opening, clear of both the swing before that and the leaf's path
+  straight up when the lid is lifted off; each is tied to its block by a
+  riser beside the notch, where the leaf never goes. The riser tops stand
+  about 1 mm above the rim, inside the lid.
+- **Tray recess**: the tray's back wall steps in around each hinge with
+  45° sides (as the reference tray), vertical over the recess, so the
+  leaf's swing and the lips have room. The headlight moves 3 mm forward in
+  its bay (6 mm clear at the back, 5 mm to the divider) to clear the
+  right-hand recess.
+- **Printing**: the socket blocks and the lips' risers have flat undersides,
+  printed on supports (the user's choice over 45° chins). The lid's leaf
+  pins are short horizontal stubs as it prints top-down.
+- **Hinge coupon**: one station cut from the real base and lid, to tune
+  BORE_CLR and SNAP and to try the stop before the long prints.
 
 ## Removed parts and code
 
@@ -230,18 +238,17 @@ with the lid closed; round bores; a lighter snap; OPEN_DEG 100.
     its rim is flush within 0.5 mm, and every bay floor holds its device
     plus the specified clearance.
   - **Lid**:
-    - it lies flush on the rim;
+    - it lies on the rim (front and sides; the back is raised BACK_GAP);
     - swept from 0° to just short of OPEN_DEG it intersects neither the
       base nor the seated tray;
-    - past OPEN_DEG the heel meets the wall;
+    - just past OPEN_DEG the leaf meets the stop lips;
     - lifted straight up while closed, the neck snaps over the pins and
       the lid comes off.
   - **Printability**: no downward face past 45°, with these allowlisted:
-    - base: bridges of 20 mm or less (the ports' flat heads, foot recesses),
-      and the hinge pins' flats across the hook gap (LONG_BRIDGES); no
-      supports;
-    - lid: the hook bores and mouths, no wider than a hook (printed on
-      supports);
+    - base: downward faces of 20 mm or less (the ports' flat heads, foot
+      recesses, and the socket blocks' and lip risers' undersides, which
+      print on supports);
+    - lid: the leaf pins' undersides;
     - tray: none.
   - **Parts**: every exported part is a single valid solid with its bed face
     at Z = 0 and fits BED_X × BED_Y.

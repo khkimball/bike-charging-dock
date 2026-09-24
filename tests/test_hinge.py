@@ -1,77 +1,75 @@
-"""Hinge pieces measured on their own; the swing is in test_assembly."""
+"""Hinge pieces measured on their own; the swing, stop and snap are in
+test_assembly."""
 import math
 
-from build123d import Align, Box, Pos, Rot
+from build123d import Align, Box, Pos
 
 from dock import hinge as H, layout as L
-from printability import span, steep_faces
-
-MAX_BRIDGE = 20.0
 
 
-def _along_axis(x0, x1, r):
-    return H.x_cylinder(r, x0, x1)
+def _box(x, y, z, sx, sy, sz):
+    return Pos(x, y, z) * Box(sx, sy, sz, align=(Align.CENTER, Align.CENTER, Align.CENTER))
 
 
-def test_hull2d_drops_interior_points():
-    pts = [(0, 0), (2, 0), (2, 2), (0, 2), (1, 1)]
-    assert sorted(H.hull2d(pts)) == [(0, 0), (0, 2), (2, 0), (2, 2)]
+def test_the_pivot_is_inside_the_wall_below_the_rim():
+    assert H.AXIS_Z < L.BASE_H
+    assert H.AXIS_Y < H.y_out(H.AXIS_Z)
 
 
-def test_two_stations_each_one_solid():
-    assert len(H.base_knuckles().solids()) == 2
-    assert len(H.lid_hooks().solids()) == 2
-
-
-def test_the_pin_sits_in_the_bore_with_clearance():
-    assert (H.base_knuckles() & H.lid_hooks()).volume < 1e-6
-
-
-def test_the_bore_is_clear_to_its_radius():
+def test_each_station_is_one_leaf_with_a_pin_at_each_end():
+    leaves = H.leaves()
+    assert len(leaves.solids()) == len(H.STATIONS)
     for xs in H.STATIONS:
-        x0, x1 = xs - H.HOOK_W / 2, xs + H.HOOK_W / 2
-        hooks = H.lid_hooks()
-        assert (_along_axis(x0, x1, H.BORE_R - 0.02) & hooks).volume < 1e-6
-        assert (_along_axis(x0, x1, H.BORE_R + 0.1) & hooks).volume > 1e-3
+        for sgn, edge in H._ends(xs):
+            # solid pin right on the axis, beyond the leaf end, inside the block's reach
+            x = edge + sgn * (H.PIN_L - H.SIDE_CLR) / 2
+            probe = _box(x, H.AXIS_Y, H.AXIS_Z, 1.0, H.PIN_R, H.PIN_R)
+            assert (probe & leaves).volume >= probe.volume * (1 - 1e-4)
 
 
-def _mouth_probe(xs, width):
-    """A bar from the axis out along the mouth, `width` across."""
-    a = H.MOUTH_DEG
-    bar = Box(H.HOOK_W, H.KNUCKLE_R + 2.0, width, align=(Align.CENTER, Align.MIN, Align.CENTER))
-    return Pos(xs, H.AXIS_Y, H.AXIS_Z) * Rot(a, 0, 0) * bar
-
-
-def test_the_mouth_neck_is_narrower_than_the_pin_by_the_snap():
-    hooks = H.lid_hooks()
-    for xs in H.STATIONS:
-        assert (_mouth_probe(xs, H.MOUTH_W - 0.02) & hooks).volume < 1e-6
-        assert (_mouth_probe(xs, H.MOUTH_W + 0.1) & hooks).volume > 1e-4
-    assert H.MOUTH_W < 2 * H.PIN_R
-
-
-def test_the_pin_underside_bridges_the_hook_gap_and_the_cheeks_print_unsupported():
-    steep = steep_faces(H.base_knuckles())
-    assert steep, "expected the pins' flat undersides"
-    for f in steep:
-        assert span(f) <= H.HOOK_W + 2 * H.SIDE_CLR + 1.0 + 1e-6
-        assert math.isclose(f.center().Z, H.AXIS_Z - H.PIN_FLAT * H.PIN_R, abs_tol=1e-6)
-
-
-def test_the_mouth_faces_straight_down_with_the_lid_closed():
-    hooks = H.lid_hooks()
+def test_the_leaf_is_flush_with_the_outer_wall():
+    leaves = H.leaves()
+    z = H.AXIS_Z
     xs = H.STATIONS[0]
-    below = Pos(xs, H.AXIS_Y, H.AXIS_Z - H.KNUCKLE_R) * Box(H.HOOK_W - 2, H.MOUTH_W - 0.2, 2 * H.KNUCKLE_R - 2 * H.BORE_R,
-                                                           align=(Align.CENTER, Align.CENTER, Align.MIN))
-    assert (below & hooks).volume < 1e-6
-    above = Pos(xs, H.AXIS_Y, H.AXIS_Z + H.BORE_R + 0.2) * Box(H.HOOK_W - 2, H.MOUTH_W - 0.2, 1.0,
-                                                              align=(Align.CENTER, Align.CENTER, Align.MIN))
-    assert (above & hooks).volume > 1e-3
+    inside = _box(xs, H.y_out(z) - 0.2, z, 5, 0.2, 0.2)
+    outside = _box(xs, H.y_out(z) + 0.2, z, 5, 0.2, 0.2)
+    assert (inside & leaves).volume > 0
+    assert (outside & leaves).volume < 1e-9
 
 
-def test_the_axis_is_behind_the_rim_and_the_knuckle_sweep_clears_the_tray():
-    assert H.AXIS_Y > L.RIM.sy / 2
-    assert H.AXIS_Y - H.RELIEF_R > L.TRAY_OUTLINE.sy / 2
+def test_the_socket_bores_clear_the_pins_and_open_upward_through_a_snap_neck():
+    blocks = H.socket_blocks() - H.sockets()
+    leaves = H.leaves()
+    assert (blocks & leaves).volume < 1e-6              # the pins sit free in their bores
+    for xs in H.STATIONS:
+        for sgn, edge in H._ends(xs):
+            x = edge + sgn * 2.5
+            neck = _box(x, H.AXIS_Y, H.AXIS_Z + H.BORE_R + 1.0, 1.0, 2 * H.PIN_R - H.SNAP - 0.05, 1.0)
+            assert (neck & blocks).volume < 1e-6        # open above the bore ...
+            wide = _box(x, H.AXIS_Y, H.AXIS_Z + H.BORE_R + 1.0, 1.0, 2 * H.PIN_R, 1.0)
+            assert (wide & blocks).volume > 1e-4        # ... through a neck narrower than the pin
+
+
+def test_the_stop_lips_reach_into_the_notch_above_the_rim():
+    blocks = H.socket_blocks()
+    assert len(blocks.solids()) == 2 * len(H.STATIONS)  # each lip is joined to its block
+    for xs in H.STATIONS:
+        for sgn, edge in H._ends(xs):
+            inside_notch = Pos(edge - sgn * H.LIP_W / 2, H.AXIS_Y - 5, L.BASE_H) * Box(
+                H.LIP_W - 0.2, 10, 10, align=(Align.CENTER, Align.CENTER, Align.MIN))
+            assert (inside_notch & blocks).volume > 0.1
+
+
+def test_the_back_relief_raises_the_lid_off_the_rim_along_the_back():
+    r = H.back_relief().bounding_box()
+    assert math.isclose(r.max.Z, L.BASE_H + H.BACK_GAP, abs_tol=1e-6)
+    assert r.min.Y < H.AXIS_Y and r.size.X > L.RIM.sx
+
+
+def test_the_headlight_sits_forward_of_the_right_hand_recess():
+    x0, x1, y0, y1 = L.device_footprint("ion")
+    assert x1 > H.STATIONS[1] - H.NOTCH_W / 2 - H.BLOCK_W      # it is behind that hinge ...
+    assert y1 <= H.RECESS_Y - 1.0 - 1.6                       # ... and clear of the recess wall
 
 
 def test_opened_turns_the_lid_up_and_back():

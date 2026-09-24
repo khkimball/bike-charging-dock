@@ -19,8 +19,9 @@ plate, one at each bay's outer end, where layout.py puts them.
 Tray coordinates: XY centred, plate underside at Z = 0.  Printed plate-down,
 bays up; nothing overhangs.
 """
-from build123d import Axis, Part, Pos, SlotCenterToCenter, extrude, fillet, loft
+from build123d import Axis, Part, Pos, SlotCenterToCenter, extrude, fillet, loft, offset
 
+from dock import hinge as H
 from dock import layout as L
 from dock import params as P
 from dock import taper
@@ -62,4 +63,15 @@ def build_tray() -> Part:
         long, short = max(sx, sy), min(sx, sy)
         oval = SlotCenterToCenter(long - short, short, rotation=0 if sx >= sy else 90)
         part -= Pos(cx, cy, -1.0) * extrude(oval, amount=P.TRAY_PLATE + 2.0)
-    return part
+    return _hinge_recesses(part)
+
+
+def _hinge_recesses(part: Part) -> Part:
+    """Step the back wall in round each hinge, as the reference tray does:
+    cut back to hinge.tray_recess() above the plate, then wall the step off
+    with a THIN_WALL wall, vertical along the recess and 45 degrees at its
+    sides, kept within the tray's outline."""
+    plan = H.tray_recess()
+    cut = Pos(0, 0, P.TRAY_PLATE) * extrude(plan, amount=TRAY_H)
+    shell = extrude(offset(plan, P.THIN_WALL), amount=TRAY_H) - extrude(plan, amount=TRAY_H + 1)
+    return part - cut + (shell & L.TRAY_OUTLINE.solid(0.0, TRAY_H))

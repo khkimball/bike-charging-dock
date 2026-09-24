@@ -1,108 +1,85 @@
-"""Snap-on lid hinge: the base carries the pins, the lid the hooks.
+"""Concealed leaf hinge, after the Trek CHRGtime's: the lid carries the pins,
+the base the sockets.
 
 Everything here is in base coordinates, with the lid modelled closed on the
-rim; lid.py turns the lid over for printing.  The axis runs along X at rim
-height, AXIS_Y behind the +Y rim -- far enough that nothing near it sweeps
-into the tray.  Two stations stand HINGE_INSET in from each end.
+rim; lid.py turns the lid over for printing and tray.py moves the tray's
+recess into its own coordinates.  Two stations stand HINGE_INSET in from each
+end of the +Y rim.
 
-At each station the base carries two cheeks with a pin between them.  A
-cheek is a disc round the axis hulled with a 45 degree chin that runs down
-into the wall, so it prints open-top-up without supports; the pin's
-underside is cut flat at PIN_FLAT*PIN_R -- a flat 3 mm wide, bridged between
-the cheeks (base.LONG_BRIDGES) -- which keeps it inside the bore circle.
+At each station:
+- the base's back wall has a NOTCH_W notch cut down from the rim;
+- the lid has a leaf hanging into it, flush with the base's outer wall (same
+  draft), LEAF_T thick and reaching LEAF_L below the pivot.  From behind a
+  closed dock shows only the leaf in its notch;
+- Ø2*PIN_R pins stand PIN_L out of each leaf end along the axis, into
+  sockets in blocks on the inside of the base wall beside the notch.  Each
+  socket opens straight up through a neck SNAP narrower than the pin, so the
+  lid presses down onto its pins and lifts off with a light snap;
+- the axis is AXIS_DROP below the rim and AXIS_IN inside the outer face, so
+  the lid's back edge would dip into the rim as it turns: the lid's back is
+  raised BACK_GAP off the rim instead (back_relief);
+- small lips on the socket blocks stop the leaf's ends at about OPEN_DEG.
+  They are cut from the region the leaf's ends reach only after LIP_FROM_DEG
+  of opening, less the leaf's path straight up (so the lid still lifts off),
+  and tied to their blocks by risers beside the notch, where the leaf never
+  goes;
+- the tray's back wall steps in round the station (tray_recess) to give the
+  leaf's swing and the lips room.
 
-The lid carries a hook between the cheeks: a ring round the pin with a plain
-round bore, hulled into the lid's back wall and top.  Its mouth faces
-straight down with the lid closed (MOUTH_DEG): a neck SNAP narrower than the
-pin, then a flare.  The lid presses straight down onto the pins and pulls
-straight up off them, with a light snap either way.  As printed (top face
-down) the mouths face up, so the bores print on supports.
-
-A heel tab at X = 0 stops the lid at OPEN_DEG: its tip lands on the base's
-outer wall there.  OPEN_DEG is kept short of 110 on purpose: resting on the
-heel, the lid pushes its hooks toward the front, which is close to the
-mouths' direction once the lid is open, and the further it leans back the
-harder that push.
-
-Each part's knuckles turn inside relief discs (RELIEF_R round the axis) cut
-out of the other part.  A disc round the axis is the same at every angle, so
-the swing clears however far the lid turns.
+The socket blocks and lip risers have flat undersides and print on supports.
 """
 import math
+from functools import lru_cache
 
-from build123d import Align, Box, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude
+from build123d import (Align, Axis, Box, Circle, Cylinder, Location, Part, Plane, Polygon,
+                       Pos, Rectangle, Rot, Sketch, extrude, fillet, offset)
 
 from dock import layout as L
 from dock import params as P
 from dock import taper
 
-PIN_R = 2.5
-PIN_FLAT = 0.8            # pin underside cut flat this far (x PIN_R) below the axis
-BORE_CLR = 0.4            # tune on the hinge coupon
+NOTCH_W = 30.0
+SIDE_CLR = 0.5            # leaf end to notch side
+NOTCH_GAP = 2.0           # below the leaf
+NOTCH_R = 3.0             # notch bottom corners
+AXIS_DROP = 4.0           # pivot below the rim
+AXIS_IN = 3.5             # pivot inside the outer face
+PIN_R = 3.0               # heavy duty: printed, not moulded
+PIN_L = 5.0
+BORE_CLR = 0.3            # tune on the hinge coupon
 BORE_R = PIN_R + BORE_CLR
-SNAP = 0.2                # neck narrower than the pin by this: a light snap; tune on the coupon
-MOUTH_W = 2 * PIN_R - SNAP
-THROAT = 1.0              # neck length past the bore before the mouth flares
-KNUCKLE_R = 5.5
-RELIEF_R = KNUCKLE_R + 0.5
-HOOK_W = 24.0
-CHEEK_W = 12.0
-SIDE_CLR = 0.3            # hook to cheek, along X
+SNAP = 0.3                # socket neck narrower than the pin; tune on the coupon
+LEAF_T = 7.0              # from the outer face in
+LEAF_L = 8.5              # below the pivot: long enough that the lips can reach it
+LEAF_ROUND = 2.5          # leaf bottom edges
+BLOCK_W = PIN_L + 3.0     # socket block along X
+BLOCK_WALL = 2.5          # socket block round the bore
+BACK_GAP = 1.5            # lid back edge off the rim
+BACK_RELIEF_IN = 5.0      # ... from this far inside the pivot, so the back corners clear
+LIP_W = 3.0               # lips reach this far into the notch from each end
+LIP_R = 9.0               # and stay within this radius of the axis
+LIP_CLR = 0.3
+LIP_FROM_DEG = 94.0       # lips start where the leaf ends reach past this ...
+OPEN_DEG = 101.0          # ... which stops the lid here (measured: tests/test_assembly.py)
+RECESS_CLR = 0.5          # leaf swing to the tray's recess wall
 HINGE_INSET = 60.0        # station centre in from each end of the rim
-OPEN_DEG = 100.0
-MOUTH_DEG = -90.0          # closed-lid mouth angle, from +Y toward +Z: straight down
-HEEL_R = 7.0              # heel tip centre, from the axis
-HEEL_TIP_R = 1.0
-HEEL_W = 24.0
-AXIS_GAP = 0.2            # knuckle sweep to tray, at the rim
-
-AXIS_Y = L.TRAY_OUTLINE.sy / 2 + RELIEF_R + AXIS_GAP
-AXIS_Z = L.BASE_H
-STATIONS = (-(L.RIM.sx / 2 - HINGE_INSET), L.RIM.sx / 2 - HINGE_INSET)
 
 _RIM_Y = L.RIM.sy / 2
-_BASE_WALL_H = taper.horiz(P.WALL)
-_LID_WALL_Y = _RIM_Y - 0.3          # inside the lid's back wall at every height of it
-_LID_TOP = L.BASE_H + L.LID_H
+_H = L.BASE_H
+AXIS_Z = _H - AXIS_DROP
+STATIONS = (-(L.RIM.sx / 2 - HINGE_INSET), L.RIM.sx / 2 - HINGE_INSET)
 _ALONG = (Align.CENTER, Align.CENTER, Align.MIN)
 
 
-def hull2d(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
-    """Convex hull, counter-clockwise (Andrew's monotone chain)."""
-    pts = sorted(set((round(a, 9), round(b, 9)) for a, b in points))
-    if len(pts) < 3:
-        return pts
-
-    def cross(o, a, b):
-        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
-
-    lower: list = []
-    upper: list = []
-    for p in pts:
-        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
-            lower.pop()
-        lower.append(p)
-    for p in reversed(pts):
-        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
-            upper.pop()
-        upper.append(p)
-    return lower[:-1] + upper[:-1]
+def y_out(z: float) -> float:
+    """Y of the base's outer back face at height z."""
+    return _RIM_Y - (_H - z) * taper.TAN
 
 
-def _circle(cy: float, cz: float, r: float, n: int = 48) -> list[tuple[float, float]]:
-    return [(cy + r * math.cos(2 * math.pi * i / n), cz + r * math.sin(2 * math.pi * i / n))
-            for i in range(n)]
-
-
-def _polar(r: float, deg: float) -> tuple[float, float]:
-    """(Y, Z) of the point `r` from the axis at `deg` above +Y."""
-    a = math.radians(deg)
-    return AXIS_Y + r * math.cos(a), AXIS_Z + r * math.sin(a)
-
-
-def _prism(points_yz, x0: float, x1: float) -> Part:
-    """A YZ polygon extruded along X from x0 to x1."""
-    return extrude(Plane.YZ.offset(x0) * Polygon(*points_yz, align=None), amount=x1 - x0)
+AXIS_Y = y_out(AXIS_Z) - AXIS_IN
+_LEAF_TOP = _H + L.LID_H - P.LID_PLATE + 0.5   # up into the lid's top plate: no ledge inside the lid
+_LEAF_BOT = AXIS_Z - LEAF_L
+NOTCH_BOT = _LEAF_BOT - NOTCH_GAP
 
 
 def x_cylinder(r: float, x0: float, x1: float) -> Part:
@@ -115,108 +92,128 @@ def opened(deg: float = 0.0) -> Location:
     return Pos(0, AXIS_Y, AXIS_Z) * Rot(-deg, 0, 0) * Pos(0, -AXIS_Y, -AXIS_Z)
 
 
-def wall_gap(y: float, z: float) -> float:
-    """Signed distance from (y, z) to the base's +Y outer face, outside > 0."""
-    return ((y - _RIM_Y) + (L.BASE_H - z) * taper.TAN) * taper.COS
+def _prism(face: Sketch, x0: float, x1: float) -> Part:
+    """A YZ face (sketched with X as Y and Y as Z) extruded along X."""
+    return extrude(Plane.YZ.offset(x0) * face, amount=x1 - x0)
 
 
-def _heel_closed_deg() -> float:
-    """Where the heel tip points with the lid closed: the angle that puts it
-    HEEL_TIP_R off the outer wall when the lid is at OPEN_DEG."""
-    lo, hi = -175.0, -95.0      # wall_gap at hi is > HEEL_TIP_R, at lo < it
-    g_lo, g_hi = wall_gap(*_polar(HEEL_R, lo)), wall_gap(*_polar(HEEL_R, hi))
-    assert g_hi > HEEL_TIP_R > g_lo, (
-        f"heel bisection bracket [{lo}, {hi}] does not bracket the root: "
-        f"wall_gap(lo)={g_lo:.3f}, wall_gap(hi)={g_hi:.3f}, target={HEEL_TIP_R}")
-    for _ in range(60):
-        mid = (lo + hi) / 2
-        if wall_gap(*_polar(HEEL_R, mid)) > HEEL_TIP_R:
-            hi = mid
-        else:
-            lo = mid
-    return hi + OPEN_DEG
+def _leaf_profile() -> list[tuple[float, float]]:
+    return [(y_out(_LEAF_TOP), _LEAF_TOP), (y_out(_LEAF_TOP) - LEAF_T, _LEAF_TOP),
+            (y_out(_LEAF_BOT) - LEAF_T, _LEAF_BOT), (y_out(_LEAF_BOT), _LEAF_BOT)]
 
 
-HEEL_DEG = _heel_closed_deg()
+def _turned(pts, deg: float) -> list[tuple[float, float]]:
+    """`pts` (Y, Z) turned with the lid `deg` open."""
+    a = math.radians(-deg)
+    c, s = math.cos(a), math.sin(a)
+    return [(AXIS_Y + (y - AXIS_Y) * c - (z - AXIS_Z) * s,
+             AXIS_Z + (y - AXIS_Y) * s + (z - AXIS_Z) * c) for y, z in pts]
 
 
-def _gap_ends(xs: float) -> tuple[float, float]:
-    """X of the two cheek faces either side of the hook at station xs."""
-    return xs - HOOK_W / 2 - SIDE_CLR, xs + HOOK_W / 2 + SIDE_CLR
+def _union(faces):
+    out = None
+    for f in faces:
+        out = f if out is None else out + f
+    return out
 
 
-def _cheek_profile() -> list[tuple[float, float]]:
-    ty, tz = _polar(KNUCKLE_R, -45.0)        # where the 45-degree chin leaves the disc
-    mid = _RIM_Y - _BASE_WALL_H / 2          # the wall's mid-surface at the rim
-    # run the chin down-and-in at 45 degrees until it meets that mid-surface
-    zw = (mid - L.BASE_H * taper.TAN - ty + tz) / (1 - taper.TAN)
-    yw = ty - (tz - zw)
-    return hull2d(_circle(AXIS_Y, AXIS_Z, KNUCKLE_R) + [(yw, zw), (mid, AXIS_Z)])
+@lru_cache(maxsize=None)
+def _lip_face() -> Sketch:
+    """YZ section of a stop lip: where the leaf's ends go only past
+    LIP_FROM_DEG, less where they go before it or on the way straight up."""
+    prof = _leaf_profile()
+    before = offset(_union(Polygon(*_turned(prof, d), align=None)
+                           for d in range(0, int(LIP_FROM_DEG) + 1)), LIP_CLR)
+    after = _union(Polygon(*_turned(prof, d), align=None)
+                   for d in range(int(LIP_FROM_DEG) + 1, int(LIP_FROM_DEG) + 26))
+    lifted = offset(_union(Polygon(*[(y, z + k * 0.5) for y, z in prof], align=None)
+                           for k in range(0, 31)), LIP_CLR)
+    ring = Pos(AXIS_Y, AXIS_Z) * Circle(LIP_R) - Pos(AXIS_Y, AXIS_Z) * Circle(PIN_R + 0.6)
+    lip = ((after - before) - lifted) & ring
+    lip = lip & (Pos(AXIS_Y, _H + 2.5) * Rectangle(80, 40, align=(Align.CENTER, Align.MAX)))
+    return lip & (Pos(AXIS_Y, AXIS_Z) * Rectangle(40, 40, align=(Align.MAX, Align.CENTER)))
 
 
-def base_knuckles(stations=STATIONS) -> Part:
-    """The cheeks and pins, to be added to the base."""
-    prof = _cheek_profile()
+def _block_face() -> Sketch:
+    inner = AXIS_Y - BORE_R - BLOCK_WALL
+    bottom = AXIS_Z - BORE_R - BLOCK_WALL
+    return Polygon((y_out(_H) - 0.3, _H), (inner, _H), (inner, bottom),
+                   (y_out(bottom) - 0.3, bottom), align=None)
+
+
+def _ends(xs: float):
+    """(sign, notch edge X) of a station's two ends."""
+    return ((-1, xs - NOTCH_W / 2), (1, xs + NOTCH_W / 2))
+
+
+def notches(stations=STATIONS) -> Part:
+    """What the base's back wall gives up for the leaves."""
     part = None
     for xs in stations:
-        a, b = _gap_ends(xs)
-        flat = Pos(xs, AXIS_Y, AXIS_Z - PIN_FLAT * PIN_R) * Box(
-            b - a + 2, 2 * PIN_R + 1, PIN_R, align=(Align.CENTER, Align.CENTER, Align.MAX))
-        pin = x_cylinder(PIN_R, a - 0.5, b + 0.5) - flat
-        station = _prism(prof, a - CHEEK_W, a) + _prism(prof, b, b + CHEEK_W) + pin
-        part = station if part is None else part + station
+        n = Pos(xs, _RIM_Y - 6, NOTCH_BOT) * Box(NOTCH_W, 12, _H - NOTCH_BOT + 5, align=_ALONG)
+        n = fillet(n.edges().filter_by(Axis.Y).group_by(Axis.Z)[0], NOTCH_R)
+        part = n if part is None else part + n
     return part
 
 
-def base_relief(stations=STATIONS) -> Part:
-    """What the base gives up so the hooks can turn."""
+def socket_blocks(stations=STATIONS) -> Part:
+    """The socket blocks with their stop lips, to be added to the base."""
+    lip = _lip_face()
+    bb = lip.bounding_box()
+    block_in = AXIS_Y - BORE_R - BLOCK_WALL
+    riser = Pos(bb.min.X, _H - 0.5) * Rectangle(max(bb.max.X, block_in + 1.0) - bb.min.X,
+                                                  bb.max.Y - (_H - 0.5), align=(Align.MIN, Align.MIN))
     part = None
     for xs in stations:
-        c = x_cylinder(RELIEF_R, *_gap_ends(xs))
-        part = c if part is None else part + c
+        for sgn, edge in _ends(xs):
+            b0, b1 = sorted((edge, edge + sgn * BLOCK_W))
+            l0, l1 = sorted((edge, edge - sgn * LIP_W))
+            piece = _prism(_block_face(), b0, b1) + _prism(lip + riser, b0, b1) + _prism(lip, l0, l1)
+            part = piece if part is None else part + piece
     return part
 
 
-def lid_relief(stations=STATIONS) -> Part:
-    """What the lid gives up so it can turn round the cheeks."""
+def sockets(stations=STATIONS) -> Part:
+    """Bore and upward snap neck for each pin, cut from the finished base."""
     part = None
     for xs in stations:
-        a, b = _gap_ends(xs)
-        for c in (x_cylinder(RELIEF_R, a - CHEEK_W - SIDE_CLR, a + SIDE_CLR),
-                  x_cylinder(RELIEF_R, b - SIDE_CLR, b + CHEEK_W + SIDE_CLR)):
+        for sgn, edge in _ends(xs):
+            x0, x1 = sorted((edge - sgn * (SIDE_CLR + 0.01), edge + sgn * (PIN_L - SIDE_CLR + 0.5)))
+            c = x_cylinder(BORE_R, x0, x1) + Pos((x0 + x1) / 2, AXIS_Y, AXIS_Z) * Box(
+                x1 - x0, 2 * PIN_R - SNAP, 20, align=_ALONG)
             part = c if part is None else part + c
     return part
 
 
-def _mouth_profile() -> list[tuple[float, float]]:
-    a = math.radians(MOUTH_DEG)
-    u = (math.cos(a), math.sin(a))
-    n = (-math.sin(a), math.cos(a))
-    r1, r2 = BORE_R + THROAT, KNUCKLE_R + 3.0
-    w1, w2 = MOUTH_W / 2, BORE_R + 0.5
-    local = [(0, -w1), (r1, -w1), (r2, -w2), (r2, w2), (r1, w1), (0, w1)]
-    return [(AXIS_Y + s * u[0] + t * n[0], AXIS_Z + s * u[1] + t * n[1]) for s, t in local]
-
-
-def lid_hooks(stations=STATIONS) -> Part:
-    """The hooks, closed-lid position, to be added to the lid."""
-    k = KNUCKLE_R
-    prof = hull2d(_circle(AXIS_Y, AXIS_Z, k) + [
-        (_LID_WALL_Y, AXIS_Z), (_LID_WALL_Y, _LID_TOP), (AXIS_Y + k, _LID_TOP)])
-    bore = _circle(AXIS_Y, AXIS_Z, BORE_R, 96)
-    mouth = _mouth_profile()
+def leaves(stations=STATIONS) -> Part:
+    """The leaves and their pins, closed position, to be added to the lid."""
     part = None
     for xs in stations:
-        x0, x1 = xs - HOOK_W / 2, xs + HOOK_W / 2
-        hook = _prism(prof, x0, x1) - _prism(bore, x0 - 1, x1 + 1) - _prism(mouth, x0 - 1, x1 + 1)
-        part = hook if part is None else part + hook
+        x0, x1 = xs - NOTCH_W / 2 + SIDE_CLR, xs + NOTCH_W / 2 - SIDE_CLR
+        leaf = _prism(Polygon(*_leaf_profile(), align=None), x0, x1)
+        leaf = fillet(leaf.edges().filter_by(Axis.X).group_by(Axis.Z)[0], LEAF_ROUND)
+        leaf += x_cylinder(PIN_R, x0 - PIN_L, x0 + 0.5) + x_cylinder(PIN_R, x1 - 0.5, x1 + PIN_L)
+        part = leaf if part is None else part + leaf
     return part
 
 
-def heel_tab() -> Part:
-    """The stop, closed-lid position, to be added to the lid at X = 0."""
-    ty, tz = _polar(HEEL_R, HEEL_DEG)
-    prof = hull2d(_circle(ty, tz, HEEL_TIP_R, 16) + [
-        (ty + HEEL_TIP_R, _LID_TOP), (_LID_WALL_Y, _LID_TOP),
-        (_LID_WALL_Y, _LID_TOP - P.LID_PLATE)])
-    return _prism(prof, -HEEL_W / 2, HEEL_W / 2)
+def back_relief() -> Part:
+    """What the lid gives up along its back so its edge clears the rim."""
+    return Pos(0, AXIS_Y - BACK_RELIEF_IN, _H - 1.0) * Box(
+        L.RIM.sx + 20, 40, 1.0 + BACK_GAP, align=(Align.CENTER, Align.MIN, Align.MIN))
+
+
+RECESS_Y = AXIS_Y - math.hypot(LEAF_T - AXIS_IN, LEAF_L) - 2 * RECESS_CLR
+_RECESS_HW = NOTCH_W / 2 + BLOCK_W + 1.0
+
+
+def tray_recess(stations=STATIONS) -> Sketch:
+    """Plan (XY) of the region the tray gives up at the stations: back of
+    RECESS_Y, over the hinge width, with 45-degree sides."""
+    face = None
+    for xs in stations:
+        d = 30.0
+        f = Polygon((xs - _RECESS_HW - d, RECESS_Y + d), (xs - _RECESS_HW, RECESS_Y),
+                    (xs + _RECESS_HW, RECESS_Y), (xs + _RECESS_HW + d, RECESS_Y + d), align=None)
+        face = f if face is None else face + f
+    return face

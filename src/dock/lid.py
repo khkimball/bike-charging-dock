@@ -2,13 +2,15 @@
 
 Its lower LID_SLOPE_H continues the base's 15 degree slope from the rim; its
 top LIP_H is a lip standing LIP_W proud of that slope -- the finger grip for
-opening it, and the reference's flared lid edge.  It sits flush on the rim
-with no skirt: the hinge locates it.  Walls THIN_WALL, top LID_PLATE.
+opening it, and the reference's flared lid edge.  It sits on the rim with no
+skirt: the hinge locates it.  Along the back it is raised hinge.BACK_GAP off
+the rim, and it carries the hinge leaves (hinge.py).  Walls THIN_WALL, top
+LID_PLATE.
 
 It is modelled closed on the base, in base coordinates, which is where the
 hinge pieces are built, then turned over about X (PRINT) to print top face
 down: its walls lean inward as they rise from the bed, so nothing
-overhangs but the hook mouths' short roofs.  `lid_seat(deg)` puts the
+overhangs but the leaf pins' undersides.  `lid_seat(deg)` puts the
 printed part back on the base, `deg` open.
 """
 from build123d import Location, Part, Plane, Pos, RectangleRounded, Rot, Sketch, extrude, loft
@@ -38,8 +40,8 @@ def _closed() -> Part:
     # the top edge is the bed edge as printed: chamfered, not filleted
     body += loft([_rr(sx, sy, r, Z_TOP - c), _rr(sx - 2 * c, sy - 2 * c, r - c, Z_TOP)])
     body -= L.RIM.solid(Z_RIM - 1.0, Z_TOP - P.LID_PLATE, inset=WALL_H)
-    body -= H.lid_relief()
-    return body + H.lid_hooks() + H.heel_tab()
+    body -= H.back_relief()
+    return body + H.leaves()
 
 
 def build_lid() -> Part:

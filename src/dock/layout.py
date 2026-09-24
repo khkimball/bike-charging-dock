@@ -111,6 +111,9 @@ LIP_W = min(LIP_W_MAX,
 
 # --- what lies in the bays ------------------------------------------------------
 DEVICES = {"roam": m.ROAM, "trackr": m.TRACKR, "ion": m.ION}
+# The headlight sits this far forward of the other devices' spacing, to clear
+# the tray's recess round the right-hand hinge behind it.
+HEADLIGHT_FORWARD = 3.0
 
 
 def device_footprint(name: str) -> tuple[float, float, float, float]:
@@ -122,7 +125,7 @@ def device_footprint(name: str) -> tuple[float, float, float, float]:
         y0 = b.y0 + CUTOUT_INSET + CUTOUT[0] + CUTOUT_GAP
         return x0, x0 + d.width, y0, y0 + d.length
     x0 = b.x0 + P.CLR_BAY          # against the partition
-    y0 = b.y0 + P.CLR_BAY
+    y0 = b.y0 + P.CLR_BAY - (HEADLIGHT_FORWARD if name == "ion" else 0.0)
     return x0, x0 + d.length, y0, y0 + d.width
 
 

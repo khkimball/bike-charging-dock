@@ -1,5 +1,5 @@
 """Base: the tapered lower shell.  It hides the charger and the cable slack,
-carries the tray on a ledge, and the lid on its rim and hinge pins.
+carries the tray on a ledge, and the lid on its rim and hinge sockets.
 
 The outer faces lean at the draft from the rim (layout.RIM, CORNER_R) down
 to the foot, one WALL thick square to the slope, so the corners run from
@@ -20,9 +20,10 @@ the whole fence prints dark), and the pocket floor is filleted along the two
 side walls to follow the charger's rounded bottom edges.  Two oval escape ports flank the charger in the same wall,
 on its flat between the fence and the corner arcs, above the colour groove.
 
-It prints open-top-up with no supports.  Everything that faces down is a
-bridge of 20 mm or less -- the ports' flat heads, the foot recesses -- except
-the hinge pins' flats, which span the wide hook gap (LONG_BRIDGES).
+It prints open-top-up.  Everything that faces down spans 20 mm or less --
+the ports' flat heads, the foot recesses -- and the only supports are under
+the hinge's socket blocks and stop-lip risers (hinge.py), which have flat
+undersides by choice.
 
 Base coordinates: XY centred, bed at Z = 0.
 """
@@ -81,9 +82,8 @@ CORD_H = M.CORD_END.height + 2.0
 # it before, and the groove floor is the higher constraint here.
 CORD_Z0 = max(P.FLOOR + M.CHARGER.inlet_center_z - CORD_H / 2,
               P.BAND_H + GROOVE_UP + 0.5)
-# Downward faces longer than a 20 mm bridge, printed as bridges anyway: the
-# hinge pins' flats span the wide hook gap between the cheeks.
-LONG_BRIDGES = ("hinge pins",)
+# Printed on supports: the hinge's socket blocks and lip risers.
+SUPPORTED = ("hinge socket blocks",)
 
 # --- escape ports --------------------------------------------------------------------
 ESCAPE_H = 8.0                         # along Z; the ends are full rounds
@@ -215,6 +215,7 @@ def build_base() -> Part:
     part -= _escape_cutters()
     part -= _groove_cutter()
     part -= _floor_cutters()
-    part -= H.base_relief()
-    part += H.base_knuckles()
+    part -= H.notches()
+    part += H.socket_blocks()
+    part -= H.sockets()
     return part
