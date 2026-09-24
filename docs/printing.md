@@ -11,10 +11,11 @@ option for the base and lid, see below.
 | Part | Orientation | Walls | Infill | Supports |
 |---|---|---|---|---|
 | coupon_plate, coupon_peg | as exported | 3 | 15 % | none |
-| hinge_coupon_base, hinge_coupon_lid | as exported | 3 | 15 % | none |
+| hinge_coupon_base | as exported | 3 | 15 % | none |
+| hinge_coupon_lid | as exported: hook up | 3 | 15 % | inside the hook's bore |
 | tray | as exported: plate on the bed, bays up | 3 | 15 % | none |
-| base | as exported: open top up | 3 | 15 % | the cord port ceiling only (26 mm); paint-on or "support on build plate only" |
-| lid | as exported: top face down, hinge hooks up | 3 | 15 % | none |
+| base | as exported: open top up | 3 | 15 % | none |
+| lid | as exported: top face down, hinge hooks up | 3 | 15 % | inside the two hook bores only (paint-on) |
 
 There are no dividers to print: the tray's dividers are fixed and print with it.
 
@@ -22,11 +23,17 @@ There are no dividers to print: the tray's dividers are fixed and print with it.
 
 `uv run python scripts/slice_report.py` slices the exported base, tray and
 lid headlessly with these settings and prints time and grams next to the v1
-prototype (`--layer 0.28` for the draft profile). Measured when the design
-was planned, 0.20 mm PETG: v1 set 14 h 00 m / 582 g, this set 9 h 53 m /
-412 g (-29 %). Re-run it after any change to params.py and before a
-reprint. At 0.28 mm Extra Draft, this set measures 9 h 34 m / 418 g (time
--32 %, filament -28 %).
+prototype (`--layer 0.28` for the draft profile). Last measured
+2026-09-24 (oval ports, wide hinge), 0.20 mm PETG: v1 set 14 h 00 m / 582 g,
+this set 9 h 33 m / 413 g (time -32 %, filament -29 %). Re-run it after any
+change to params.py and before a reprint.
+
+`uv run python scripts/orca_project.py` builds `out/orca/dock_plates.3mf`,
+one Orca project with each part on its own named plate (Base, Tray, Lid,
+Hinge coupon, Clearance coupon) on the same U1 / 0.20 / PETG profiles. Run
+it after `export_all.py` (and `slice_report.py` once, which writes the
+profiles it loads), then open the project in Orca. Supports, the base's
+colour change and the prime tower are set in the GUI.
 
 The base and lid can also print at 0.28 mm Extra Draft for a little more
 time saved; the tray's cable cutouts and fillets look better at 0.20.
@@ -52,14 +59,17 @@ Print the lid and the tray in the dark colour.
 Every outer face leans 15 degrees (the CHRGtime's angle), from the lid top
 down to the foot; the corners run from R30 at the rim to about R8 at the
 bed. The base walls lean outward as they rise, well inside 45 degrees, so
-the whole shell prints unsupported; the only supported ceiling is the AC
-cord port's flat top (`base.SUPPORTED_CEILINGS`). The escape ports' heads,
-the foot recesses and the hinge pins' flats (3 mm wide, bridged between the
-cheeks) are short bridges.
+the whole base prints without supports. Every cable hole -- the AC cord
+port, the two escape ports and the tray's cutouts -- is an oval, so the
+ports' flat heads (10 mm at most) and the foot recesses are short bridges.
+The hinge pins' flats (3 mm wide) bridge the 25 mm hook gap between the
+cheeks (`base.LONG_BRIDGES`), which the U1 bridges cleanly.
 
 The charger (Anker A2154) stands in a U fence backed onto the -X end wall;
 its corners follow the charger's rounded edges (`CHARGER.corner_r`). The
-mains cord plugs in from outside through the cord port. Two oval escape
+mains cord plugs in from outside through the cord port, sized for a
+figure-8 (C7) end; if your cord's moulding is square-cornered, measure it
+(docs/measuring.md) before printing the base. Two oval escape
 ports, one each side of the charger in the same wall, let a cable out to
 charge something outside the dock.
 
@@ -70,12 +80,14 @@ falls clear for at least 15 mm, then follows the wall down.
 
 ## Hinge
 
-The lid hinges on the +Y long side at two stations. The base carries the
-pins, the lid the hooks. To fit the lid: open it to full (about 110
-degrees, where the heel tab in the middle rests on the base's back wall),
-line the hooks up over the pins, and push it down along the wall until the
-hooks snap on. To take it off, open it fully and pull it up along the wall.
-A closed lid lifted straight up stays on.
+The lid hinges on the +Y long side at two 24 mm wide stations. The base
+carries the pins, the lid the hooks, whose round bores open straight down
+with the lid closed. To fit the lid: set it closed on the rim with the hooks
+over the pins and press the back edge down until the hooks snap on; to take
+it off, lift the back edge straight up. The snap is deliberately light.
+Opened fully (about 100 degrees) it rests on the wide heel tab in the middle
+against the base's back wall; it stops short of leaning further back so its
+weight does not push the hooks off the pins.
 
 Print the hinge coupon first: it is one station on a short stretch of wall
 and lid. If the hook will not snap on, or falls off, change `SNAP` in
@@ -91,7 +103,8 @@ and lid. If the hook will not snap on, or falls off, change `SNAP` in
    cleanly through the cutout.
 4. **base** -- check the charger drops into the fence and the tray seats on
    the ledge.
-5. **lid** -- check it snaps on at full open, swings shut flush with the
+5. **lid** -- check it snaps onto the pins, stays on resting fully open,
+   swings shut flush with the
    rim, and clears every device.
 
 Re-run `uv run python scripts/export_all.py` after any parameter change, and

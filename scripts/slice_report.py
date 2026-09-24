@@ -9,7 +9,7 @@ It needs the Snapmaker Orca Flatpak and takes minutes, so it is not part of
 pytest.  The profiles are the vendor's own -- Snapmaker U1 (0.4 nozzle), the
 0.20 Standard or 0.28 Extra Draft process, Generic PETG -- flattened at run
 time, with the per-part settings from docs/printing.md laid over them: three
-walls and 15 % infill everywhere, supports only for the base.
+walls and 15 % infill everywhere, supports only for the lid (its hook bores).
 
 The Orca CLI in this Flatpak has three quirks, each handled below:
 - system profiles `inherits` from one another and the CLI will not follow
@@ -34,7 +34,7 @@ MACHINE = "Snapmaker U1 (0.4 nozzle)"
 PROCESS = {"0.20": "0.20 Standard @Snapmaker U1 (0.4 nozzle)",
            "0.28": "0.28 Extra Draft @Snapmaker U1 (0.4 nozzle)"}
 FILAMENT = "Generic PETG"
-SUPPORTED = {"base"}             # parts that print with supports
+SUPPORTED = {"lid"}              # parts that print with supports
 DOCK_SET = ("base", "tray", "lid")
 # The v1 prototype's STLs (releases/v1-prototype/) through this same script
 # at 0.20, 2026-09-24: (minutes, grams) per part, and how many of each part a
@@ -143,10 +143,9 @@ def main() -> int:
         "machine": _write(_flatten(_index(root, "machine"), MACHINE), OUT / "machine.json"),
         "filament": _write(_flatten(_index(root, "filament"), FILAMENT), OUT / "filament.json"),
         "plain": _write({**proc, "enable_support": "0"}, OUT / f"process_{args.layer}.json"),
-        # The CLI has no way to restrict supports to just the cord port
-        # ceiling, so this blankets the whole base plate with them -- the
-        # base's reported time/filament are slightly overstated here, which
-        # is conservative for the v1/v2 comparison, not an inaccuracy to fix.
+        # The CLI has no way to restrict supports to just the hook bores
+        # (paint-on in the GUI), so the lid's time is slightly overstated --
+        # conservative for the comparison.
         "support": _write({**proc, "enable_support": "1"}, OUT / f"process_{args.layer}_s.json"),
     }
 
