@@ -17,3 +17,8 @@ Parametric 3D-print models for a cycling-electronics charging dock: a tapered ba
 - Tests must measure the built solid (faces, wires, bounding boxes, intersections, probes), not restate constants. Every exported part is checked as a single valid solid on the bed in tests/test_parts.py; overhangs through tests/printability.py.
 - Chamfers not fillets on downward edges; no overhang past 45 degrees; short bridges (<= 20 mm) are allowlisted in the overhang tests.
 - out/ is gitignored; never commit exports.
+
+## Publishing
+- Public at https://github.com/khkimball/bike-charging-dock (remote `origin`, branch `master`). Commit as the GitHub noreply address (set repo-local); never push kkimball@gmail.com.
+- History was rewritten on 2026-09-26 to the noreply email; the pre-rewrite master is tagged `pre-publish-backup` (local only). Any branch cut from the old history (e.g. claude/wahoo-trackr-seat-mount-6064ac) must be moved first: `git rebase --onto master pre-publish-backup <branch>`.
+- Models: CC BY 4.0 (LICENSE-models.md); code: MIT (LICENSE). Release assets (STL/STEP/3MF) go on GitHub releases, not in git. Keep "Trek" out of titles and tags: "inspired by", not affiliated.

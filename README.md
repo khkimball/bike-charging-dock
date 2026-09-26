@@ -11,7 +11,7 @@ two colours, a dark foot band and a light body.
 |---|---|---|
 | ![Closed](docs/images/dock_closed.png) | ![Tray](docs/images/tray_top.png) | ![Base](docs/images/base_back.png) |
 
-- About 243 x 178 x 88 mm, and every part fits a 250 mm bed.
+- About 250 x 184 x 88 mm closed. The largest part, the lid, is 249.5 x 184.3 mm, so it needs a bed at least 250 mm across.
 - Bays are sized for a Wahoo Elemnt Roam 3, a Bontrager Ion headlight and a Wahoo Trackr radar, plus one open bay.
 - The charger is an Anker A2154 six-port desktop charger. It stands in a fence in the base, and its mains cord comes in through a port in the end wall.
 - Two escape ports beside the charger let a cable out to charge something outside the dock.
