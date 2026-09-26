@@ -6,7 +6,7 @@ WALL = 2.0         # base shell and tray dividers: 5 lines at 0.4 mm (v1: 2.4)
 THIN_WALL = 1.6    # 2 perimeters a side: the tray's hidden outer walls, the lid's walls
 FLOOR = 1.2        # base floor: 6 layers at 0.2 mm (v1: 1.6)
 CHAMFER = 1.0      # downward-facing edge chamfer
-CLR_FIT = 0.15     # coupon 2026-09-20, PLA on U1: 0.10 tight, 0.15 slides
+CLR_FIT = 0.15     # fit test 2026-09-20, PLA on U1: 0.10 tight, 0.15 slides
 CLR_BAY = 8.0      # device to a vertical (internal) bay wall; room for the cable beside it
 CLR_BAY_OUTER = 3.0  # device to a sloped (outer) bay wall at the floor; the lean opens it
                      # to ~13 mm by the rim

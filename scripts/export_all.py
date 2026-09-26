@@ -5,34 +5,34 @@ from typing import Callable
 from build123d import Part
 from dock.export import write_all
 from dock import base
-from dock import coupon
+from dock import fit_tests
 from dock import hinge
 from dock import layout
 from dock import lid
 from dock import tray
 
 
-def _coupon_plate() -> Part:
-    return coupon.build_coupon()[0]
+def _fit_test_plate() -> Part:
+    return fit_tests.build_fit_test()[0]
 
 
-def _coupon_peg() -> Part:
-    return coupon.build_coupon()[1]
+def _fit_test_peg() -> Part:
+    return fit_tests.build_fit_test()[1]
 
 
-def _hinge_coupon_base() -> Part:
-    return coupon.build_hinge_coupon()[0]
+def _hinge_test_base() -> Part:
+    return fit_tests.build_hinge_test()[0]
 
 
-def _hinge_coupon_lid() -> Part:
-    return coupon.build_hinge_coupon()[1]
+def _hinge_test_lid() -> Part:
+    return fit_tests.build_hinge_test()[1]
 
 
 PARTS: dict[str, Callable[[], Part]] = {
-    "coupon_plate": _coupon_plate,
-    "coupon_peg": _coupon_peg,
-    "hinge_coupon_base": _hinge_coupon_base,
-    "hinge_coupon_lid": _hinge_coupon_lid,
+    "fit_test_plate": _fit_test_plate,
+    "fit_test_peg": _fit_test_peg,
+    "hinge_test_base": _hinge_test_base,
+    "hinge_test_lid": _hinge_test_lid,
     "base": base.build_base,
     "tray": tray.build_tray,
     "lid": lid.build_lid,

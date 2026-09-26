@@ -1,10 +1,10 @@
-"""Calibration coupons.
+"""Test prints, to tune the fit before the long prints.
 
-`build_coupon`: one plate with six graded holes and one peg, for the fit
-clearances in params.py.
+`build_fit_test`: the fit test, one plate with six graded holes and one
+peg, for the fit clearances in params.py.
 
-`build_hinge_coupon`: one hinge station cut out of the real base and lid --
-the notch, socket blocks and stop lips on a stretch of back wall, and the
+`build_hinge_test`: the hinge test, one hinge station cut out of the real
+base and lid -- the notch, socket blocks and stop lips on a stretch of back wall, and the
 leaf on a stretch of lid -- for BORE_CLR and SNAP in hinge.py and to try the
 stop.  Print both halves, press the leaf's pins down into the sockets, and
 swing it: tune the numbers there before the base and lid, which are the two
@@ -22,11 +22,11 @@ PEG = 10.0
 PITCH = 16.0
 THICK = 4.0
 
-HINGE_SPAN = H.NOTCH_W + 2 * H.BLOCK_W + 8.0     # the coupon's length along the hinge
-_COUPON_IN = 14.0                                  # how far into the dock it reaches
+HINGE_SPAN = H.NOTCH_W + 2 * H.BLOCK_W + 8.0     # the hinge test's length along the hinge
+_TEST_IN = 14.0                                  # how far into the dock it reaches
 
 
-def build_coupon() -> tuple[Part, Part]:
+def build_fit_test() -> tuple[Part, Part]:
     n = len(CLEARANCES)
     plate = Box(PITCH * n + 6, PITCH + 6, THICK, align=(Align.MIN, Align.MIN, Align.MIN))
     for i, c in enumerate(CLEARANCES):
@@ -38,7 +38,7 @@ def build_coupon() -> tuple[Part, Part]:
     return plate, peg
 
 
-def build_hinge_coupon() -> tuple[Part, Part]:
+def build_hinge_test() -> tuple[Part, Part]:
     """(base side, lid side), each on the bed as it prints."""
     xs = H.STATIONS[1]
     y0 = H.RECESS_Y - 1.0
@@ -47,7 +47,7 @@ def build_hinge_coupon() -> tuple[Part, Part]:
     box = Pos(xs, y0, z0) * Box(HINGE_SPAN, L.RIM.sy / 2 + 10 - y0, top - z0,
                                 align=(Align.CENTER, Align.MIN, Align.MIN))
     base_side = Pos(-xs, -y0, -z0) * (B.build_base() & box)
-    lid_box = Pos(xs, H.AXIS_Y - _COUPON_IN, z0) * Box(HINGE_SPAN, 40, top - z0,
+    lid_box = Pos(xs, H.AXIS_Y - _TEST_IN, z0) * Box(HINGE_SPAN, 40, top - z0,
                                                        align=(Align.CENTER, Align.MIN, Align.MIN))
     lid_side = LD._closed() & lid_box
     lid_side = Pos(-xs, 0, 0) * (LD.PRINT * lid_side)      # top face on the bed, like the lid

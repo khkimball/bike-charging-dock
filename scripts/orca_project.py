@@ -1,5 +1,5 @@
 """Build one Snapmaker Orca project with every printed part on its own plate:
-Base, Tray, Lid, Hinge coupon (both halves), Clearance coupon (plate + peg).
+Base, Tray, Lid, Hinge test (both halves), Fit test (plate + peg).
 
     uv run python scripts/export_all.py        # first: fresh out/*.stl
     uv run python scripts/orca_project.py      # -> out/orca/dock_plates.3mf
@@ -29,8 +29,8 @@ PLATES = [  # (plate name, [(part, dx, dy) offset from the plate centre])
     ("Base", [("base", 0, 0)]),
     ("Tray", [("tray", 0, 0)]),
     ("Lid", [("lid", 0, 0)]),
-    ("Hinge coupon", [("hinge_coupon_base", -34, 0), ("hinge_coupon_lid", 34, 0)]),
-    ("Clearance coupon", [("coupon_plate", 0, -12), ("coupon_peg", 0, 18)]),
+    ("Hinge test", [("hinge_test_base", -34, 0), ("hinge_test_lid", 34, 0)]),
+    ("Fit test", [("fit_test_plate", 0, -12), ("fit_test_peg", 0, 18)]),
 ]
 BED_CENTRE = (135.5, 136.0)      # U1 printable area 0.5..270.5 x 1..271
 PLATE_STRIDE = 324.0             # Orca spaces plates 1.2 bed-widths apart

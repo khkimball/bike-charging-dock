@@ -10,9 +10,9 @@ option for the base and lid, see below.
 
 | Part | Orientation | Walls | Infill | Supports |
 |---|---|---|---|---|
-| coupon_plate, coupon_peg | as exported | 3 | 15 % | none |
-| hinge_coupon_base | as exported | 3 | 15 % | none |
-| hinge_coupon_lid | as exported: leaf up | 3 | 15 % | under the pins if needed |
+| fit_test_plate, fit_test_peg | as exported | 3 | 15 % | none |
+| hinge_test_base | as exported | 3 | 15 % | none |
+| hinge_test_lid | as exported: leaf up | 3 | 15 % | under the pins if needed |
 | tray | as exported: plate on the bed, bays up | 3 | 15 % | none |
 | base | as exported: open top up | 3 | 15 % | none |
 | lid | as exported: top face down, hinge leaves up | 3 | 15 % | under the leaf pins if needed (paint-on) |
@@ -30,7 +30,7 @@ change to params.py and before a reprint.
 
 `uv run python scripts/orca_project.py` builds `out/orca/dock_plates.3mf`,
 one Orca project with each part on its own named plate (Base, Tray, Lid,
-Hinge coupon, Clearance coupon) on the same U1 / 0.20 / PETG profiles. Run
+Hinge test, Fit test) on the same U1 / 0.20 / PETG profiles. Run
 it after `export_all.py` (and `slice_report.py` once, which writes the
 profiles it loads), then open the project in Orca. Supports, the base's
 colour change and the prime tower are set in the GUI.
@@ -98,14 +98,14 @@ take it off, lift the back edge straight up. The snap is deliberately
 light. Opened fully it stops at about 101 degrees, the leaves' ends resting
 on small lips on the socket blocks.
 
-Print the hinge coupon first: it is one station cut from the real base and
+Print the hinge test first: it is one station cut from the real base and
 lid. If the pins will not snap in, or pop out, change `SNAP` in
 `src/dock/hinge.py`; if the hinge binds, raise `BORE_CLR`; check it stops
 at about 100 degrees and the lips hold. Then re-export.
 
 ## Print order and measurement cycle
 
-1. **coupons** -- the clearance coupon and the hinge coupon, in the final
+1. **test prints** -- the fit test and the hinge test, in the final
    material. Set `CLR_FIT` (params.py) and `SNAP` / `BORE_CLR` (hinge.py).
 2. **measurements** -- fill in `src/dock/measurements.py` per
    `docs/measuring.md`; `CHARGER.edge_r` is new.

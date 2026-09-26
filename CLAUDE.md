@@ -1,6 +1,6 @@
 # Charging dock (build123d)
 
-Parametric 3D-print models for a cycling-electronics charging dock: a tapered base, a tray with fixed dividers, and a hinged lid, plus clearance and hinge calibration coupons. Spec and plan live in docs/superpowers/; the current design is specs/2026-09-23-tapered-dock-design.md. The printed v1 prototype is tagged `v1-prototype`.
+Parametric 3D-print models for a cycling-electronics charging dock: a tapered base, a tray with fixed dividers, and a hinged lid, plus fit and hinge test prints. Spec and plan live in docs/superpowers/; the current design is specs/2026-09-23-tapered-dock-design.md. The printed v1 prototype is tagged `v1-prototype`.
 
 ## Toolchain
 - Python 3.12 via uv only (system Python is 3.14; build123d has no wheels for it): `uv venv --python 3.12 && uv pip install -e ".[dev]"`, then `uv run pytest` / `uv run python scripts/export_all.py`.
