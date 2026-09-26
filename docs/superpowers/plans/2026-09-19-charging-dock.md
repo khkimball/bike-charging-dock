@@ -62,7 +62,7 @@ README.md
 - [ ] **Step 1: Create the environment**
 
 ```bash
-cd /home/kkimb/personal-projects/onshape-projects
+cd bike-charging-dock
 echo "3.12" > .python-version
 uv venv --python 3.12
 ```

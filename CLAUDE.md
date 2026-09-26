@@ -6,6 +6,7 @@ Parametric 3D-print models for a cycling-electronics charging dock: a tapered ba
 - Python 3.12 via uv only (system Python is 3.14; build123d has no wheels for it): `uv venv --python 3.12 && uv pip install -e ".[dev]"`, then `uv run pytest` / `uv run python scripts/export_all.py`.
 - Slice in Snapmaker Orca (Flatpak io.github.Snapmaker.Snapmaker_Orca) for the Snapmaker U1, PETG. See docs/printing.md.
 - `uv run python scripts/slice_report.py [--layer 0.28]` slices out/base,tray,lid headlessly and compares time and grams with v1 (not part of pytest; minutes). The design target is at least 25 % below v1 in both.
+- `uv run python scripts/render.py` renders docs/images/*.png for the README (numpy z-buffer, no extra deps; about a minute).
 - `uv run python scripts/orca_project.py` builds out/orca/dock_plates.3mf, every part on its own named Orca plate (the Orca CLI's own assemble-list and 3mf loading segfault in this Flatpak, so it arranges STLs and rewrites the plates).
 - build123d 0.12: `part.is_valid` is a property; `ShapeList.sort_by(Axis.Z)`, not a lambda.
 
