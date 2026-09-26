@@ -24,7 +24,7 @@ not affiliated with or endorsed by Trek.
 ## What you need
 
 - **Charger:** [Anker Desktop Charger, 112W Max, 6 ports](https://www.amazon.com/dp/B0CM6WDH6S), model A2154 (3 USB-C and 3 USB-A, 77 x 82 x 33 mm). The base's fence and ports are sized for it; check the model number on the label if you buy it elsewhere. Any other charger needs its size entered in `src/dock/measurements.py` (see [Adapt it](#adapt-it)).
-- **Cables:** one USB charging cable per device; the charger comes with its mains cord but no USB cables.
+- **Cables:** one USB charging cable per device (the charger ships without USB cables).
 
 ## Print it
 
